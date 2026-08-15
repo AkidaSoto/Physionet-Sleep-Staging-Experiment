@@ -1,0 +1,62 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Logs / temp
+*.log
+tmp/
+.tmp/
+
+# Build artifacts
+dist/
+build/
+
+# Node / Next.js
+node_modules/
+.next/
+*.tsbuildinfo
+
+# Local data
+data/raw/
+data/interim/
+data/processed/
+data/external/
+
+# Large binaries and archives
+*.edf
+*.dat
+*.hea
+*.zip
+*.gz
+*.tar
+*.7z
+
+# Keep lightweight repo structure
+!data/
+!data/.gitkeep
+!data/**/.gitkeep
+
+# Bundled/external analysis dumps and generated outputs
+/external/
+/artifacts/
+!/artifacts/.gitkeep
