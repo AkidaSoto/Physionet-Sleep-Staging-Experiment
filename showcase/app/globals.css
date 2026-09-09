@@ -337,7 +337,7 @@
 
 .research-feature-workbench .research-feature-analysis {
   display: grid;
-  grid-template-columns: minmax(230px, 0.72fr) minmax(360px, 1.28fr);
+  grid-template-columns: minmax(300px, 0.86fr) minmax(360px, 1.14fr);
   border: 0;
 }
 
@@ -5655,8 +5655,35 @@ body:has(.research-page) .site-nav {
 
 .research-family-tabs {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   border-bottom: 1px solid rgba(174, 201, 225, 0.16);
+}
+
+.research-stage-target-summary {
+  padding: 16px 24px;
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1.15fr) minmax(260px, 0.85fr);
+  gap: 20px;
+  align-items: baseline;
+  border-bottom: 1px solid rgba(174, 201, 225, 0.15);
+}
+
+.research-stage-target-summary > span {
+  font-family: Georgia, Cambria, "Times New Roman", serif;
+  font-size: 1.22rem;
+  font-weight: 700;
+}
+
+.research-stage-target-summary p,
+.research-stage-target-summary small {
+  margin: 0;
+  color: rgba(230, 239, 251, 0.68);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+.research-stage-target-summary small {
+  color: rgba(230, 239, 251, 0.46);
 }
 
 .research-family-tabs button,
@@ -5882,6 +5909,36 @@ body:has(.research-page) .site-nav {
   font-size: 0.76rem;
 }
 
+.research-stage-feature-list {
+  display: grid;
+  grid-template-columns: 1fr;
+  padding-top: 0;
+  border-top: 1px solid rgba(174, 201, 225, 0.12);
+}
+
+.research-stage-feature-list button {
+  padding: 10px 0;
+  display: grid;
+  gap: 2px;
+  border-right: 0;
+  border-bottom: 1px solid rgba(174, 201, 225, 0.1);
+}
+
+.research-stage-feature-list button span {
+  font-size: 0.76rem;
+}
+
+.research-stage-feature-list button small {
+  color: rgba(230, 239, 251, 0.4);
+  font-size: 0.66rem;
+}
+
+.research-family-reading .research-feature-scope-note {
+  color: rgba(230, 239, 251, 0.44);
+  font-size: 0.72rem;
+  line-height: 1.55;
+}
+
 .research-feature-list-inline button:hover,
 .research-feature-list-inline button[aria-selected="true"] {
   color: #f3f7fb;
@@ -5939,6 +5996,55 @@ body:has(.research-page) .site-nav {
   line-height: 1.5;
 }
 
+.research-feature-derivation {
+  margin-top: 16px;
+  padding: 14px 0;
+  display: grid;
+  gap: 8px;
+  border-top: 1px solid rgba(174, 201, 225, 0.12);
+  border-bottom: 1px solid rgba(174, 201, 225, 0.12);
+}
+
+.research-feature-derivation strong {
+  color: rgba(230, 239, 251, 0.52);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.research-feature-derivation code {
+  color: #f3f7fb;
+  font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.76rem;
+  line-height: 1.55;
+  white-space: normal;
+}
+
+.research-feature-derivation small,
+.research-feature-family-note p {
+  color: rgba(230, 239, 251, 0.5);
+  font-size: 0.7rem;
+  line-height: 1.55;
+}
+
+.research-feature-family-note {
+  padding-top: 12px;
+}
+
+.research-feature-family-note > summary {
+  color: rgba(230, 239, 251, 0.72);
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.research-feature-family-note p {
+  margin-top: 10px;
+}
+
+.research-feature-family-note p strong {
+  color: #f0b36d;
+}
+
 .research-feature-analysis .research-distribution-chart {
   padding-left: 32px;
   border-left: 1px solid rgba(174, 201, 225, 0.16);
@@ -5973,6 +6079,14 @@ body:has(.research-page) .site-nav {
 
   .research-family-tabs button:nth-child(n + 4) {
     border-top: 1px solid rgba(174, 201, 225, 0.12);
+  }
+
+  .research-stage-target-summary {
+    grid-template-columns: 54px minmax(0, 1fr);
+  }
+
+  .research-stage-target-summary small {
+    grid-column: 2;
   }
 
   .research-physiology-body,
@@ -6014,6 +6128,15 @@ body:has(.research-page) .site-nav {
     min-height: 74px;
     border-right: 1px solid rgba(174, 201, 225, 0.12);
     border-top: 0;
+  }
+
+  .research-stage-target-summary {
+    grid-template-columns: 1fr;
+    gap: 7px;
+  }
+
+  .research-stage-target-summary small {
+    grid-column: auto;
   }
 
   .research-integrated-night {
@@ -6117,7 +6240,7 @@ body:has(.research-page) .site-nav {
 
 .research-feature-workbench .research-feature-analysis {
   display: grid;
-  grid-template-columns: minmax(230px, 0.72fr) minmax(360px, 1.28fr);
+  grid-template-columns: minmax(300px, 0.86fr) minmax(360px, 1.14fr);
   border: 0;
 }
 

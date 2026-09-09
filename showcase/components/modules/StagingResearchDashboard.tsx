@@ -205,6 +205,97 @@ const featureFamilies: FeatureFamily[] = [
   }
 ];
 
+type StageFeatureTarget = {
+  stage: string;
+  cue: string;
+  contrast: string;
+  featureIds: string[];
+};
+
+const stageFeatureTargets: StageFeatureTarget[] = [
+  {
+    stage: "Wake",
+    cue: "Higher-frequency EEG, sustained chin tone, eye activity, and heart rate provide evidence against sleep.",
+    contrast: "The targeted inputs emphasize activation relative to NREM and the muscle-tone contrast with REM.",
+    featureIds: [
+      "slow_wave_features.high_frequency_envelope",
+      "emg_tone_features.emg_tone_baseline",
+      "eye_movement_activity.eye_movement_baseline",
+      "pan_tompkins.heart_rate_bpm_track"
+    ]
+  },
+  {
+    stage: "N1",
+    cue: "Sleep onset weakens wake-like EEG structure and often introduces slow eye movements.",
+    contrast: "The targeted inputs look for a shallow transition state without the spindle or slow-wave evidence of deeper NREM.",
+    featureIds: [
+      "spindle_features.aperiodic_exponent",
+      "eye_movement_activity.eye_movement_activity",
+      "eog_rem_features.sem_band_power_fast"
+    ]
+  },
+  {
+    stage: "N2",
+    cue: "Sigma activity and sleep spindles are the main stage-specific cues, supported here by spectral shape and HRV.",
+    contrast: "The targeted inputs emphasize spindle-range structure that separates N2 from N1 and N3.",
+    featureIds: [
+      "spindle_features.splindex",
+      "spindle_features.sigma_residual_power",
+      "spindle_features.aperiodic_exponent",
+      "pan_tompkins.hrv_rmssd_track"
+    ]
+  },
+  {
+    stage: "N3",
+    cue: "High-amplitude slow EEG is the defining visual evidence for deep NREM sleep.",
+    contrast: "The targeted inputs measure both absolute slow activity and its dominance over faster EEG.",
+    featureIds: [
+      "slow_wave_features.slow_wave_envelope",
+      "slow_wave_features.slow_wave_index",
+      "slow_wave_features.slow_wave_ratio_power",
+      "slow_wave_features.high_frequency_envelope"
+    ]
+  },
+  {
+    stage: "REM",
+    cue: "Rapid eye activity paired with reduced chin tone distinguishes REM from wake and NREM.",
+    contrast: "The targeted inputs combine EOG movement bands with the muscle-tone reference needed to resolve wake-like EEG.",
+    featureIds: [
+      "eye_movement_activity.eye_movement_activity",
+      "eog_rem_features.rem_band_power_fast",
+      "eog_rem_features.sem_band_power_fast",
+      "emg_tone_features.emg_tone_baseline"
+    ]
+  }
+];
+
+const featureDerivations: Record<string, { formula: string; method: string }> = {
+  spindles: {
+    formula: "SBI = [Σ(Pσ / Pβ)] × [Σ(Rσ − Rβ)]",
+    method: "A 2-second EEG spectrogram with 90% overlap estimates sigma (11–16 Hz) and beta (16–30 Hz) power. R is log-power remaining after a fitted 1/f background is removed."
+  },
+  spectrum: {
+    formula: "Rb(f) = log₁₀|STFT(x)| − [a + b log₁₀(f)]",
+    method: "Band medians come from 2-second EEG spectra. The aperiodic line is fitted over 2–7 Hz and 14–24 Hz; residual band power measures oscillatory structure above that background."
+  },
+  "slow-waves": {
+    formula: "SWI = (L′ / H) × (L′ − H),   L′ = L − median₃₀s(L)",
+    method: "L is the Hilbert envelope of 0.3–1.5 Hz EEG and H is the 30–100 Hz envelope. The 30-second rolling median removes the local slow-wave baseline."
+  },
+  "eye-movement": {
+    formula: "EOGactivity = MA₁s(max[E₀.₁–₅ − median₃₀s(E₀.₁–₅), 0])",
+    method: "The activity channel uses a band-limited Hilbert envelope. Separate 30-second spectra summarize slow-eye power at 0.1–0.5 Hz, rapid-eye power at 0.5–5 Hz, and a 5–30 Hz comparison band."
+  },
+  "muscle-tone": {
+    formula: "Tone = MA₁s(|Hilbert(BP₁₀–₁₀₀{EMG})|)",
+    method: "A 10–100 Hz chin-EMG envelope is smoothed for one second. A 60-second rolling median supplies the local tone baseline used to detect relative suppression."
+  },
+  cardiac: {
+    formula: "HR = 60 / RR,   RMSSD = √mean[(RRᵢ₊₁ − RRᵢ)²]",
+    method: "R peaks are detected from ECG. Heart rate and 30-second beat-domain summaries provide secondary autonomic context rather than stage-defining evidence."
+  }
+};
+
 type ModelProfile = {
   question: string;
   input: string;
@@ -535,16 +626,24 @@ function NightHypnogram({ example }: { example: FeatureSignalExample }) {
 const STAGES_FROM_INDEX = ["Wake", "N1", "N2", "N3", "REM"];
 
 function PhysiologyExplorer() {
-  const [familyId, setFamilyId] = useState("spindles");
+  const [stageId, setStageId] = useState("N2");
   const [examples, setExamples] = useState<FeatureSignalExample[] | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const explorerRef = useRef<HTMLDivElement>(null);
-  const family = featureFamilies.find((item) => item.id === familyId) ?? featureFamilies[0];
-  const example = examples?.find((item) => item.family_id === family.id) ?? examples?.[0];
+  const stageTarget = stageFeatureTargets.find((item) => item.stage === stageId) ?? stageFeatureTargets[2];
+  const targetedFeatures = stageTarget.featureIds.flatMap((id) => {
+    const family = featureFamilies.find((item) => item.features.some((feature) => feature.id === id));
+    const feature = family?.features.find((item) => item.id === id);
+    return family && feature ? [{ family, feature }] : [];
+  });
   const [featureId, setFeatureId] = useState("spindle_features.splindex");
-  const feature = family.features.find((item) => item.id === featureId) ?? family.features[0];
+  const selectedTarget = targetedFeatures.find((item) => item.feature.id === featureId) ?? targetedFeatures[0];
+  const family = selectedTarget?.family ?? featureFamilies[0];
+  const feature = selectedTarget?.feature ?? family.features[0];
+  const example = examples?.find((item) => item.family_id === family.id) ?? examples?.[0];
   const distribution = data.feature_evidence.distributions.find((item) => item.id === feature.id) ?? data.feature_evidence.distributions[0];
   const exampleValue = example?.feature_values[feature.id];
+  const derivation = featureDerivations[family.id];
 
   useEffect(() => {
     let cancelled = false;
@@ -575,56 +674,74 @@ function PhysiologyExplorer() {
     };
   }, []);
 
-  function chooseFamily(next: FeatureFamily) {
-    const nextExample = examples?.find((item) => item.family_id === next.id);
-    setFamilyId(next.id);
-    setFeatureId(nextExample?.feature_id ?? next.features[0].id);
+  function chooseStage(next: StageFeatureTarget) {
+    setStageId(next.stage);
+    setFeatureId(next.featureIds[0]);
   }
 
   return (
     <div className="research-physiology-explorer" ref={explorerRef} aria-busy={!examples && !loadFailed}>
       <div className="research-explorer-intro">
         <div>
-          <h4>Choose a signal family and feature</h4>
+          <h4>Start with the label</h4>
         </div>
-        <p>The definition, stage distribution, and source epoch update together.</p>
+        <p>Choose a sleep stage, then inspect the measurements designed to separate it from the other labels.</p>
       </div>
-      <div className="research-family-tabs" role="tablist" aria-label="Choose a physiological feature group">
-        {featureFamilies.map((item) => (
-          <button key={item.id} type="button" role="tab" aria-selected={item.id === family.id} onClick={() => chooseFamily(item)}>
-            <span>{item.label}</span>
-            <small>{item.signal} · {item.features.length}</small>
+      <div className="research-family-tabs research-stage-tabs" role="tablist" aria-label="Choose an expert sleep-stage label">
+        {stageFeatureTargets.map((item) => (
+          <button key={item.stage} type="button" role="tab" aria-selected={item.stage === stageTarget.stage} onClick={() => chooseStage(item)}>
+            <span style={{ color: item.stage === stageTarget.stage ? stageColors[item.stage] : undefined }}>{item.stage}</span>
+            <small>{item.featureIds.length} targeted inputs</small>
           </button>
         ))}
       </div>
 
+      <div className="research-stage-target-summary">
+        <span style={{ color: stageColors[stageTarget.stage] }}>{stageTarget.stage}</span>
+        <p>{stageTarget.cue} <Citation number={1} /></p>
+        <small>{stageTarget.contrast}</small>
+      </div>
+
       <div className="research-feature-workbench">
         <article className="research-family-reading" aria-live="polite">
-          <div><span>{family.signal}</span><strong>{family.label}</strong></div>
-          <p>{family.evidence} {family.sources.map((number) => <Citation key={number} number={number} />)}</p>
-          <div className="research-feature-list-inline" role="listbox" aria-label={`${family.label} features`}>
-            {family.features.map((item) => (
-              <button key={item.id} type="button" role="option" aria-selected={item.id === feature.id} onClick={() => setFeatureId(item.id)}>{item.name}</button>
+          <div><span>One-vs-rest view</span><strong>{stageTarget.stage} feature subset</strong></div>
+          <p>The stage-expert experiments used these inputs to ask whether a focused physiological representation improves {stageTarget.stage} separability.</p>
+          <div className="research-feature-list-inline research-stage-feature-list" role="listbox" aria-label={`${stageTarget.stage} targeted features`}>
+            {targetedFeatures.map((item) => (
+              <button key={item.feature.id} type="button" role="option" aria-selected={item.feature.id === feature.id} onClick={() => setFeatureId(item.feature.id)}>
+                <span>{item.feature.name}</span>
+                <small>{item.family.label} · {item.family.signal}</small>
+              </button>
             ))}
           </div>
-          <p className="research-family-limit"><strong>Limit:</strong> {family.limitation}</p>
+          <p className="research-feature-scope-note">The best multiclass model still receives the full feature vector. This label-first view explains the design logic behind selected inputs.</p>
         </article>
 
         <div className="research-feature-analysis">
           <div className="research-feature-definition">
-            <span>Selected model input</span>
+            <span>{family.label} · {family.signal}</span>
             <h4>{feature.name}</h4>
             <p>{feature.summary}</p>
             <dl>
               <div><dt>Computed as</dt><dd>{feature.measurement}</dd></div>
-              <div><dt>Expected use</dt><dd>{feature.stageUse}</dd></div>
+              <div><dt>Target role</dt><dd>{feature.stageUse}</dd></div>
               <div><dt>Example value</dt><dd>{exampleValue ? `${featureValue(exampleValue.value)} · ${ordinal(exampleValue.percentile)} percentile` : "Loading example…"}</dd></div>
             </dl>
+            <div className="research-feature-derivation">
+              <strong>Derivation</strong>
+              <code>{derivation.formula}</code>
+              <small>{derivation.method}</small>
+            </div>
+            <details className="research-feature-family-note">
+              <summary>Physiological basis and limits</summary>
+              <p>{family.evidence} {family.sources.map((number) => <Citation key={number} number={number} />)}</p>
+              <p><strong>Limit:</strong> {family.limitation}</p>
+            </details>
           </div>
           <div className="research-selected-distribution">
             <div className="research-selected-distribution-head">
               <strong>Distribution by expert stage</strong>
-              <span>{example ? `● selected ${example.stage} epoch` : "loading selected epoch"}</span>
+              <span>target: {stageTarget.stage}{example ? ` · ● example: ${example.stage}` : ""}</span>
             </div>
             <FeatureDistributionChart
               feature={distribution}
@@ -641,9 +758,9 @@ function PhysiologyExplorer() {
       ) : (
         <details className="research-example-disclosure" open>
           <summary>
-            <span>Representative epoch</span>
+            <span>Signal example</span>
             <strong>{example.stage} at {formatClock(example.epoch_start_sec)}</strong>
-            <small>See where the selected measurement came from</small>
+            <small>See how the selected feature appears in its source signals</small>
           </summary>
           <div className="research-example-context">
             <NightHypnogram example={example} />
@@ -662,7 +779,7 @@ function PhysiologyExplorer() {
           </div>
         </details>
       )}
-      <p className="research-data-note">The feature value, stage distribution, waveform, and expert label come from the same example. Stage prediction uses the full feature vector.</p>
+      <p className="research-data-note">The distribution uses every expert label. The waveform is a high-signal example for the selected feature family; its stage is shown explicitly above.</p>
     </div>
   );
 }
@@ -1144,7 +1261,7 @@ export function StagingResearchDashboard() {
         </div>
 
         <div className="research-method-block" id="features">
-          <div className="research-method-block-heading"><span>2.2</span><div><h3>Feature representation</h3><p>Each 30-second epoch becomes 34 normalized measurements from EEG, EOG, chin EMG, and ECG. Use the explorer to connect one selected feature directly to its stage distribution and the real signal segment that produced it.</p></div></div>
+          <div className="research-method-block-heading"><span>2.2</span><div><h3>Feature representation</h3><p>Start with an expert label, then trace its targeted inputs from derivation to stage distribution and a real signal segment. The full classifier uses all 34 normalized measurements from EEG, EOG, chin EMG, and ECG.</p></div></div>
           <PhysiologyExplorer />
         </div>
 
