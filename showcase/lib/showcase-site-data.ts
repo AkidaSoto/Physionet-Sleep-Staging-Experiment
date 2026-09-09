@@ -1,5 +1,3 @@
-import siteData from "../../artifacts/showcase/site-data.json";
-
 export type ShowcaseSignalSlice = {
   id: string;
   label: string;
@@ -90,6 +88,19 @@ export type ShowcaseSiteData = {
   };
 };
 
+const siteData: ShowcaseSiteData = {
+  generated_at: "",
+  dataset: "UCDDB",
+  record_id: "not-published",
+  apnea: {
+    default_example_index: 0,
+    examples: []
+  },
+  staging: {
+    examples: []
+  }
+};
+
 export function getShowcaseSiteData(): ShowcaseSiteData {
-  return siteData as ShowcaseSiteData;
+  return siteData;
 }
