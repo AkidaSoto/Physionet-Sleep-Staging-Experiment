@@ -221,7 +221,7 @@ const modelProfiles: Record<string, ModelProfile> = {
     context: "None; every epoch is classified independently",
     architecture: ["feature vector", "balanced feature ensemble", "5 stage probabilities"],
     training: "Each epoch is classified independently. This is the reference point for the other models.",
-    lesson: "Mean macro-F1 is 0.608. This is the reference result for the other four models."
+    lesson: "This establishes how far the physiological representation goes before sequence modeling is added."
   },
   "context-5": {
     question: "Does a five-epoch probability smoother improve the baseline?",
@@ -229,7 +229,7 @@ const modelProfiles: Record<string, ModelProfile> = {
     context: "5 epochs · 2.5 minutes",
     architecture: ["epoch ensemble", "5 probability vectors", "learned Stage 2 smoother", "stage label"],
     training: "The Stage 2 model uses the ensemble's probability outputs. The physiological representation remains fixed.",
-    lesson: "Mean macro-F1 increases to 0.668 while the physiological feature model remains unchanged."
+    lesson: "Performance improves while the underlying physiological feature model remains unchanged."
   },
   "tcn-6s": {
     question: "Does six-second feature sampling improve classification?",
@@ -237,7 +237,7 @@ const modelProfiles: Record<string, ModelProfile> = {
     context: "Within-epoch and neighboring short-timescale structure",
     architecture: ["6-second features", "dilated temporal convolutions", "pooled representation", "stage label"],
     training: "Dilated convolutions combine nearby 6-second steps without a recurrent state.",
-    lesson: "Mean macro-F1 is 0.654, above the epoch baseline and below both second-stage models."
+    lesson: "Denser sampling improves on the epoch baseline but does not beat the strongest second-stage model."
   },
   hierarchical: {
     question: "Does a joint short-step and cross-epoch encoder improve the result?",
@@ -245,7 +245,7 @@ const modelProfiles: Record<string, ModelProfile> = {
     context: "Joint within-epoch and cross-epoch context",
     architecture: ["short feature steps", "epoch encoder", "cross-epoch encoder", "stage sequence"],
     training: "The raw hierarchical output is evaluated directly; a later smoothing stage did not become the default.",
-    lesson: "Mean macro-F1 is 0.658. The added hierarchy does not outperform the smaller second-stage models."
+    lesson: "The hierarchy improves on the epoch baseline, but its added complexity does not produce the best result."
   },
   "context-9": {
     question: "Do a wider window and baseline confidence add useful information?",
@@ -253,7 +253,7 @@ const modelProfiles: Record<string, ModelProfile> = {
     context: "9 epochs · 4.5 minutes",
     architecture: ["epoch ensemble", "9 logit + confidence vectors", "learned Stage 2 smoother", "stage label"],
     training: "Logits preserve relative evidence across all classes, while confidence adds the baseline model's uncertainty.",
-    lesson: "Mean macro-F1 is 0.683, the highest result in this comparison."
+    lesson: "This configuration produces the highest mean macro-F1 in the comparison."
   }
 };
 
@@ -585,10 +585,9 @@ function PhysiologyExplorer() {
     <div className="research-physiology-explorer" ref={explorerRef} aria-busy={!examples && !loadFailed}>
       <div className="research-explorer-intro">
         <div>
-          <span>Feature explorer</span>
-          <h4>Inspect one feature family</h4>
+          <h4>Choose a signal family and feature</h4>
         </div>
-        <p>The selected measurement, its value in one real epoch, and its distribution across all expert labels update together below.</p>
+        <p>The definition, stage distribution, and source epoch update together.</p>
       </div>
       <div className="research-family-tabs" role="tablist" aria-label="Choose a physiological feature group">
         {featureFamilies.map((item) => (
@@ -718,7 +717,6 @@ function MethodPipeline() {
 }
 
 function ModelDetail({ model, className = "" }: { model: ModelResult; className?: string }) {
-  const [view, setView] = useState<"overview" | "architecture" | "training" | "evidence">("overview");
   const profile = modelProfiles[model.id];
   const baseline = data.headline.baseline_macro_f1;
   const delta = model.metrics.macro_f1 - baseline;
@@ -726,98 +724,48 @@ function ModelDetail({ model, className = "" }: { model: ModelResult; className?
     <div className={`research-model-detail ${className}`} aria-live="polite">
       <div className="research-model-detail-head">
         <div>
-          <span>{model.role}</span>
           <h3>{model.name}</h3>
         </div>
         {model.id === "context-9" ? <span className="research-winner">best mean macro-F1</span> : null}
       </div>
-      <div className="research-inline-metrics">
-        <span><small>Mean macro-F1</small><strong>{formatMetric(model.metrics.macro_f1)}</strong></span>
+      <div className="research-inline-metrics research-model-metrics">
         <span><small>Accuracy</small><strong>{formatMetric(model.metrics.accuracy)}</strong></span>
         <span><small>vs. baseline</small><strong>{delta === 0 ? "reference" : `+${delta.toFixed(3)}`}</strong></span>
       </div>
-      <div className="research-model-tabs" role="tablist" aria-label={`${model.name} details`}>
-        {[
-          ["overview", "Question"],
-          ["architecture", "Architecture"],
-          ["training", "Training"],
-          ["evidence", "Evidence"]
-        ].map(([id, label]) => (
-          <button key={id} type="button" role="tab" aria-selected={view === id} onClick={() => setView(id as typeof view)}>{label}</button>
-        ))}
+      <div className="research-model-primary">
+        <div className="research-model-architecture">
+          <span className="research-model-kicker">Architecture</span>
+          <div className="research-model-architecture-flow">
+            {profile.architecture.map((step, index) => (
+              <span key={step}><b>{step}</b>{index < profile.architecture.length - 1 ? <i>→</i> : null}</span>
+            ))}
+          </div>
+          <dl>
+            <div><dt>Input</dt><dd>{profile.input}</dd></div>
+            <div><dt>Visible context</dt><dd>{profile.context}</dd></div>
+          </dl>
+        </div>
+        <div className="research-model-overview">
+          <span>Experiment question</span>
+          <h4>{profile.question}</h4>
+          <p>{modelDescriptions[model.id] ?? model.hypothesis}</p>
+          <div>
+            <strong>Result</strong>
+            <p>{profile.lesson}</p>
+          </div>
+        </div>
       </div>
-
-      <div className="research-model-view" role="tabpanel">
-        {view === "overview" ? (
-          <div className="research-model-overview">
-            <span>Experiment question</span>
-            <h4>{profile.question}</h4>
-            <p>{modelDescriptions[model.id] ?? model.hypothesis}</p>
-            <div>
-              <strong>Observed result</strong>
-              <p>{profile.lesson}</p>
-            </div>
-          </div>
-        ) : null}
-        {view === "architecture" ? (
-          <div className="research-model-architecture">
-            <div>
-              {profile.architecture.map((step, index) => (
-                <span key={step}><b>{step}</b>{index < profile.architecture.length - 1 ? <i>→</i> : null}</span>
-              ))}
-            </div>
-            <dl>
-              <div><dt>Input</dt><dd>{profile.input}</dd></div>
-              <div><dt>Visible context</dt><dd>{profile.context}</dd></div>
-            </dl>
-          </div>
-        ) : null}
-        {view === "training" ? (
-          <div className="research-model-training">
-            <dl>
-              <div><dt>Outer evaluation</dt><dd>Five grouped folds.</dd></div>
-              <div><dt>Imbalance handling</dt><dd>{model.id === "raw-ensemble" || model.id.startsWith("context") ? "Balanced class weights." : "Weighted neural sampling."}</dd></div>
-              <div><dt>Model selection</dt><dd>{model.id === "tcn-6s" || model.id === "hierarchical" ? "One training-only subject used for early stopping." : "All tuning remains inside the outer training subjects."}</dd></div>
-              <div><dt>Model-specific setup</dt><dd>{profile.training}</dd></div>
-            </dl>
-          </div>
-        ) : null}
-        {view === "evidence" ? (
-          <div className="research-model-evidence">
-            <FoldChart model={model} />
-            <p className="research-caption">Each point is macro-F1 for one outer fold. Cohen's κ: {formatMetric(model.metrics.cohen_kappa)}.</p>
-          </div>
-        ) : null}
-      </div>
+      <details className="research-model-training-disclosure">
+        <summary><span>Training details</span><small>imbalance, selection, and model-specific setup</small></summary>
+        <div className="research-model-training">
+          <dl>
+            <div><dt>Imbalance handling</dt><dd>{model.id === "raw-ensemble" || model.id.startsWith("context") ? "Balanced class weights." : "Weighted neural sampling."}</dd></div>
+            <div><dt>Model selection</dt><dd>{model.id === "tcn-6s" || model.id === "hierarchical" ? "One training-only subject used for early stopping." : "All tuning remains inside the outer training subjects."}</dd></div>
+            <div><dt>Model-specific setup</dt><dd>{profile.training}</dd></div>
+          </dl>
+        </div>
+      </details>
     </div>
-  );
-}
-
-function FoldChart({ model }: { model: ModelResult }) {
-  const width = 520;
-  const height = 190;
-  const min = 0.54;
-  const max = 0.73;
-  const x = (index: number) => 34 + index * ((width - 68) / 4);
-  const y = (value: number) => 18 + ((max - value) / (max - min)) * (height - 50);
-  const path = model.folds.map((fold, index) => `${index === 0 ? "M" : "L"}${x(index)} ${y(fold.macro_f1)}`).join(" ");
-  return (
-    <svg className="research-fold-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${model.name} macro-F1 across five outer folds`}>
-      {[0.55, 0.6, 0.65, 0.7].map((tick) => (
-        <g key={tick}>
-          <line x1="34" x2={width - 24} y1={y(tick)} y2={y(tick)} />
-          <text x="0" y={y(tick) + 4}>{tick.toFixed(2)}</text>
-        </g>
-      ))}
-      <path className="research-fold-line" d={path} />
-      {model.folds.map((fold, index) => (
-        <g key={fold.fold}>
-          <circle cx={x(index)} cy={y(fold.macro_f1)} r="6" />
-          <text className="research-fold-value" x={x(index)} y={y(fold.macro_f1) - 13}>{fold.macro_f1.toFixed(3)}</text>
-          <text x={x(index)} y={height - 4}>F{fold.fold}</text>
-        </g>
-      ))}
-    </svg>
   );
 }
 
@@ -1219,7 +1167,7 @@ export function StagingResearchDashboard() {
           Cross-validated performance by model, sleep stage, and subject.
         </SectionHeading>
         <div className="research-results-block">
-          <div className="research-method-block-heading"><span>3.1</span><div><h3>Model comparison</h3><p>Select a model to inspect its question, architecture, training choices, and fold scores.</p></div></div>
+          <div className="research-method-block-heading"><span>3.1</span><div><h3>Model comparison</h3><p>Select a model to compare its architecture, inputs, and result.</p></div></div>
           <ModelResults />
         </div>
         <div className="research-results-block">
