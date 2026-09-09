@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 import { SiteNav } from "../components/SiteNav";
 
 export const metadata: Metadata = {
-  title: "PhysioNet Sleep Explorer",
-  description: "Technical showcase for clinically interpretable PSG analysis."
+  title: "Interpretable Temporal Sleep Staging",
+  description: "A technical case study in subject-independent sleep-stage modeling."
 };
 
 export default function RootLayout({
