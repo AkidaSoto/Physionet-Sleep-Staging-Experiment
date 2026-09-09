@@ -1,7 +1,35 @@
-import overview from "../../artifacts/showcase/overview.json";
-import researchLinks from "../../artifacts/showcase/research-links.json";
-import taskSummary from "../../artifacts/showcase/task-summary.json";
 export { getShowcaseSiteData } from "./showcase-site-data";
+
+const overview = {
+  title: "Interpretable Temporal Sleep Staging",
+  subtitle: "A subject-independent machine-learning case study built on UCDDB"
+};
+
+const researchLinks = [
+  {
+    id: "ucddb",
+    label: "UCDDB dataset",
+    title: "University College Dublin Sleep Apnea Database",
+    url: "https://physionet.org/content/ucddb/1.0.0/",
+    summary: "Primary PhysioNet source for the overnight PSG records and annotations."
+  },
+  {
+    id: "staging-benchmark",
+    label: "UCDDB staging benchmark",
+    title: "Multi-Branch CNN with stage refinement and attention fusion",
+    url: "https://pmc.ncbi.nlm.nih.gov/articles/PMC7698838/",
+    summary: "Published sleep-staging reference evaluated on UCDDB."
+  }
+];
+
+const taskSummary = [
+  {
+    slug: "sleep-staging",
+    title: "Sleep staging",
+    signals: ["EEG", "EOG", "Chin EMG"],
+    focus: "Subject-independent staging with interpretable physiology and explicit temporal context."
+  }
+];
 
 export function getOverview() {
   return overview;
