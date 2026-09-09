@@ -431,31 +431,6 @@
   gap: 42px;
 }
 
-.research-evaluation-block {
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.48fr);
-  gap: 36px;
-  align-items: center;
-}
-
-.research-evaluation-facts {
-  display: grid;
-  border-top: 1px solid rgba(174, 201, 225, 0.15);
-}
-
-.research-evaluation-facts span {
-  padding: 12px 0;
-  display: flex;
-  justify-content: space-between;
-  gap: 20px;
-  color: rgba(224, 235, 247, 0.5);
-  border-bottom: 1px solid rgba(174, 201, 225, 0.12);
-  font-size: 0.78rem;
-}
-
-.research-evaluation-facts strong {
-  color: #f3f7fb;
-}
-
 .research-secondary-disclosure {
   padding-top: 30px;
   border-top: 1px solid rgba(174, 201, 225, 0.15);

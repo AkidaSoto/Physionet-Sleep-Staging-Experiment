@@ -2,7 +2,7 @@ export { getShowcaseSiteData } from "./showcase-site-data";
 
 const overview = {
   title: "Interpretable Sleep Staging from PSG",
-  subtitle: "A subject-independent machine-learning case study built on UCDDB"
+  subtitle: "Sleep-stage classification using physiological features from UCDDB"
 };
 
 const researchLinks = [

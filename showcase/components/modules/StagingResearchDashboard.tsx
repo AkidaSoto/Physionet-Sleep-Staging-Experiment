@@ -23,7 +23,7 @@ function Citation({ number }: { number: number }) {
   return <a className="research-citation" href={`#reference-${number}`} aria-label={`Reference ${number}`}>[{number}]</a>;
 }
 const modelDescriptions: Record<string, string> = {
-  "raw-ensemble": "The ensemble classifies each 30-second epoch from 34 physiological features.",
+  "raw-ensemble": "The ensemble classifies each 30-second epoch from its physiological feature vector.",
   "context-5": "A second model receives five consecutive vectors of baseline probabilities.",
   "tcn-6s": "A dilated convolutional network receives features sampled every six seconds.",
   hierarchical: "Separate encoders summarize short feature sequences and neighboring epochs.",
@@ -216,10 +216,10 @@ type ModelProfile = {
 
 const modelProfiles: Record<string, ModelProfile> = {
   "raw-ensemble": {
-    question: "How well do the 34 features work without sequence information?",
-    input: "34 normalized physiological features from one 30-second epoch",
+    question: "How well does the feature vector work without sequence information?",
+    input: "Normalized physiological features from one 30-second epoch",
     context: "None; every epoch is classified independently",
-    architecture: ["34 features", "balanced feature ensemble", "5 stage probabilities"],
+    architecture: ["feature vector", "balanced feature ensemble", "5 stage probabilities"],
     training: "Each epoch is classified independently. This is the reference point for the other models.",
     lesson: "Mean macro-F1 is 0.608. This is the reference result for the other four models."
   },
@@ -228,7 +228,7 @@ const modelProfiles: Record<string, ModelProfile> = {
     input: "Five consecutive vectors of baseline class probabilities",
     context: "5 epochs · 2.5 minutes",
     architecture: ["epoch ensemble", "5 probability vectors", "learned Stage 2 smoother", "stage label"],
-    training: "The Stage 2 model consumes the ensemble's probability outputs rather than relearning the physiological representation.",
+    training: "The Stage 2 model uses the ensemble's probability outputs. The physiological representation remains fixed.",
     lesson: "Mean macro-F1 increases to 0.668 while the physiological feature model remains unchanged."
   },
   "tcn-6s": {
@@ -330,7 +330,7 @@ function ContextWindowExplorer() {
           A 30-second epoch can contain weak, mixed, or transitional evidence. Manual scorers disagree most often around Wake/N1, N1/N2, and N2/N3 boundaries because many transition epochs are physiologically equivocal. <Citation number={7} />
         </p>
         <p>
-          Three of the model variants differ mainly in how many consecutive epoch predictions they receive. This control shows the input to each variant without making sequence length the premise of the study. Prior multichannel work has tested similar inputs. <Citation number={4} />
+          Three model variants differ mainly in how many consecutive epoch predictions they receive. Prior multichannel work has tested similar inputs. <Citation number={4} />
         </p>
         <div className="research-question">
           <span>Comparison detail</span>
@@ -395,7 +395,7 @@ function SleepStudyPrimer() {
           For sleep staging, a technologist reads the EEG, EOG, and chin EMG in consecutive <strong>30-second epochs</strong> and assigns one label: Wake, N1, N2, N3, or REM. Joining those labels produces a hypnogram, the night’s sleep architecture. The labels support measures such as total sleep time, sleep efficiency, sleep latency, and time spent in each stage. <Citation number={1} />
         </p>
         <p>
-          Manual staging is slow, and difficult epochs are often genuinely ambiguous, especially near transitions between adjacent stages. This project asks how well an inspectable physiological feature set can reproduce those labels on sleepers excluded from training. <Citation number={7} />
+          Manual staging is slow, and difficult epochs are often genuinely ambiguous, especially near transitions between adjacent stages. This project represents each epoch with physiological measurements and compares five classifiers against the expert labels. <Citation number={7} />
         </p>
       </div>
 
@@ -416,7 +416,7 @@ function SleepStudyPrimer() {
 
       <div className="research-objective">
         <span>Study objective</span>
-        <p>Evaluate 34 interpretable physiological features for five-stage classification in unseen sleepers, then use class-level and subject-level errors to identify where the representation fails.</p>
+        <p>Build a sleep-staging pipeline from physiological measurements, compare several classifiers under one validation protocol, and trace the errors back to the input representation.</p>
       </div>
     </div>
   );
@@ -663,7 +663,7 @@ function PhysiologyExplorer() {
           </div>
         </details>
       )}
-      <p className="research-data-note">The feature value, stage distribution, waveform, and expert label are linked to the same example. It illustrates the measurement; it is not a standalone scoring rule.</p>
+      <p className="research-data-note">The feature value, stage distribution, waveform, and expert label come from the same example. Stage prediction uses the full feature vector.</p>
     </div>
   );
 }
@@ -674,7 +674,7 @@ function CompactStudyProtocol() {
     <div className="research-protocol">
       <div className="research-protocol-copy">
         <p>
-          The experiments use the <strong>25 overnight recordings</strong> in the University College Dublin Sleep Apnea Database. The cohort consists of adults referred for suspected sleep-disordered breathing, so this is a small clinical dataset rather than a healthy population sample. <Citation number={3} />
+          The experiments use the <strong>25 overnight recordings</strong> in the University College Dublin Sleep Apnea Database. The cohort consists of adults referred for suspected sleep-disordered breathing. <Citation number={3} />
         </p>
         <p>
           Original Rechtschaffen and Kales stage 3 and stage 4 labels are combined as N3. After preparation, the task contains <strong>{data.source.epochs.toLocaleString()} labeled 30-second epochs</strong> across Wake, N1, N2, N3, and REM.
@@ -698,10 +698,10 @@ function CompactStudyProtocol() {
 function MethodPipeline() {
   const steps = [
     { number: "01", label: "Signals", detail: "EEG · EOG · chin EMG · ECG" },
-    { number: "02", label: "Epoch representation", detail: "34 features per 30-second window" },
+    { number: "02", label: "Epoch representation", detail: "Physiological summary features" },
     { number: "03", label: "Model comparison", detail: "Ensemble, smoothers, TCN, and hierarchy" },
     { number: "04", label: "Stage prediction", detail: "One of five labels for each epoch" },
-    { number: "05", label: "Held-out evaluation", detail: "Macro-F1 by fold, stage, and subject" }
+    { number: "05", label: "Evaluation", detail: "Macro-F1 by fold, stage, and subject" }
   ];
   return (
     <div className="research-method-pipeline">
@@ -775,7 +775,7 @@ function ModelDetail({ model, className = "" }: { model: ModelResult; className?
         {view === "training" ? (
           <div className="research-model-training">
             <dl>
-              <div><dt>Outer evaluation</dt><dd>Five subject-grouped folds; five unseen sleepers per fold.</dd></div>
+              <div><dt>Outer evaluation</dt><dd>Five grouped folds.</dd></div>
               <div><dt>Imbalance handling</dt><dd>{model.id === "raw-ensemble" || model.id.startsWith("context") ? "Balanced class weights." : "Weighted neural sampling."}</dd></div>
               <div><dt>Model selection</dt><dd>{model.id === "tcn-6s" || model.id === "hierarchical" ? "One training-only subject used for early stopping." : "All tuning remains inside the outer training subjects."}</dd></div>
               <div><dt>Model-specific setup</dt><dd>{profile.training}</dd></div>
@@ -785,7 +785,7 @@ function ModelDetail({ model, className = "" }: { model: ModelResult; className?
         {view === "evidence" ? (
           <div className="research-model-evidence">
             <FoldChart model={model} />
-            <p className="research-caption">Each point is macro-F1 on one held-out fold of five subjects. Cohen's κ: {formatMetric(model.metrics.cohen_kappa)}.</p>
+            <p className="research-caption">Each point is macro-F1 for one outer fold. Cohen's κ: {formatMetric(model.metrics.cohen_kappa)}.</p>
           </div>
         ) : null}
       </div>
@@ -802,7 +802,7 @@ function FoldChart({ model }: { model: ModelResult }) {
   const y = (value: number) => 18 + ((max - value) / (max - min)) * (height - 50);
   const path = model.folds.map((fold, index) => `${index === 0 ? "M" : "L"}${x(index)} ${y(fold.macro_f1)}`).join(" ");
   return (
-    <svg className="research-fold-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${model.name} macro-F1 across five held-out folds`}>
+    <svg className="research-fold-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${model.name} macro-F1 across five outer folds`}>
       {[0.55, 0.6, 0.65, 0.7].map((tick) => (
         <g key={tick}>
           <line x1="34" x2={width - 24} y1={y(tick)} y2={y(tick)} />
@@ -960,9 +960,9 @@ function SubjectVariability() {
     <div className="research-subjects">
       <div>
         <h3>Performance varies across subjects</h3>
-        <p>Held-out subject macro-F1 ranges from {min.macro_f1.toFixed(3)} to {max.macro_f1.toFixed(3)}.</p>
+        <p>Subject macro-F1 ranges from {min.macro_f1.toFixed(3)} to {max.macro_f1.toFixed(3)}.</p>
       </div>
-      <div className="research-subject-strip" aria-label="Select a held-out subject to inspect its macro-F1">
+      <div className="research-subject-strip" aria-label="Select a subject to inspect its macro-F1">
         {subjects.map((subject) => (
           <button
             type="button"
@@ -985,7 +985,7 @@ function SubjectVariability() {
       </div>
       <div className="research-subject-range">
         <span>lowest <strong>{min.macro_f1.toFixed(3)}</strong></span>
-        <span>Select a bar for the held-out subject metrics</span>
+        <span>Select a bar for subject metrics</span>
         <span>highest <strong>{max.macro_f1.toFixed(3)}</strong></span>
       </div>
     </div>
@@ -996,22 +996,22 @@ function DiscussionExplorer() {
   return (
     <div className="research-discussion-body">
       <article>
-        <h3>The feature set provides a measurable baseline.</h3>
-        <p>The feature ensemble reaches 0.608 mean macro-F1 on held-out subjects. All four sequence-aware variants score higher, from 0.654 to 0.683. The best result comes from a small second-stage model rather than the two deeper architectures. This comparison supports the feature pipeline as a useful starting point, but it does not establish a generally superior architecture.</p>
+        <h3>Model comparison</h3>
+        <p>The feature ensemble reaches 0.608 mean macro-F1 across the outer folds. The other four models score between 0.654 and 0.683. A small second-stage model has the highest score in this set of experiments. Architecture comparisons on other datasets remain open.</p>
       </article>
       <article>
-        <h3>N2 is the clearest representation problem.</h3>
-        <p>N2 has the weakest class F1 (0.469) and is often assigned to Wake or N3. That pattern is consistent with a model that captures broad slow-wave structure better than brief N2 events. Spindle features account for only 7% of normalized feature importance, but importance is not causal evidence. The appropriate next experiment is a controlled replacement or ablation of spindle and K-complex detection, followed by the same held-out-subject evaluation.</p>
+        <h3>N2 errors</h3>
+        <p>N2 has the lowest class F1 at 0.469 and is often assigned to Wake or N3. The model may capture broad slow-wave structure more reliably than brief N2 events. Spindle features account for 7% of normalized feature importance. Next, I would replace or ablate the spindle and K-complex detectors and repeat the evaluation.</p>
       </article>
       <article>
-        <h3>Performance varies substantially by subject.</h3>
-        <p>Subject-level macro-F1 ranges from 0.431 to 0.823. Every result on this page is internal to UCDDB, a small cohort referred for suspected sleep-disordered breathing. The study does not establish clinical equivalence, cross-device generalization, or deployment readiness.</p>
+        <h3>Between-subject variation</h3>
+        <p>Subject-level macro-F1 ranges from 0.431 to 0.823. These results describe UCDDB only. External datasets are needed to assess other cohorts, recording systems, and clinical settings.</p>
       </article>
       <details className="research-limitations">
         <summary>Limitations and next experiments</summary>
         <ul>
           <li>Evaluate the locked pipeline on a second PSG dataset without retuning the test cohort.</li>
-          <li>Report calibration and transition-specific performance, not only aggregate discrimination.</li>
+          <li>Report calibration and transition-specific performance alongside aggregate metrics.</li>
           <li>Relate difficult subjects to signal quality and per-stage support.</li>
           <li>Test improved spindle and K-complex detectors through controlled ablation.</li>
         </ul>
@@ -1028,9 +1028,9 @@ function RelatedWork() {
         Automatic staging systems commonly combine an epoch representation with a sequence model. DeepSleepNet learns raw-EEG features with multiscale CNNs and then models transitions with bidirectional LSTMs; SeqSleepNet explicitly separates within-epoch encoding from across-epoch sequence modeling. <Citation number={17} /> <Citation number={18} />
       </p>
       <p>
-        Work on UCDDB has also compared handcrafted and learned representations, recurrent dependencies, and multichannel fusion. Those studies are useful context, but differences in channels, preprocessing, label mapping, and validation make their headline scores unsuitable as a direct leaderboard. <Citation number={5} /> <Citation number={8} />
+        Published UCDDB studies use different channels, preprocessing, label mappings, and validation designs. Their methods provide context for this work; their headline scores are not placed on the model chart. <Citation number={5} /> <Citation number={8} />
       </p>
-      <p className="research-related-position"><strong>Position of this study:</strong> compare an interpretable feature pipeline and five model configurations under the same held-out-subject protocol, then inspect where their errors remain.</p>
+      <p className="research-related-position">All five models use the same folds and outcome metrics.</p>
     </div>
   );
 }
@@ -1052,7 +1052,7 @@ const references = [
     number: 3,
     citation: "University College Dublin and St. Vincent’s University Hospital. Sleep Apnea Database v1.0.0. PhysioNet. 2007.",
     href: "https://physionet.org/content/ucddb/1.0.0/",
-    note: "Primary dataset description: 25 full-night polysomnograms, recorded channels, subject cohort, and R&K stage annotations."
+    note: "Primary dataset description, recorded channels, cohort, and R&K stage annotations."
   },
   {
     number: 4,
@@ -1161,7 +1161,7 @@ function ReferencesSection() {
         ))}
       </ol>
       <footer className="research-footer">
-        <span>UCDDB · 25 subjects · subject-grouped evaluation</span>
+        <span>UCDDB sleep-staging experiments</span>
         <a href="#top">Back to top ↑</a>
       </footer>
     </section>
@@ -1174,18 +1174,12 @@ export function StagingResearchDashboard() {
       <section className="research-hero" id="top">
         <div className="research-hero-copy">
           <h1>Automatic sleep staging from overnight polysomnography</h1>
-          <p className="research-hero-lede">
-            Five classifiers built from interpretable PSG features, evaluated on sleepers excluded from training.
-          </p>
-        </div>
-        <div className="research-hero-line" aria-hidden="true">
-          <span>{data.source.subjects} overnight PSGs</span><i /><span>{data.source.epochs.toLocaleString()} epochs</span><i /><span>{data.source.features} features</span><i /><strong>five sleep stages</strong>
         </div>
       </section>
 
       <section className="research-section" id="introduction">
         <SectionHeading label="Introduction" title="Introduction">
-          What a sleep study records, what a sleep-stage label means, and why the prediction task matters.
+          Clinical context for the prediction task.
         </SectionHeading>
         <SleepStudyPrimer />
         <RelatedWork />
@@ -1193,11 +1187,11 @@ export function StagingResearchDashboard() {
 
       <section className="research-section" id="methods">
         <SectionHeading label="Methods" title="Methods">
-          Dataset, feature representation, model comparison, and evaluation protocol.
+          Data preparation and model evaluation.
         </SectionHeading>
 
         <div className="research-method-block">
-          <div className="research-method-block-heading"><span>2.1</span><div><h3>Dataset and prediction task</h3><p>Twenty-five overnight recordings provide the signals and expert stage labels used in the experiments.</p></div></div>
+          <div className="research-method-block-heading"><span>2.1</span><div><h3>Dataset and prediction task</h3><p>UCDDB provides the overnight signals and expert stage labels.</p></div></div>
           <CompactStudyProtocol />
         </div>
 
@@ -1215,22 +1209,17 @@ export function StagingResearchDashboard() {
           </details>
         </div>
 
-        <div className="research-method-block research-evaluation-block">
-          <div className="research-method-block-heading"><span>2.4</span><div><h3>Evaluation</h3><p>All epochs from one sleeper stay together. Each outer fold trains on 20 subjects and evaluates on five unseen subjects; neural model selection uses training subjects only. Class weighting or weighted sampling addresses imbalance. Mean macro-F1 is primary because it gives each of the five stages equal weight.</p></div></div>
-          <div className="research-evaluation-facts">
-            <span><strong>5</strong> subject-grouped folds</span>
-            <span><strong>20 / 5</strong> train / held-out subjects</span>
-            <span><strong>Macro-F1</strong> primary metric</span>
-          </div>
+        <div className="research-method-block">
+          <div className="research-method-block-heading"><span>2.4</span><div><h3>Cross-validation</h3><p>Models are compared with five-fold grouped cross-validation. All epochs from one subject remain in the same fold. Neural model selection uses training folds only. Class weights or weighted sampling address imbalance, and macro-F1 is the primary metric.</p></div></div>
         </div>
       </section>
 
       <section className="research-section" id="results">
         <SectionHeading label="Results" title="Results">
-          Held-out performance by model, sleep stage, and subject.
+          Cross-validated performance by model, sleep stage, and subject.
         </SectionHeading>
         <div className="research-results-block">
-          <div className="research-method-block-heading"><span>3.1</span><div><h3>Model comparison</h3><p>Select a model to inspect its question, architecture, training choices, and held-out fold scores.</p></div></div>
+          <div className="research-method-block-heading"><span>3.1</span><div><h3>Model comparison</h3><p>Select a model to inspect its question, architecture, training choices, and fold scores.</p></div></div>
           <ModelResults />
         </div>
         <div className="research-results-block">
@@ -1238,7 +1227,7 @@ export function StagingResearchDashboard() {
           <ConfusionExplorer />
         </div>
         <details className="research-secondary-disclosure">
-          <summary><span>3.3</span><strong>Additional diagnostics</strong><small>Feature-family importance and variation across held-out sleepers</small></summary>
+          <summary><span>3.3</span><strong>Additional diagnostics</strong><small>Feature-family importance and variation across subjects</small></summary>
           <div className="research-secondary-analysis">
             <FeatureImportance />
             <SubjectVariability />
@@ -1248,7 +1237,7 @@ export function StagingResearchDashboard() {
 
       <section className="research-section research-discussion" id="discussion">
         <SectionHeading label="Discussion" title="Discussion">
-          What the results support, what remains uncertain, and which experiment should come next.
+          Interpretation and limitations.
         </SectionHeading>
         <DiscussionExplorer />
       </section>

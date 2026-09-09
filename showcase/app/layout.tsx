@@ -4,7 +4,7 @@ import { SiteNav } from "../components/SiteNav";
 
 export const metadata: Metadata = {
   title: "Interpretable Sleep Staging from PSG",
-  description: "A technical case study in subject-independent sleep-stage modeling."
+  description: "Methods and results for automatic sleep staging with physiological features."
 };
 
 export default function RootLayout({
