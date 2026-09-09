@@ -141,9 +141,18 @@
 
 .research-introduction-flow {
   display: grid;
-  grid-template-columns: 1fr auto 1.3fr auto 0.9fr;
+  grid-template-columns: minmax(0, 1.45fr) auto minmax(0, 0.85fr);
   gap: 8px;
   align-items: center;
+}
+
+.research-introduction-scored-epoch {
+  border-color: rgba(120, 216, 255, 0.35) !important;
+  background: rgba(120, 216, 255, 0.055);
+}
+
+.research-context-disclosure .research-context-explorer {
+  margin-top: 30px;
 }
 
 .research-introduction-flow em {

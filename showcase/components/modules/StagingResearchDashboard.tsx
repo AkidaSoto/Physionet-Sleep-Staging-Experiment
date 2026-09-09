@@ -23,11 +23,11 @@ function Citation({ number }: { number: number }) {
   return <a className="research-citation" href={`#reference-${number}`} aria-label={`Reference ${number}`}>[{number}]</a>;
 }
 const modelDescriptions: Record<string, string> = {
-  "raw-ensemble": "No temporal input. The ensemble classifies each 30-second epoch from 34 physiological features.",
-  "context-5": "A learned smoother receives class probabilities from a five-epoch window.",
-  "tcn-6s": "A dilated temporal convolutional network operates on 6-second feature sequences.",
-  hierarchical: "One network learns within-epoch and across-epoch context.",
-  "context-9": "A learned smoother receives logits and confidence from a nine-epoch window."
+  "raw-ensemble": "The ensemble classifies each 30-second epoch from 34 physiological features.",
+  "context-5": "A second model receives five consecutive vectors of baseline probabilities.",
+  "tcn-6s": "A dilated convolutional network receives features sampled every six seconds.",
+  hierarchical: "Separate encoders summarize short feature sequences and neighboring epochs.",
+  "context-9": "A second model receives nine epochs of baseline logits and confidence."
 };
 
 type FeatureSpec = {
@@ -164,7 +164,7 @@ const featureFamilies: FeatureFamily[] = [
     signal: "EOG",
     summary: "Five features describe overall eye activity and frequency content associated with slow and rapid movements.",
     evidence: "EOG carries slow-eye-movement evidence around sleep onset and rapid-eye-movement evidence in REM. Subject-independent studies have shown that two EOG channels alone contain substantial five-stage information.",
-    limitation: "Eye movements also occur during wake, and EOG electrodes pick up frontal EEG. The channel must be interpreted with EEG, chin tone, and temporal context.",
+    limitation: "Eye movements also occur during wake, and EOG electrodes pick up frontal EEG. Interpret the channel alongside EEG and chin tone.",
     sources: [1, 12, 13],
     features: [
       { id: "eye_movement_activity.eye_movement_activity", name: "Eye-movement activity", signal: "EOG", summary: "Measures moment-to-moment EOG activity above a local baseline.", measurement: "Derived activity envelope from the EOG channels.", stageUse: "Helps separate REM and wake from quieter non-REM stages." },
@@ -206,6 +206,7 @@ const featureFamilies: FeatureFamily[] = [
 ];
 
 type ModelProfile = {
+  question: string;
   input: string;
   context: string;
   architecture: string[];
@@ -215,39 +216,44 @@ type ModelProfile = {
 
 const modelProfiles: Record<string, ModelProfile> = {
   "raw-ensemble": {
+    question: "How well do the 34 features work without sequence information?",
     input: "34 normalized physiological features from one 30-second epoch",
     context: "None; every epoch is classified independently",
     architecture: ["34 features", "balanced feature ensemble", "5 stage probabilities"],
-    training: "No temporal target or post-processing stage is used; this is the reference point for every later comparison.",
-    lesson: "The features contain useful stage information, but an isolated epoch leaves ambiguous transitions unresolved."
+    training: "Each epoch is classified independently. This is the reference point for the other models.",
+    lesson: "Mean macro-F1 is 0.608. This is the reference result for the other four models."
   },
   "context-5": {
+    question: "Does a five-epoch probability smoother improve the baseline?",
     input: "Five consecutive vectors of baseline class probabilities",
     context: "5 epochs · 2.5 minutes",
     architecture: ["epoch ensemble", "5 probability vectors", "learned Stage 2 smoother", "stage label"],
     training: "The Stage 2 model consumes the ensemble's probability outputs rather than relearning the physiological representation.",
-    lesson: "A small learned context layer recovered most of the gain without replacing the interpretable epoch model."
+    lesson: "Mean macro-F1 increases to 0.668 while the physiological feature model remains unchanged."
   },
   "tcn-6s": {
+    question: "Does six-second feature sampling improve classification?",
     input: "A denser sequence of physiological features sampled every 6 seconds",
     context: "Within-epoch and neighboring short-timescale structure",
     architecture: ["6-second features", "dilated temporal convolutions", "pooled representation", "stage label"],
     training: "Dilated convolutions combine nearby 6-second steps without a recurrent state.",
-    lesson: "The TCN learned useful temporal structure, but extra depth did not outperform the simpler learned smoother."
+    lesson: "Mean macro-F1 is 0.654, above the epoch baseline and below both second-stage models."
   },
   hierarchical: {
+    question: "Does a joint short-step and cross-epoch encoder improve the result?",
     input: "Short feature sequences organized within and across 30-second epochs",
     context: "Joint within-epoch and cross-epoch context",
     architecture: ["short feature steps", "epoch encoder", "cross-epoch encoder", "stage sequence"],
     training: "The raw hierarchical output is evaluated directly; a later smoothing stage did not become the default.",
-    lesson: "Connecting both timescales improved on the raw baseline, but the best configuration still trailed the two-stage smoother."
+    lesson: "Mean macro-F1 is 0.658. The added hierarchy does not outperform the smaller second-stage models."
   },
   "context-9": {
+    question: "Do a wider window and baseline confidence add useful information?",
     input: "Nine epochs of baseline logits plus prediction confidence",
     context: "9 epochs · 4.5 minutes",
     architecture: ["epoch ensemble", "9 logit + confidence vectors", "learned Stage 2 smoother", "stage label"],
     training: "Logits preserve relative evidence across all classes, while confidence adds the baseline model's uncertainty.",
-    lesson: "Preserving uncertainty and widening the window produced the strongest mean score in this comparison."
+    lesson: "Mean macro-F1 is 0.683, the highest result in this comparison."
   }
 };
 
@@ -300,18 +306,18 @@ function ContextWindowExplorer() {
   const radius = Math.floor(windowSize / 2);
   const explanations: Record<number, { title: string; body: string; span: string }> = {
     1: {
-      title: "One epoch: physiology only",
-      body: "The baseline sees the EEG, EOG, EMG, and ECG features for the selected 30 seconds. It cannot tell whether the sleeper was just awake or is moving toward deeper sleep.",
+      title: "Single-epoch baseline",
+      body: "The baseline receives the EEG, EOG, EMG, and ECG features measured within the selected 30 seconds.",
       span: "30 seconds"
     },
     5: {
-      title: "Five epochs: local sequence context",
-      body: "The first smoother sees two predictions before and after the selected epoch. This helps correct isolated, implausible jumps while keeping the original feature model visible.",
+      title: "Five-epoch smoother",
+      body: "This model receives the baseline probabilities for the target epoch and two neighbors on either side.",
       span: "2.5 minutes"
     },
     9: {
-      title: "Nine epochs: wider context and uncertainty",
-      body: "The best model receives logits and confidence across four neighboring epochs on each side. It can use both the predicted stages and how certain the baseline was.",
+      title: "Nine-epoch smoother",
+      body: "This model receives logits and confidence for the target epoch and four neighbors on either side.",
       span: "4.5 minutes"
     }
   };
@@ -324,11 +330,11 @@ function ContextWindowExplorer() {
           A 30-second epoch can contain weak, mixed, or transitional evidence. Manual scorers disagree most often around Wake/N1, N1/N2, and N2/N3 boundaries because many transition epochs are physiologically equivocal. <Citation number={7} />
         </p>
         <p>
-          The baseline classifies each epoch from its physiology alone. Later models receive nearby probabilities, logits, or short feature sequences. This isolates the contribution of surrounding time. Prior multichannel work has also measured gains from temporal context. <Citation number={4} />
+          Three of the model variants differ mainly in how many consecutive epoch predictions they receive. This control shows the input to each variant without making sequence length the premise of the study. Prior multichannel work has tested similar inputs. <Citation number={4} />
         </p>
         <div className="research-question">
-          <span>Experiment</span>
-          <strong>Measure the gain from temporal context and test whether a deeper temporal architecture improves on a compact learned smoother.</strong>
+          <span>Comparison detail</span>
+          <strong>The target prediction is the same. Only the information available around it changes.</strong>
         </div>
       </div>
 
@@ -386,14 +392,14 @@ function SleepStudyPrimer() {
           A <strong>polysomnogram (PSG)</strong> records several body systems on the same overnight timeline: brain activity (EEG), eye movement (EOG), chin-muscle tone (EMG), heart rhythm, breathing, and oxygen. Clinicians use the recording to understand how sleep is organized and to place respiratory events, arousals, and movements in physiological context. <Citation number={2} />
         </p>
         <p>
-          For sleep staging, a technologist reads the EEG, EOG, and chin EMG in consecutive <strong>30-second epochs</strong> and assigns one label—Wake, N1, N2, N3, or REM. Joining those labels produces a hypnogram: the night’s sleep architecture. The labels support measures such as total sleep time, sleep efficiency, sleep latency, and time spent in each stage. <Citation number={1} />
+          For sleep staging, a technologist reads the EEG, EOG, and chin EMG in consecutive <strong>30-second epochs</strong> and assigns one label: Wake, N1, N2, N3, or REM. Joining those labels produces a hypnogram, the night’s sleep architecture. The labels support measures such as total sleep time, sleep efficiency, sleep latency, and time spent in each stage. <Citation number={1} />
         </p>
         <p>
-          Manual staging is slow, and difficult epochs are often genuinely ambiguous—especially near transitions between adjacent stages. Automatic staging therefore has two requirements: recognize physiological evidence within an epoch and use surrounding time without leaking information between people. <Citation number={7} />
+          Manual staging is slow, and difficult epochs are often genuinely ambiguous, especially near transitions between adjacent stages. This project asks how well an inspectable physiological feature set can reproduce those labels on sleepers excluded from training. <Citation number={7} />
         </p>
       </div>
 
-      <div className="research-introduction-figure" role="img" aria-label="A sleep study is divided into 30-second epochs, each epoch is assigned a sleep stage, and the labels form a whole-night hypnogram">
+      <div className="research-introduction-figure" role="img" aria-label="A sleep study is divided into 30-second scoring epochs. Each epoch receives one stage label, and the labels form a whole-night hypnogram">
         <div className="research-introduction-signals">
           <span><strong>EEG</strong><small>brain activity</small></span>
           <span><strong>EOG</strong><small>eye movement</small></span>
@@ -401,9 +407,7 @@ function SleepStudyPrimer() {
         </div>
         <i>recorded together through the night</i>
         <div className="research-introduction-flow">
-          <span><b>30-second epoch</b><small>one scoring decision</small></span>
-          <em>→</em>
-          <span><b>W · N1 · N2 · N3 · REM</b><small>one expert label</small></span>
+          <span className="research-introduction-scored-epoch"><b>30-second scoring epoch</b><small>one label: Wake, N1, N2, N3, or REM</small></span>
           <em>→</em>
           <span><b>Hypnogram</b><small>sleep architecture</small></span>
         </div>
@@ -412,7 +416,7 @@ function SleepStudyPrimer() {
 
       <div className="research-objective">
         <span>Study objective</span>
-        <p>Test whether 34 interpretable physiological features can classify sleep stages in unseen sleepers, then measure whether short temporal context improves that baseline.</p>
+        <p>Evaluate 34 interpretable physiological features for five-stage classification in unseen sleepers, then use class-level and subject-level errors to identify where the representation fails.</p>
       </div>
     </div>
   );
@@ -473,7 +477,7 @@ function FeatureDistributionChart({
           <span>{featureValue(stage.median)}</span>
         </div>
       ))}
-      <p className="research-chart-key"><span /> 10th–90th percentile <i /> middle 50% <b /> median {marker ? <em>● selected epoch</em> : null}</p>
+      <p className="research-chart-key"><span /> 10th to 90th percentile <i /> middle 50% <b /> median {marker ? <em>● selected epoch</em> : null}</p>
     </div>
   );
 }
@@ -581,8 +585,8 @@ function PhysiologyExplorer() {
     <div className="research-physiology-explorer" ref={explorerRef} aria-busy={!examples && !loadFailed}>
       <div className="research-explorer-intro">
         <div>
-          <span>Feature families</span>
-          <h4>Choose a physiological cue</h4>
+          <span>Feature explorer</span>
+          <h4>Inspect one feature family</h4>
         </div>
         <p>The selected measurement, its value in one real epoch, and its distribution across all expert labels update together below.</p>
       </div>
@@ -647,7 +651,7 @@ function PhysiologyExplorer() {
             <div className="research-epoch-panel">
               <div className="research-epoch-heading">
                 <div><span className="research-stage-dot" style={{ background: stageColors[example.stage] }} /> <strong>{example.stage}</strong><span>{example.title.replace(`${example.stage} `, "")}</span></div>
-                <span>{formatClock(example.epoch_start_sec)}–{formatClock(example.epoch_start_sec + 30)}</span>
+                <span>{formatClock(example.epoch_start_sec)} to {formatClock(example.epoch_start_sec + 30)}</span>
               </div>
               <div className="research-signal-stack">
                 {example.signals.map((signal) => (
@@ -694,10 +698,10 @@ function CompactStudyProtocol() {
 function MethodPipeline() {
   const steps = [
     { number: "01", label: "Signals", detail: "EEG · EOG · chin EMG · ECG" },
-    { number: "02", label: "30-second epoch", detail: "34 normalized physiological features" },
-    { number: "03", label: "Epoch baseline", detail: "Five class probabilities per epoch" },
-    { number: "04", label: "Temporal context", detail: "5 or 9 epochs, TCN, or hierarchy" },
-    { number: "05", label: "Stage sequence", detail: "Wake · N1 · N2 · N3 · REM" }
+    { number: "02", label: "Epoch representation", detail: "34 features per 30-second window" },
+    { number: "03", label: "Model comparison", detail: "Ensemble, smoothers, TCN, and hierarchy" },
+    { number: "04", label: "Stage prediction", detail: "One of five labels for each epoch" },
+    { number: "05", label: "Held-out evaluation", detail: "Macro-F1 by fold, stage, and subject" }
   ];
   return (
     <div className="research-method-pipeline">
@@ -730,7 +734,7 @@ function ModelDetail({ model, className = "" }: { model: ModelResult; className?
       <div className="research-inline-metrics">
         <span><small>Mean macro-F1</small><strong>{formatMetric(model.metrics.macro_f1)}</strong></span>
         <span><small>Accuracy</small><strong>{formatMetric(model.metrics.accuracy)}</strong></span>
-        <span><small>vs. baseline</small><strong>{delta === 0 ? "—" : `+${delta.toFixed(3)}`}</strong></span>
+        <span><small>vs. baseline</small><strong>{delta === 0 ? "reference" : `+${delta.toFixed(3)}`}</strong></span>
       </div>
       <div className="research-model-tabs" role="tablist" aria-label={`${model.name} details`}>
         {[
@@ -747,10 +751,10 @@ function ModelDetail({ model, className = "" }: { model: ModelResult; className?
         {view === "overview" ? (
           <div className="research-model-overview">
             <span>Experiment question</span>
-            <h4>{model.hypothesis}</h4>
+            <h4>{profile.question}</h4>
             <p>{modelDescriptions[model.id] ?? model.hypothesis}</p>
             <div>
-              <strong>What this experiment taught me</strong>
+              <strong>Observed result</strong>
               <p>{profile.lesson}</p>
             </div>
           </div>
@@ -992,16 +996,16 @@ function DiscussionExplorer() {
   return (
     <div className="research-discussion-body">
       <article>
-        <h3>Temporal context helped more than architectural depth.</h3>
-        <p>The isolated-epoch ensemble reached 0.608 mean macro-F1. Giving a small second-stage model five neighboring probability vectors raised that score to 0.668; widening the window to nine epochs and retaining logits plus confidence reached 0.683. The 6-second TCN and hierarchical model also improved on the baseline, but neither exceeded the simpler smoother. On this 25-subject dataset, preserving the interpretable epoch model and learning how to repair its uncertain sequences was the stronger tradeoff.</p>
+        <h3>The feature set provides a measurable baseline.</h3>
+        <p>The feature ensemble reaches 0.608 mean macro-F1 on held-out subjects. All four sequence-aware variants score higher, from 0.654 to 0.683. The best result comes from a small second-stage model rather than the two deeper architectures. This comparison supports the feature pipeline as a useful starting point, but it does not establish a generally superior architecture.</p>
       </article>
       <article>
-        <h3>The remaining errors point back to representation.</h3>
+        <h3>N2 is the clearest representation problem.</h3>
         <p>N2 has the weakest class F1 (0.469) and is often assigned to Wake or N3. That pattern is consistent with a model that captures broad slow-wave structure better than brief N2 events. Spindle features account for only 7% of normalized feature importance, but importance is not causal evidence. The appropriate next experiment is a controlled replacement or ablation of spindle and K-complex detection, followed by the same held-out-subject evaluation.</p>
       </article>
       <article>
-        <h3>The mean score is not a reliability claim.</h3>
-        <p>Subject-level macro-F1 ranges from 0.431 to 0.823. Every result on this page is internal to UCDDB, a small cohort referred for suspected sleep-disordered breathing. The experiments support a narrow conclusion—short temporal context improves this feature pipeline—not clinical equivalence, cross-device generalization, or deployment readiness.</p>
+        <h3>Performance varies substantially by subject.</h3>
+        <p>Subject-level macro-F1 ranges from 0.431 to 0.823. Every result on this page is internal to UCDDB, a small cohort referred for suspected sleep-disordered breathing. The study does not establish clinical equivalence, cross-device generalization, or deployment readiness.</p>
       </article>
       <details className="research-limitations">
         <summary>Limitations and next experiments</summary>
@@ -1019,14 +1023,14 @@ function DiscussionExplorer() {
 function RelatedWork() {
   return (
     <div className="research-related-work">
-      <h3>Technical gap</h3>
+      <h3>Related work</h3>
       <p>
         Automatic staging systems commonly combine an epoch representation with a sequence model. DeepSleepNet learns raw-EEG features with multiscale CNNs and then models transitions with bidirectional LSTMs; SeqSleepNet explicitly separates within-epoch encoding from across-epoch sequence modeling. <Citation number={17} /> <Citation number={18} />
       </p>
       <p>
         Work on UCDDB has also compared handcrafted and learned representations, recurrent dependencies, and multichannel fusion. Those studies are useful context, but differences in channels, preprocessing, label mapping, and validation make their headline scores unsuitable as a direct leaderboard. <Citation number={5} /> <Citation number={8} />
       </p>
-      <p className="research-related-position"><strong>This study isolates one question:</strong> with the 34-feature representation held constant, how much does explicit temporal context improve subject-independent staging?</p>
+      <p className="research-related-position"><strong>Position of this study:</strong> compare an interpretable feature pipeline and five model configurations under the same held-out-subject protocol, then inspect where their errors remain.</p>
     </div>
   );
 }
@@ -1169,10 +1173,9 @@ export function StagingResearchDashboard() {
     <main className="research-page">
       <section className="research-hero" id="top">
         <div className="research-hero-copy">
-          <p className="research-paper-type">Machine-learning study · UCDDB</p>
           <h1>Automatic sleep staging from overnight polysomnography</h1>
           <p className="research-hero-lede">
-            An interpretable feature-based baseline, four temporal models, and subject-independent evaluation across 25 overnight recordings.
+            Five classifiers built from interpretable PSG features, evaluated on sleepers excluded from training.
           </p>
         </div>
         <div className="research-hero-line" aria-hidden="true">
@@ -1182,7 +1185,7 @@ export function StagingResearchDashboard() {
 
       <section className="research-section" id="introduction">
         <SectionHeading label="Introduction" title="Introduction">
-          What a sleep study records, how sleep staging turns it into a clinical timeline, and the technical question tested here.
+          What a sleep study records, what a sleep-stage label means, and why the prediction task matters.
         </SectionHeading>
         <SleepStudyPrimer />
         <RelatedWork />
@@ -1194,7 +1197,7 @@ export function StagingResearchDashboard() {
         </SectionHeading>
 
         <div className="research-method-block">
-          <div className="research-method-block-heading"><span>2.1</span><div><h3>Dataset and prediction task</h3><p>Define the cohort, labels, and unit of prediction before describing any model.</p></div></div>
+          <div className="research-method-block-heading"><span>2.1</span><div><h3>Dataset and prediction task</h3><p>Twenty-five overnight recordings provide the signals and expert stage labels used in the experiments.</p></div></div>
           <CompactStudyProtocol />
         </div>
 
@@ -1204,9 +1207,12 @@ export function StagingResearchDashboard() {
         </div>
 
         <div className="research-method-block">
-          <div className="research-method-block-heading"><span>2.3</span><div><h3>Models and temporal context</h3><p>The representation stays fixed while the experiments vary how much neighboring context the classifier receives.</p></div></div>
-        <MethodPipeline />
-        <ContextWindowExplorer />
+          <div className="research-method-block-heading"><span>2.3</span><div><h3>Model comparison</h3><p>The five configurations test a feature ensemble, two compact second-stage models, a six-second TCN, and a hierarchical encoder.</p></div></div>
+          <MethodPipeline />
+          <details className="research-secondary-disclosure research-context-disclosure">
+            <summary><span>Detail</span><strong>Context-window inputs</strong><small>Compare the information available to the 1-, 5-, and 9-epoch configurations</small></summary>
+            <ContextWindowExplorer />
+          </details>
         </div>
 
         <div className="research-method-block research-evaluation-block">
@@ -1221,14 +1227,14 @@ export function StagingResearchDashboard() {
 
       <section className="research-section" id="results">
         <SectionHeading label="Results" title="Results">
-          Model comparison first, followed by class-level errors and secondary diagnostics.
+          Held-out performance by model, sleep stage, and subject.
         </SectionHeading>
         <div className="research-results-block">
           <div className="research-method-block-heading"><span>3.1</span><div><h3>Model comparison</h3><p>Select a model to inspect its question, architecture, training choices, and held-out fold scores.</p></div></div>
           <ModelResults />
         </div>
         <div className="research-results-block">
-          <div className="research-method-block-heading"><span>3.2</span><div><h3>Class-level errors</h3><p>The confusion matrix shows which stage boundaries remain difficult rather than hiding them inside one aggregate score.</p></div></div>
+          <div className="research-method-block-heading"><span>3.2</span><div><h3>Class-level errors</h3><p>The confusion matrix shows how predictions are distributed for each expert stage.</p></div></div>
           <ConfusionExplorer />
         </div>
         <details className="research-secondary-disclosure">
@@ -1242,7 +1248,7 @@ export function StagingResearchDashboard() {
 
       <section className="research-section research-discussion" id="discussion">
         <SectionHeading label="Discussion" title="Discussion">
-          Interpretation of the temporal-context result, remaining representation failures, and the limits of this evidence.
+          What the results support, what remains uncertain, and which experiment should come next.
         </SectionHeading>
         <DiscussionExplorer />
       </section>

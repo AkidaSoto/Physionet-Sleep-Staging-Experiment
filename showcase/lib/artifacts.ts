@@ -1,7 +1,7 @@
 export { getShowcaseSiteData } from "./showcase-site-data";
 
 const overview = {
-  title: "Interpretable Temporal Sleep Staging",
+  title: "Interpretable Sleep Staging from PSG",
   subtitle: "A subject-independent machine-learning case study built on UCDDB"
 };
 
@@ -27,7 +27,7 @@ const taskSummary = [
     slug: "sleep-staging",
     title: "Sleep staging",
     signals: ["EEG", "EOG", "Chin EMG"],
-    focus: "Subject-independent staging with interpretable physiology and explicit temporal context."
+    focus: "Subject-independent staging with interpretable physiological features and explicit error analysis."
   }
 ];
 
