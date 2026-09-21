@@ -59,6 +59,7 @@ export type FeatureDistribution = {
 export type FeatureSignalExample = {
   id: string;
   family_id: string;
+  target_stage: string;
   stage: string;
   record_id: string;
   epoch_start_sec: number;
@@ -68,6 +69,7 @@ export type FeatureSignalExample = {
   feature_percentile: number;
   stage_percentile: number;
   direction: "high" | "low";
+  comparison_role: "target" | "contrast";
   selection_note: string;
   signal: {
     id: string;

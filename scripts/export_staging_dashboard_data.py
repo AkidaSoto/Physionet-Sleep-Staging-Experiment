@@ -164,6 +164,40 @@ STAGE_FEATURE_TARGETS = {
     ],
 }
 
+# These directions describe the physiological example we want a reader to inspect.
+# They are intentionally separate from the sign of the dataset-wide effect size:
+# a weak marginal effect should not turn a spindle example into a low-spindle epoch.
+STAGE_FEATURE_EXAMPLE_DIRECTIONS = {
+    "Wake": {
+        "slow_wave_features.high_frequency_envelope": "high",
+        "emg_tone_features.emg_tone_baseline": "high",
+        "eye_movement_activity.eye_movement_baseline": "high",
+        "pan_tompkins.heart_rate_bpm_track": "high",
+    },
+    "N1": {
+        "spindle_features.aperiodic_exponent": "low",
+        "eye_movement_activity.eye_movement_activity": "high",
+        "eog_rem_features.sem_band_power_fast": "high",
+    },
+    "N2": {
+        "spindle_features.splindex": "high",
+        "spindle_features.sigma_residual_power": "high",
+        "spindle_features.aperiodic_exponent": "low",
+        "pan_tompkins.hrv_rmssd_track": "high",
+    },
+    "N3": {
+        "slow_wave_features.slow_wave_envelope": "high",
+        "slow_wave_features.slow_wave_index": "high",
+        "slow_wave_features.slow_wave_ratio_power": "high",
+        "slow_wave_features.high_frequency_envelope": "low",
+    },
+    "REM": {
+        "eye_movement_activity.eye_movement_activity": "high",
+        "eog_rem_features.rem_band_power_fast": "high",
+        "eog_rem_features.sem_band_power_fast": "high",
+        "emg_tone_features.emg_tone_baseline": "low",
+    },
+}
 
 def _summary(path: Path) -> dict[str, float]:
     row = pd.read_parquet(path).iloc[0]
@@ -488,78 +522,95 @@ def _representative_signal_examples(
         for feature_id in group["feature_ids"]
     }
 
-    for stage, feature_ids in STAGE_FEATURE_TARGETS.items():
+    for target_stage, feature_ids in STAGE_FEATURE_TARGETS.items():
       for feature_id in feature_ids:
-        stage_index = stage_to_index[stage]
-        target_values = merged.loc[merged["y_true"].eq(stage_index), feature_id]
-        rest_values = merged.loc[~merged["y_true"].eq(stage_index), feature_id]
-        effect = _cohens_d(target_values, rest_values)
-        direction = "high" if effect >= 0 else "low"
-        candidates = merged.loc[
+        direction = STAGE_FEATURE_EXAMPLE_DIRECTIONS[target_stage][feature_id]
+        target_index = stage_to_index[target_stage]
+        feature_values = merged[feature_id].dropna()
+        lower_bound, upper_bound = feature_values.quantile([0.01, 0.99])
+        eligible = merged.loc[
             merged["stable_stage"]
-            & merged["y_true"].eq(stage_index)
-            & merged["y_pred"].eq(stage_index)
-            & merged[feature_id].notna()
+            & merged["y_true"].eq(merged["y_pred"])
+            & merged[feature_id].between(lower_bound, upper_bound)
         ].copy()
-        candidates["selection_percentile"] = candidates[feature_id].rank(
-            pct=True,
-            ascending=True,
-        )
-        target = 0.97 if direction == "high" else 0.03
-        candidates["selection_distance"] = (
-            candidates["selection_percentile"] - target
-        ).abs()
-        candidates = candidates.sort_values(
-            ["selection_distance", "subject_id", "time_seconds"]
+        comparisons = (
+            ("target", eligible.loc[eligible["y_true"].eq(target_index)].copy()),
+            ("contrast", eligible.loc[~eligible["y_true"].eq(target_index)].copy()),
         )
 
-        selected_row = None
-        selected_signal = None
-        for row in candidates.head(80).itertuples(index=False):
-            epoch_start = float(row.time_seconds)
-            signal = _raw_feature_excerpt(
-                str(row.subject_id),
-                epoch_start,
-                epoch_start + 30.0,
-                feature_id,
+        for comparison_role, candidates in comparisons:
+            candidates["selection_percentile"] = candidates[feature_id].rank(
+                pct=True,
+                ascending=True,
             )
-            if _signal_is_usable(signal):
-                selected_row = row
-                selected_signal = signal
-                break
+            choose_low = (
+                direction == "low"
+                if comparison_role == "target"
+                else direction == "high"
+            )
+            candidates = candidates.sort_values(
+                [feature_id, "subject_id", "time_seconds"],
+                ascending=[choose_low, True, True],
+            )
 
-        if selected_row is None or selected_signal is None:
-            raise RuntimeError(f"No usable signal example found for {stage} / {feature_id}")
+            selected_row = None
+            selected_signal = None
+            for row in candidates.head(100).itertuples(index=False):
+                epoch_start = float(row.time_seconds)
+                signal = _raw_feature_excerpt(
+                    str(row.subject_id),
+                    epoch_start,
+                    epoch_start + 30.0,
+                    feature_id,
+                )
+                if _signal_is_usable(signal):
+                    selected_row = row
+                    selected_signal = signal
+                    break
 
-        record_id = str(selected_row.subject_id)
-        epoch_start = float(selected_row.time_seconds)
-        value = float(
-            merged.loc[
-                merged["subject_id"].eq(record_id)
-                & merged["time_seconds"].eq(epoch_start),
-                feature_id,
-            ].iloc[0]
-        )
-        population = merged[feature_id].dropna().to_numpy(dtype=float)
-        percentile = float(np.mean(population <= value) * 100.0)
-        stage_percentile = float(selected_row.selection_percentile * 100.0)
-        output.append(
-            {
-                "id": f"{stage.lower()}::{feature_id}",
-                "family_id": family_by_feature[feature_id],
-                "stage": stage,
-                "record_id": record_id,
-                "epoch_start_sec": epoch_start,
-                "feature_id": feature_id,
-                "feature_label": FEATURE_LABELS[feature_id],
-                "feature_value": value,
-                "feature_percentile": percentile,
-                "stage_percentile": stage_percentile,
-                "direction": direction,
-                "selection_note": f"Stable, correctly classified {stage} epoch near the {'upper' if direction == 'high' else 'lower'} tail of this feature within {stage}.",
-                "signal": selected_signal,
-            }
-        )
+            if selected_row is None or selected_signal is None:
+                raise RuntimeError(
+                    f"No usable {comparison_role} signal example found for "
+                    f"{target_stage} / {feature_id}"
+                )
+
+            record_id = str(selected_row.subject_id)
+            epoch_start = float(selected_row.time_seconds)
+            example_stage = STAGES[int(selected_row.y_true)]
+            value = float(
+                merged.loc[
+                    merged["subject_id"].eq(record_id)
+                    & merged["time_seconds"].eq(epoch_start),
+                    feature_id,
+                ].iloc[0]
+            )
+            population = merged[feature_id].dropna().to_numpy(dtype=float)
+            percentile = float(np.mean(population <= value) * 100.0)
+            stage_percentile = float(selected_row.selection_percentile * 100.0)
+            selection_note = (
+                f"Strongest clean {target_stage} example among stable, correctly classified epochs."
+                if comparison_role == "target"
+                else f"Weakest clean example from another class; this one is {example_stage}."
+            )
+            output.append(
+                {
+                    "id": f"{target_stage.lower()}::{feature_id}::{comparison_role}",
+                    "family_id": family_by_feature[feature_id],
+                    "target_stage": target_stage,
+                    "stage": example_stage,
+                    "record_id": record_id,
+                    "epoch_start_sec": epoch_start,
+                    "feature_id": feature_id,
+                    "feature_label": FEATURE_LABELS[feature_id],
+                    "feature_value": value,
+                    "feature_percentile": percentile,
+                    "stage_percentile": stage_percentile,
+                    "direction": direction,
+                    "comparison_role": comparison_role,
+                    "selection_note": selection_note,
+                    "signal": selected_signal,
+                }
+            )
     return output
 
 

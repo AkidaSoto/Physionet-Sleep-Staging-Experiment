@@ -271,22 +271,22 @@ const stageFeatureTargets: StageFeatureTarget[] = [
 
 const featureDerivations: Record<string, { method: string }> = {
   spindles: {
-    method: "A 2-second EEG spectrogram with 90% overlap estimates sigma (11–16 Hz) and beta (16–30 Hz) power. R is log-power remaining after a fitted 1/f background is removed."
+    method: "The code compares EEG power in the spindle range (11–16 Hz) with faster beta activity. It also removes the broad spectral background so a narrow sigma peak is easier to see."
   },
   spectrum: {
-    method: "Band medians come from 2-second EEG spectra. The aperiodic line is fitted over 2–7 Hz and 14–24 Hz; residual band power measures oscillatory structure above that background."
+    method: "The code separates EEG into familiar frequency bands and estimates how much power belongs to each one. A fitted background curve helps distinguish narrow rhythms from the overall spectral slope."
   },
   "slow-waves": {
-    method: "L is the Hilbert envelope of 0.3–1.5 Hz EEG and H is the 30–100 Hz envelope. The 30-second rolling median removes the local slow-wave baseline."
+    method: "The EEG is filtered to isolate 0.3–1.5 Hz slow activity. A rolling 30-second baseline and a faster comparison channel help separate sustained slow waves from drift."
   },
   "eye-movement": {
-    method: "The activity channel uses a band-limited Hilbert envelope. Separate 30-second spectra summarize slow-eye power at 0.1–0.5 Hz, rapid-eye power at 0.5–5 Hz, and a 5–30 Hz comparison band."
+    method: "The EOG is separated into slow- and rapid-eye-movement ranges. A rolling baseline shows when movement rises above the subject's local background level."
   },
   "muscle-tone": {
-    method: "A 10–100 Hz chin-EMG envelope is smoothed for one second. A 60-second rolling median supplies the local tone baseline used to detect relative suppression."
+    method: "The code tracks the envelope of chin EMG and smooths it over one second. A 60-second baseline shows whether muscle tone is raised or suppressed for that subject."
   },
   cardiac: {
-    method: "R peaks are detected from ECG. Heart rate and 30-second beat-domain summaries provide secondary autonomic context across stages."
+    method: "R peaks are detected in the ECG. The time between consecutive beats is converted into heart rate and short-term variability measures."
   }
 };
 
@@ -535,16 +535,6 @@ function featureValue(value: number) {
   return value.toFixed(3);
 }
 
-function ordinal(value: number) {
-  const rounded = Math.round(value);
-  const remainder100 = rounded % 100;
-  if (remainder100 >= 11 && remainder100 <= 13) return `${rounded}th`;
-  if (rounded % 10 === 1) return `${rounded}st`;
-  if (rounded % 10 === 2) return `${rounded}nd`;
-  if (rounded % 10 === 3) return `${rounded}rd`;
-  return `${rounded}th`;
-}
-
 function formatEffect(value: number) {
   return `${value >= 0 ? "+" : ""}${value.toFixed(2)}`;
 }
@@ -600,6 +590,7 @@ function formatClock(totalSeconds: number) {
 
 function PhysiologyExplorer() {
   const [stageId, setStageId] = useState("N2");
+  const [exampleRole, setExampleRole] = useState<"target" | "contrast">("target");
   const [examples, setExamples] = useState<FeatureSignalExample[] | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const explorerRef = useRef<HTMLDivElement>(null);
@@ -613,7 +604,9 @@ function PhysiologyExplorer() {
   const selectedTarget = targetedFeatures.find((item) => item.feature.id === featureId) ?? targetedFeatures[0];
   const family = selectedTarget?.family ?? featureFamilies[0];
   const feature = selectedTarget?.feature ?? family.features[0];
-  const example = examples?.find((item) => item.stage === stageTarget.stage && item.feature_id === feature.id);
+  const matchingExamples = examples?.filter((item) => item.target_stage === stageTarget.stage && item.feature_id === feature.id);
+  const example = matchingExamples?.find((item) => item.comparison_role === exampleRole);
+  const contrastExample = matchingExamples?.find((item) => item.comparison_role === "contrast");
   const distribution = data.feature_evidence.distributions.find((item) => item.id === feature.id) ?? data.feature_evidence.distributions[0];
   const selectedStageDistribution = distribution.stages.find((item) => item.stage === stageTarget.stage) ?? distribution.stages[0];
   const derivation = featureDerivations[family.id];
@@ -650,6 +643,7 @@ function PhysiologyExplorer() {
   function chooseStage(next: StageFeatureTarget) {
     setStageId(next.stage);
     setFeatureId(next.featureIds[0]);
+    setExampleRole("target");
   }
 
   return (
@@ -664,7 +658,7 @@ function PhysiologyExplorer() {
 
       <div className="research-feature-picker" role="listbox" aria-label={`${stageTarget.stage} targeted features`}>
         {targetedFeatures.map((item) => (
-          <button key={item.feature.id} type="button" role="option" aria-selected={item.feature.id === feature.id} onClick={() => setFeatureId(item.feature.id)}>
+          <button key={item.feature.id} type="button" role="option" aria-selected={item.feature.id === feature.id} onClick={() => { setFeatureId(item.feature.id); setExampleRole("target"); }}>
             <strong>{item.feature.name}</strong>
             <span>{item.family.signal}</span>
           </button>
@@ -691,22 +685,29 @@ function PhysiologyExplorer() {
       </div>
 
       <div className="research-feature-explanation">
-        <article><h5>Why it matters</h5><p>{stageTarget.cue} {family.limitation} {family.sources.map((number) => <Citation key={number} number={number} />)}</p></article>
-        <article><h5>How it is measured</h5><p>{feature.measurement} {derivation.method}</p><a className="research-text-link" href={`#code-${family.id}`}>View the Python implementation</a></article>
+        <article><h5>Why it helps</h5><p>{stageTarget.cue} {feature.stageUse}</p></article>
+        <article><h5>How it is calculated</h5><p>{derivation.method}</p><a className="research-text-link" href={`#code-${family.id}`}>View the Python implementation</a></article>
+        <article><h5>What can fool it</h5><p>{family.limitation} {family.sources.map((number) => <Citation key={number} number={number} />)}</p></article>
       </div>
 
       {!example ? (
         <div className="research-example-loading" role="status">
-          {loadFailed ? "The epoch example could not be loaded." : "Loading one representative epoch…"}
+          {loadFailed ? "The epoch examples could not be loaded." : "Loading the epoch comparison…"}
         </div>
       ) : (
         <div className="research-feature-epoch">
           <div className="research-epoch-heading">
-            <div><span className="research-stage-dot" style={{ background: stageColors[example.stage] }} /><strong>{example.stage} epoch</strong><span>{example.record_id} · {formatClock(example.epoch_start_sec)}</span></div>
-            <span>{example.feature_label} {featureValue(example.feature_value)} · {ordinal(example.stage_percentile)} within {example.stage}</span>
+            <div><span className="research-stage-dot" style={{ background: stageColors[example.stage] }} /><strong>Compare {stageTarget.stage} with {contrastExample?.stage ?? "another stage"}</strong></div>
+            <div className="research-epoch-toggle" role="group" aria-label="Choose sleep stage example">
+              <button type="button" aria-pressed={exampleRole === "target"} onClick={() => setExampleRole("target")}>{stageTarget.stage}</button>
+              <button type="button" aria-pressed={exampleRole === "contrast"} onClick={() => setExampleRole("contrast")}>{contrastExample?.stage ?? "Contrast"}</button>
+            </div>
           </div>
           <SignalTrace signal={example.signal} active />
-          <p className="research-example-method">{example.selection_note}</p>
+          <div className="research-example-caption">
+            <p className="research-example-method">{example.selection_note}</p>
+            <span>{example.record_id} · {formatClock(example.epoch_start_sec)}</span>
+          </div>
         </div>
       )}
     </div>
@@ -846,17 +847,13 @@ const resultMetricOptions: Array<{ id: ResultMetric; label: string }> = [
   { id: "cohen_kappa", label: "Kappa" }
 ];
 
-function ModelDetail({ model, metric = "macro_f1", className = "" }: { model: ModelResult; metric?: ResultMetric; className?: string }) {
+function ModelDetail({ model, metric = "macro_f1" }: { model: ModelResult; metric?: ResultMetric }) {
   const profile = modelProfiles[model.id];
-  const metricLabel = resultMetricOptions.find((item) => item.id === metric)?.label ?? "Macro-F1";
   const baselineModel = data.models.find((item) => item.id === "raw-ensemble") ?? data.models[0];
   const delta = model.metrics[metric] - baselineModel.metrics[metric];
   return (
-    <div className={`research-model-detail ${className}`} aria-live="polite">
-      <div className="research-model-detail-head">
-        <h3>{model.name}</h3>
-        <div className="research-model-score"><strong>{formatMetric(model.metrics[metric])}</strong><span>{metricLabel}{delta === 0 ? " · epoch-only reference" : ` · ${delta > 0 ? "+" : ""}${delta.toFixed(3)} vs epoch-only`}</span></div>
-      </div>
+    <div className="research-model-detail">
+      <p className="research-model-comparison">{delta === 0 ? "Epoch-only reference model" : `${delta > 0 ? "+" : ""}${delta.toFixed(3)} compared with the epoch-only model`}</p>
       <div className="research-model-architecture">
         <div className="research-model-architecture-flow">
           {profile.architecture.map((step, index) => (
@@ -878,9 +875,8 @@ function ModelDetail({ model, metric = "macro_f1", className = "" }: { model: Mo
 }
 
 function ModelResults() {
-  const [selectedId, setSelectedId] = useState("context-9");
+  const [selectedId, setSelectedId] = useState<string | null>("context-9");
   const [metric, setMetric] = useState<ResultMetric>("macro_f1");
-  const selected = data.models.find((model) => model.id === selectedId) ?? data.models[0];
   const metricLabel = resultMetricOptions.find((item) => item.id === metric)?.label ?? "Macro-F1";
 
   return (
@@ -890,31 +886,30 @@ function ModelResults() {
           <button key={option.id} type="button" aria-pressed={metric === option.id} onClick={() => setMetric(option.id)}>{option.label}</button>
         ))}
       </div>
-      <div className="research-results-grid">
       <div className="research-model-list" role="list" aria-label={`Model comparison by ${metricLabel}`}>
-        {data.models.map((model) => {
-          const active = model.id === selected.id;
-          const position = model.metrics[metric] * 100;
+        {data.models.map((model, index) => {
+          const active = model.id === selectedId;
+          const panelId = `model-panel-${model.id}`;
           return (
-            <div role="listitem" className="research-model-item" key={model.id}>
+            <div role="listitem" className={`research-model-item${active ? " is-open" : ""}`} key={model.id}>
               <button
                 type="button"
                 className={active ? "is-selected" : ""}
-                aria-pressed={active}
-                onClick={() => setSelectedId(model.id)}
+                aria-expanded={active}
+                aria-controls={panelId}
+                onClick={() => setSelectedId(active ? null : model.id)}
               >
+                <span className="research-model-number">{String(index + 1).padStart(2, "0")}</span>
                 <span className="research-model-label">
                   <span><strong>{model.name}</strong></span>
-                  <b>{formatMetric(model.metrics[metric])}</b>
                 </span>
-                <span className="research-model-track"><i style={{ left: `${Math.min(Math.max(position, 0), 100)}%` }} /></span>
+                <b className="research-model-value">{formatMetric(model.metrics[metric])}</b>
+                <span className="research-model-chevron" aria-hidden="true">⌄</span>
               </button>
-              {active ? <ModelDetail model={selected} metric={metric} className="research-model-detail-mobile" /> : null}
+              {active ? <div id={panelId} className="research-model-expanded"><ModelDetail model={model} metric={metric} /></div> : null}
             </div>
           );
         })}
-      </div>
-      <ModelDetail key={`${selected.id}-${metric}`} model={selected} metric={metric} className="research-model-detail-desktop" />
       </div>
     </div>
   );
