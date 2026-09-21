@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
+    "data:staging": "python ../scripts/export_staging_dashboard_data.py",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

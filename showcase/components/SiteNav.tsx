@@ -8,6 +8,7 @@ const items = [
   { id: "methods", href: "/#methods", label: "Methods" },
   { id: "results", href: "/#results", label: "Results" },
   { id: "discussion", href: "/#discussion", label: "Discussion" },
+  { id: "technical-appendix", href: "/#technical-appendix", label: "Python" },
   { id: "references", href: "/#references", label: "References" }
 ];
 

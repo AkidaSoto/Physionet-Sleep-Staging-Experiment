@@ -269,29 +269,23 @@ const stageFeatureTargets: StageFeatureTarget[] = [
   }
 ];
 
-const featureDerivations: Record<string, { formula: string; method: string }> = {
+const featureDerivations: Record<string, { method: string }> = {
   spindles: {
-    formula: "SBI = [Σ(Pσ / Pβ)] × [Σ(Rσ − Rβ)]",
     method: "A 2-second EEG spectrogram with 90% overlap estimates sigma (11–16 Hz) and beta (16–30 Hz) power. R is log-power remaining after a fitted 1/f background is removed."
   },
   spectrum: {
-    formula: "Rb(f) = log₁₀|STFT(x)| − [a + b log₁₀(f)]",
     method: "Band medians come from 2-second EEG spectra. The aperiodic line is fitted over 2–7 Hz and 14–24 Hz; residual band power measures oscillatory structure above that background."
   },
   "slow-waves": {
-    formula: "SWI = (L′ / H) × (L′ − H),   L′ = L − median₃₀s(L)",
     method: "L is the Hilbert envelope of 0.3–1.5 Hz EEG and H is the 30–100 Hz envelope. The 30-second rolling median removes the local slow-wave baseline."
   },
   "eye-movement": {
-    formula: "EOGactivity = MA₁s(max[E₀.₁–₅ − median₃₀s(E₀.₁–₅), 0])",
     method: "The activity channel uses a band-limited Hilbert envelope. Separate 30-second spectra summarize slow-eye power at 0.1–0.5 Hz, rapid-eye power at 0.5–5 Hz, and a 5–30 Hz comparison band."
   },
   "muscle-tone": {
-    formula: "Tone = MA₁s(|Hilbert(BP₁₀–₁₀₀{EMG})|)",
     method: "A 10–100 Hz chin-EMG envelope is smoothed for one second. A 60-second rolling median supplies the local tone baseline used to detect relative suppression."
   },
   cardiac: {
-    formula: "HR = 60 / RR,   RMSSD = √mean[(RRᵢ₊₁ − RRᵢ)²]",
     method: "R peaks are detected from ECG. Heart rate and 30-second beat-domain summaries provide secondary autonomic context rather than stage-defining evidence."
   }
 };
@@ -301,8 +295,11 @@ type ModelProfile = {
   input: string;
   context: string;
   architecture: string[];
+  method: string;
   training: string;
+  tradeoff: string;
   lesson: string;
+  sources: number[];
 };
 
 const modelProfiles: Record<string, ModelProfile> = {
@@ -311,40 +308,55 @@ const modelProfiles: Record<string, ModelProfile> = {
     input: "Normalized physiological features from one 30-second epoch",
     context: "None; every epoch is classified independently",
     architecture: ["feature vector", "balanced feature ensemble", "5 stage probabilities"],
-    training: "Each epoch is classified independently. This is the reference point for the other models.",
-    lesson: "This establishes how far the physiological representation goes before sequence modeling is added."
+    method: "Median imputation feeds 34 physiological measurements into 200 bagged decision trees. Each tree is capped at 21 leaves with at least 10 samples per leaf, and class-balanced weights reduce majority-stage dominance. Averaged tree probabilities become the baseline stage evidence.",
+    training: "Imputation and normalization are estimated inside each outer training partition. No neighboring epoch, previous label, or future label is available to this model.",
+    tradeoff: "This is the cleanest test of the representation itself. It is interpretable and data-efficient, but it cannot learn transition persistence or correct an ambiguous epoch from its neighbors.",
+    lesson: "This establishes how far the physiological representation goes before sequence modeling is added.",
+    sources: [10]
   },
   "context-5": {
     question: "Does a five-epoch probability smoother improve the baseline?",
     input: "Five consecutive vectors of baseline class probabilities",
     context: "5 epochs · 2.5 minutes",
     architecture: ["epoch ensemble", "5 probability vectors", "learned Stage 2 smoother", "stage label"],
-    training: "The Stage 2 model uses the ensemble's probability outputs. The physiological representation remains fixed.",
-    lesson: "Performance improves while the underlying physiological feature model remains unchanged."
+    method: "A balanced multinomial logistic regression receives the five class probabilities from the target epoch plus two epochs on either side: 25 inputs in total. It learns when neighboring evidence should reinforce or overturn the epoch-only prediction.",
+    training: "Stage 1 remains frozen. The smoother is fit only on predictions from the training side of the outer split, and context windows are rejected at subject boundaries or timestamp gaps.",
+    tradeoff: "The second stage adds a direct temporal prior without relearning physiology. Its linear form is deliberately low variance, but it can only combine the evidence Stage 1 already produced.",
+    lesson: "Performance improves while the underlying physiological feature model remains unchanged.",
+    sources: [4, 17]
   },
   "tcn-6s": {
     question: "Does six-second feature sampling improve classification?",
     input: "A denser sequence of physiological features sampled every 6 seconds",
-    context: "Within-epoch and neighboring short-timescale structure",
+    context: "20 six-second steps · 2 minutes",
     architecture: ["6-second features", "dilated temporal convolutions", "pooled representation", "stage label"],
-    training: "Dilated convolutions combine nearby 6-second steps without a recurrent state.",
-    lesson: "Denser sampling improves on the epoch baseline but does not beat the strongest second-stage model."
+    method: "The same physiological representation is sampled every six seconds. Ten history steps, five target-epoch steps, and five future steps form a 20-step sequence. Four levels of dilated temporal convolutions expand the receptive field without recurrence, then a pooled representation predicts the stage.",
+    training: "Features use median/IQR normalization. Weighted sampling and class-weighted cross-entropy address imbalance; one training-side subject controls early stopping.",
+    tradeoff: "The TCN can learn short events and temporal motifs directly, but it has more parameters and optimization variance than the probability smoother in a 25-subject dataset.",
+    lesson: "Denser sampling improves on the epoch baseline but does not beat the strongest second-stage model.",
+    sources: [4, 17]
   },
   hierarchical: {
     question: "Does a joint short-step and cross-epoch encoder improve the result?",
     input: "Short feature sequences organized within and across 30-second epochs",
-    context: "Joint within-epoch and cross-epoch context",
+    context: "3 epochs × 5 six-second steps",
     architecture: ["short feature steps", "epoch encoder", "cross-epoch encoder", "stage sequence"],
-    training: "The raw hierarchical output is evaluated directly; a later smoothing stage did not become the default.",
-    lesson: "The hierarchy improves on the epoch baseline, but its added complexity does not produce the best result."
+    method: "Each 30-second epoch is represented by five six-second feature steps. An epoch encoder compresses those steps; a second temporal encoder connects the previous, current, and next epoch before classification. This separates within-epoch morphology from across-epoch dynamics.",
+    training: "The network uses 64 hidden channels, four temporal levels, 0.15 dropout, weighted sampling, and training-side early stopping. The displayed result is the raw network output; an added Stage 3 smoother was redundant or harmful.",
+    tradeoff: "The hierarchy is a stronger inductive bias than a flat TCN, but the extra representation learning did not clearly beat a simpler learned smoother on this cohort.",
+    lesson: "The hierarchy improves on the epoch baseline, but its added complexity does not produce the best result.",
+    sources: [18]
   },
   "context-9": {
     question: "Do a wider window and baseline confidence add useful information?",
     input: "Nine epochs of baseline logits plus prediction confidence",
     context: "9 epochs · 4.5 minutes",
     architecture: ["epoch ensemble", "9 logit + confidence vectors", "learned Stage 2 smoother", "stage label"],
-    training: "Logits preserve relative evidence across all classes, while confidence adds the baseline model's uncertainty.",
-    lesson: "This configuration produces the highest mean macro-F1 in the comparison."
+    method: "A balanced multinomial logistic regression receives 45 class logits, 27 confidence summaries (top probability, margin, and entropy), and 10 adjacent probability deltas. The 82-input vector preserves weak class evidence and exposes whether the baseline is uncertain or changing across a transition.",
+    training: "Stage 1 is frozen and the Stage 2 fit stays inside the outer training subjects. Nine-epoch windows never cross a subject boundary or a missing 30-second step.",
+    tradeoff: "This model gains temporal correction and uncertainty information without an end-to-end network. The cost is dependence on baseline calibration and a 4.5-minute window that may oversmooth short transitions.",
+    lesson: "This configuration produces the highest mean macro-F1 in the comparison.",
+    sources: [4, 17, 18]
   }
 };
 
@@ -378,15 +390,42 @@ function SectionHeading({
 }: {
   label: string;
   title: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }) {
   return (
     <header className="research-section-heading" aria-label={label}>
       <div>
         <h2>{title}</h2>
-        <p className="research-section-lede">{children}</p>
+        {children ? <p className="research-section-lede">{children}</p> : null}
       </div>
     </header>
+  );
+}
+
+function PaperDisclosure({
+  label,
+  title,
+  summary,
+  children,
+  open = false,
+  className = ""
+}: {
+  label: string;
+  title: string;
+  summary: string;
+  children: React.ReactNode;
+  open?: boolean;
+  className?: string;
+}) {
+  return (
+    <details className={`research-paper-disclosure ${className}`.trim()} open={open || undefined}>
+      <summary>
+        <span>{label}</span>
+        <strong>{title}</strong>
+        <small>{summary}</small>
+      </summary>
+      <div className="research-paper-disclosure-body">{children}</div>
+    </details>
   );
 }
 
@@ -482,12 +521,7 @@ function SleepStudyPrimer() {
         <p>
           A <strong>polysomnogram (PSG)</strong> records several body systems on the same overnight timeline: brain activity (EEG), eye movement (EOG), chin-muscle tone (EMG), heart rhythm, breathing, and oxygen. Clinicians use the recording to understand how sleep is organized and to place respiratory events, arousals, and movements in physiological context. <Citation number={2} />
         </p>
-        <p>
-          For sleep staging, a technologist reads the EEG, EOG, and chin EMG in consecutive <strong>30-second epochs</strong> and assigns one label: Wake, N1, N2, N3, or REM. Joining those labels produces a hypnogram, the night’s sleep architecture. The labels support measures such as total sleep time, sleep efficiency, sleep latency, and time spent in each stage. <Citation number={1} />
-        </p>
-        <p>
-          Manual staging is slow, and difficult epochs are often genuinely ambiguous, especially near transitions between adjacent stages. This project represents each epoch with physiological measurements and compares five classifiers against the expert labels. <Citation number={7} />
-        </p>
+        <p>This project predicts the expert label for each 30-second epoch, then tests whether interpretable physiological features and neighboring epochs improve subject-level generalization.</p>
       </div>
 
       <div className="research-introduction-figure" role="img" aria-label="A sleep study is divided into 30-second scoring epochs. Each epoch receives one stage label, and the labels form a whole-night hypnogram">
@@ -505,10 +539,7 @@ function SleepStudyPrimer() {
         <p>This project uses EEG, EOG, chin EMG, and ECG from UCDDB. Respiratory-event detection is outside the present task. <Citation number={3} /></p>
       </div>
 
-      <div className="research-objective">
-        <span>Study objective</span>
-        <p>Build a sleep-staging pipeline from physiological measurements, compare several classifiers under one validation protocol, and trace the errors back to the input representation.</p>
-      </div>
+      <p className="research-introduction-note">Five labels—Wake, N1, N2, N3, and REM—form the whole-night hypnogram. Transition epochs are often genuinely ambiguous, so the analysis emphasizes where the representation succeeds and fails rather than treating every disagreement as a simple model error. <Citation number={1} /> <Citation number={7} /></p>
     </div>
   );
 }
@@ -529,6 +560,18 @@ function ordinal(value: number) {
   if (rounded % 10 === 2) return `${rounded}nd`;
   if (rounded % 10 === 3) return `${rounded}rd`;
   return `${rounded}th`;
+}
+
+function formatEffect(value: number) {
+  return `${value >= 0 ? "+" : ""}${value.toFixed(2)}`;
+}
+
+function effectMagnitude(value: number) {
+  const magnitude = Math.abs(value);
+  if (magnitude >= 0.8) return "large";
+  if (magnitude >= 0.5) return "moderate";
+  if (magnitude >= 0.2) return "small";
+  return "minimal";
 }
 
 function FeatureDistributionChart({
@@ -580,51 +623,6 @@ function formatClock(totalSeconds: number) {
   return `${hours}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 }
 
-function selectedSignalId(familyId: string) {
-  if (familyId === "eye-movement") return "eog";
-  if (familyId === "muscle-tone") return "emg";
-  if (familyId === "cardiac") return "ecg";
-  return "eeg_c3a2";
-}
-
-function NightHypnogram({ example }: { example: FeatureSignalExample }) {
-  const values = example.hypnogram.values;
-  const plotLeft = 58;
-  const plotWidth = 834;
-  const stepWidth = plotWidth / Math.max(values.length, 1);
-  const y = (label: string) => 18 + stageOrder.indexOf(label) * 23;
-  const path = values.map((value, index) => {
-    const x = plotLeft + index * stepWidth;
-    const stage = STAGES_FROM_INDEX[Number(value)] ?? "Wake";
-    return index === 0 ? `M${x} ${y(stage)}` : `H${x} V${y(stage)}`;
-  }).join(" ");
-  const highlightX = plotLeft + (example.epoch_start_sec / example.hypnogram.end_sec) * plotWidth;
-
-  return (
-    <div className="research-integrated-night">
-      <div className="research-integrated-night-head">
-        <div><strong>{example.record_id}</strong><span>whole-night expert labels</span></div>
-        <span>{formatClock(example.epoch_start_sec)} selected</span>
-      </div>
-      <svg viewBox="0 0 920 145" role="img" aria-label={`Whole-night hypnogram for ${example.record_id}; selected ${example.stage} epoch at ${formatClock(example.epoch_start_sec)}`}>
-        {stageOrder.map((stage) => (
-          <g key={stage}>
-            <line x1={plotLeft} x2={plotLeft + plotWidth} y1={y(stage)} y2={y(stage)} />
-            <text x="0" y={y(stage) + 4} fill={stageColors[stage]}>{stage}</text>
-          </g>
-        ))}
-        <rect className="research-epoch-highlight" x={Math.max(highlightX - 4, plotLeft)} y="5" width="9" height="116" />
-        <path className="research-hypnogram-path" d={path} />
-        <circle cx={highlightX} cy={y(example.stage)} r="5" fill={stageColors[example.stage]} />
-        <text className="research-hypnogram-time" x={plotLeft} y="141">lights out</text>
-        <text className="research-hypnogram-time" x="842" y="141">morning</text>
-      </svg>
-    </div>
-  );
-}
-
-const STAGES_FROM_INDEX = ["Wake", "N1", "N2", "N3", "REM"];
-
 function PhysiologyExplorer() {
   const [stageId, setStageId] = useState("N2");
   const [examples, setExamples] = useState<FeatureSignalExample[] | null>(null);
@@ -640,9 +638,9 @@ function PhysiologyExplorer() {
   const selectedTarget = targetedFeatures.find((item) => item.feature.id === featureId) ?? targetedFeatures[0];
   const family = selectedTarget?.family ?? featureFamilies[0];
   const feature = selectedTarget?.feature ?? family.features[0];
-  const example = examples?.find((item) => item.family_id === family.id) ?? examples?.[0];
+  const example = examples?.find((item) => item.stage === stageTarget.stage && item.feature_id === feature.id);
   const distribution = data.feature_evidence.distributions.find((item) => item.id === feature.id) ?? data.feature_evidence.distributions[0];
-  const exampleValue = example?.feature_values[feature.id];
+  const selectedStageDistribution = distribution.stages.find((item) => item.stage === stageTarget.stage) ?? distribution.stages[0];
   const derivation = featureDerivations[family.id];
 
   useEffect(() => {
@@ -681,105 +679,66 @@ function PhysiologyExplorer() {
 
   return (
     <div className="research-physiology-explorer" ref={explorerRef} aria-busy={!examples && !loadFailed}>
-      <div className="research-explorer-intro">
-        <div>
-          <h4>Start with the label</h4>
-        </div>
-        <p>Choose a sleep stage, then inspect the measurements designed to separate it from the other labels.</p>
-      </div>
       <div className="research-family-tabs research-stage-tabs" role="tablist" aria-label="Choose an expert sleep-stage label">
         {stageFeatureTargets.map((item) => (
           <button key={item.stage} type="button" role="tab" aria-selected={item.stage === stageTarget.stage} onClick={() => chooseStage(item)}>
             <span style={{ color: item.stage === stageTarget.stage ? stageColors[item.stage] : undefined }}>{item.stage}</span>
-            <small>{item.featureIds.length} targeted inputs</small>
           </button>
         ))}
       </div>
 
-      <div className="research-stage-target-summary">
-        <span style={{ color: stageColors[stageTarget.stage] }}>{stageTarget.stage}</span>
-        <p>{stageTarget.cue} <Citation number={1} /></p>
-        <small>{stageTarget.contrast}</small>
+      <div className="research-feature-picker" role="listbox" aria-label={`${stageTarget.stage} targeted features`}>
+        {targetedFeatures.map((item) => (
+          <button key={item.feature.id} type="button" role="option" aria-selected={item.feature.id === feature.id} onClick={() => setFeatureId(item.feature.id)}>
+            <strong>{item.feature.name}</strong>
+            <span>{item.family.signal}</span>
+          </button>
+        ))}
       </div>
 
-      <div className="research-feature-workbench">
-        <article className="research-family-reading" aria-live="polite">
-          <div><span>One-vs-rest view</span><strong>{stageTarget.stage} feature subset</strong></div>
-          <p>The stage-expert experiments used these inputs to ask whether a focused physiological representation improves {stageTarget.stage} separability.</p>
-          <div className="research-feature-list-inline research-stage-feature-list" role="listbox" aria-label={`${stageTarget.stage} targeted features`}>
-            {targetedFeatures.map((item) => (
-              <button key={item.feature.id} type="button" role="option" aria-selected={item.feature.id === feature.id} onClick={() => setFeatureId(item.feature.id)}>
-                <span>{item.feature.name}</span>
-                <small>{item.family.label} · {item.family.signal}</small>
-              </button>
-            ))}
-          </div>
-          <p className="research-feature-scope-note">The best multiclass model still receives the full feature vector. This label-first view explains the design logic behind selected inputs.</p>
-        </article>
-
-        <div className="research-feature-analysis">
-          <div className="research-feature-definition">
-            <span>{family.label} · {family.signal}</span>
+      <div className="research-feature-result" aria-live="polite">
+        <div className="research-feature-result-head">
+          <div>
             <h4>{feature.name}</h4>
             <p>{feature.summary}</p>
-            <dl>
-              <div><dt>Computed as</dt><dd>{feature.measurement}</dd></div>
-              <div><dt>Target role</dt><dd>{feature.stageUse}</dd></div>
-              <div><dt>Example value</dt><dd>{exampleValue ? `${featureValue(exampleValue.value)} · ${ordinal(exampleValue.percentile)} percentile` : "Loading example…"}</dd></div>
-            </dl>
-            <div className="research-feature-derivation">
-              <strong>Derivation</strong>
-              <code>{derivation.formula}</code>
-              <small>{derivation.method}</small>
-            </div>
-            <details className="research-feature-family-note">
-              <summary>Physiological basis and limits</summary>
-              <p>{family.evidence} {family.sources.map((number) => <Citation key={number} number={number} />)}</p>
-              <p><strong>Limit:</strong> {family.limitation}</p>
-            </details>
           </div>
-          <div className="research-selected-distribution">
-            <div className="research-selected-distribution-head">
-              <strong>Distribution by expert stage</strong>
-              <span>target: {stageTarget.stage}{example ? ` · ● example: ${example.stage}` : ""}</span>
-            </div>
-            <FeatureDistributionChart
-              feature={distribution}
-              marker={example && exampleValue ? { stage: example.stage, value: exampleValue.value, percentile: exampleValue.percentile } : undefined}
-            />
+          <div className="research-feature-evidence-metrics">
+            <span><small>{stageTarget.stage} vs all</small><strong>d = {formatEffect(selectedStageDistribution.one_vs_rest_cohens_d)}</strong><em>{effectMagnitude(selectedStageDistribution.one_vs_rest_cohens_d)} effect</em></span>
+            <span><small>Example value</small><strong>{example ? featureValue(example.feature_value) : "—"}</strong><em>{example ? `${ordinal(example.feature_percentile)} percentile` : "Loading…"}</em></span>
           </div>
         </div>
+        <div className="research-selected-distribution">
+          <div className="research-selected-distribution-head">
+            <strong>Stage distribution</strong>
+            <span>{stageTarget.stage} target{example ? ` · ${example.stage} example` : ""}</span>
+          </div>
+          <FeatureDistributionChart
+            feature={distribution}
+            marker={example ? { stage: example.stage, value: example.feature_value, percentile: example.feature_percentile } : undefined}
+          />
+        </div>
+      </div>
+
+      <div className="research-feature-explanation">
+        <article><h5>Physiological rationale</h5><p>{stageTarget.cue} {feature.stageUse} {family.sources.map((number) => <Citation key={number} number={number} />)}</p></article>
+        <article><h5>Measurement</h5><p>{feature.measurement} {derivation.method}</p><a className="research-text-link" href={`#code-${family.id}`}>Python implementation ↓</a></article>
+        <article><h5>Interpretation</h5><p>Cohen’s d compares {stageTarget.stage} epochs with all other stages; its sign shows direction and its magnitude shows standardized separation. <Citation number={19} /> {family.limitation}</p></article>
       </div>
 
       {!example ? (
         <div className="research-example-loading" role="status">
-          {loadFailed ? "The waveform example could not be loaded. Refresh the page to retry." : "Loading one representative epoch…"}
+          {loadFailed ? "The epoch example could not be loaded." : "Loading one representative epoch…"}
         </div>
       ) : (
-        <details className="research-example-disclosure" open>
-          <summary>
-            <span>Signal example</span>
-            <strong>{example.stage} at {formatClock(example.epoch_start_sec)}</strong>
-            <small>See how the selected feature appears in its source signals</small>
-          </summary>
-          <div className="research-example-context">
-            <NightHypnogram example={example} />
-            <div className="research-epoch-panel">
-              <div className="research-epoch-heading">
-                <div><span className="research-stage-dot" style={{ background: stageColors[example.stage] }} /> <strong>{example.stage}</strong><span>{example.title.replace(`${example.stage} `, "")}</span></div>
-                <span>{formatClock(example.epoch_start_sec)} to {formatClock(example.epoch_start_sec + 30)}</span>
-              </div>
-              <div className="research-signal-stack">
-                {example.signals.map((signal) => (
-                  <SignalTrace key={signal.id} signal={signal} active={signal.id === selectedSignalId(family.id)} />
-                ))}
-              </div>
-              <p className="research-example-method">{example.selection_note}</p>
-            </div>
+        <div className="research-feature-epoch">
+          <div className="research-epoch-heading">
+            <div><span className="research-stage-dot" style={{ background: stageColors[example.stage] }} /><strong>{example.stage} epoch</strong><span>{example.record_id} · {formatClock(example.epoch_start_sec)}</span></div>
+            <span>{example.feature_label} {featureValue(example.feature_value)} · {ordinal(example.stage_percentile)} within {example.stage}</span>
           </div>
-        </details>
+          <SignalTrace signal={example.signal} active />
+          <p className="research-example-method">{example.selection_note}</p>
+        </div>
       )}
-      <p className="research-data-note">The distribution uses every expert label. The waveform is a high-signal example for the selected feature family; its stage is shown explicitly above.</p>
     </div>
   );
 }
@@ -788,16 +747,8 @@ function CompactStudyProtocol() {
   const total = data.diagnostics.per_stage.reduce((sum, stage) => sum + stage.support, 0);
   return (
     <div className="research-protocol">
-      <div className="research-protocol-copy">
-        <p>
-          The experiments use the <strong>25 overnight recordings</strong> in the University College Dublin Sleep Apnea Database. The cohort consists of adults referred for suspected sleep-disordered breathing. <Citation number={3} />
-        </p>
-        <p>
-          Original Rechtschaffen and Kales stage 3 and stage 4 labels are combined as N3. After preparation, the task contains <strong>{data.source.epochs.toLocaleString()} labeled 30-second epochs</strong> across Wake, N1, N2, N3, and REM.
-        </p>
-      </div>
+      <p className="research-dataset-line"><strong>25 overnight recordings</strong><span>{data.source.epochs.toLocaleString()} labeled epochs</span><span>EEG · EOG · chin EMG · ECG</span><span>34 features</span></p>
       <div className="research-protocol-balance">
-        <span>Class distribution</span>
         <div className="research-class-stack" role="img" aria-label="Distribution of labeled sleep stages">
           {data.diagnostics.per_stage.map((stage) => (
             <i key={stage.stage} style={{ width: `${(stage.support / total) * 100}%`, background: stageColors[stage.stage] }} title={`${stage.stage}: ${stage.support.toLocaleString()} epochs`} />
@@ -807,6 +758,7 @@ function CompactStudyProtocol() {
           {data.diagnostics.per_stage.map((stage) => <span key={stage.stage}><i style={{ background: stageColors[stage.stage] }} />{stage.stage} <strong>{formatPercent(stage.support / total)}</strong></span>)}
         </div>
       </div>
+      <p className="research-protocol-source">UCDDB adults referred for suspected sleep-disordered breathing · 30-second Wake/N1/N2/N3/REM labels <Citation number={3} /></p>
     </div>
   );
 }
@@ -833,72 +785,147 @@ function MethodPipeline() {
   );
 }
 
-function ModelDetail({ model, className = "" }: { model: ModelResult; className?: string }) {
+function ModelMethodAccordions() {
+  return (
+    <div className="research-paper-disclosures research-model-methods">
+      {data.models.map((model, index) => {
+        const profile = modelProfiles[model.id];
+        return (
+          <PaperDisclosure
+            key={model.id}
+            label={`M${index + 1}`}
+            title={model.name}
+            summary={model.hypothesis}
+            open={model.id === "raw-ensemble"}
+          >
+            <div className="research-method-model-grid">
+              <div>
+                <span>Input</span>
+                <strong>{profile.input}</strong>
+              </div>
+              <div>
+                <span>Visible context</span>
+                <strong>{profile.context}</strong>
+              </div>
+              <div>
+                <span>Training decision</span>
+                <strong>{profile.training}</strong>
+              </div>
+            </div>
+            <div className="research-model-architecture-flow research-method-architecture">
+              {profile.architecture.map((step, stepIndex) => (
+                <span key={step}><b>{step}</b>{stepIndex < profile.architecture.length - 1 ? <i>→</i> : null}</span>
+              ))}
+            </div>
+            <a className="research-text-link" href="#results">Inspect the held-out result ↓</a>
+          </PaperDisclosure>
+        );
+      })}
+    </div>
+  );
+}
+
+function ValidationExplorer() {
+  const [selectedFold, setSelectedFold] = useState(data.validation.folds[0]?.fold ?? 1);
+  const fold = data.validation.folds.find((item) => item.fold === selectedFold) ?? data.validation.folds[0];
+  const allSubjects = useMemo(
+    () => [...new Set(data.validation.folds.flatMap((item) => [...item.train_subjects, ...item.test_subjects]))].sort(),
+    []
+  );
+
+  return (
+    <div className="research-validation-explorer">
+      <div className="research-validation-selector" aria-label="Choose a cross-validation fold">
+        {data.validation.folds.map((item) => (
+          <button key={item.fold} type="button" aria-pressed={item.fold === fold.fold} onClick={() => setSelectedFold(item.fold)}>
+            Fold {item.fold}
+          </button>
+        ))}
+      </div>
+      <div className="research-validation-subjects" aria-live="polite">
+        {allSubjects.map((subject) => {
+          const isTest = fold.test_subjects.includes(subject);
+          return <span key={subject} className={isTest ? "is-test" : "is-train"}>{subject.replace("ucddb", "UCD ")}</span>;
+        })}
+      </div>
+      <div className="research-validation-key">
+        <span><i className="is-train" />20 development subjects</span>
+        <span><i className="is-test" />5 untouched test subjects</span>
+        <strong>Every epoch from a subject stays on one side of the split.</strong>
+      </div>
+      <div className="research-paper-disclosures research-validation-disclosures">
+        <PaperDisclosure label="V1" title="Outer evaluation" summary="Five subject-grouped folds estimate generalization to unseen people" open>
+          <p>Each subject appears in the test set exactly once. The reported comparison aggregates the same five held-out folds for every model family.</p>
+        </PaperDisclosure>
+        <PaperDisclosure label="V2" title="Neural model selection" summary="Early stopping uses training-side data only">
+          <p>Neural runs reserve one development subject for early stopping. The five test subjects remain untouched until the fold is scored.</p>
+        </PaperDisclosure>
+        <PaperDisclosure label="V3" title="Class imbalance" summary="Macro-F1 keeps uncommon stages visible">
+          <p>Balanced class weights or weighted sampling reduce majority-stage dominance. Macro-F1 gives each of the five stages equal weight in the primary result.</p>
+        </PaperDisclosure>
+      </div>
+    </div>
+  );
+}
+
+type ResultMetric = "macro_f1" | "accuracy" | "cohen_kappa";
+
+const resultMetricOptions: Array<{ id: ResultMetric; label: string }> = [
+  { id: "macro_f1", label: "Macro-F1" },
+  { id: "accuracy", label: "Accuracy" },
+  { id: "cohen_kappa", label: "Kappa" }
+];
+
+function ModelDetail({ model, metric = "macro_f1", className = "" }: { model: ModelResult; metric?: ResultMetric; className?: string }) {
   const profile = modelProfiles[model.id];
-  const baseline = data.headline.baseline_macro_f1;
-  const delta = model.metrics.macro_f1 - baseline;
+  const metricLabel = resultMetricOptions.find((item) => item.id === metric)?.label ?? "Macro-F1";
+  const baselineModel = data.models.find((item) => item.id === "raw-ensemble") ?? data.models[0];
+  const delta = model.metrics[metric] - baselineModel.metrics[metric];
   return (
     <div className={`research-model-detail ${className}`} aria-live="polite">
       <div className="research-model-detail-head">
-        <div>
-          <h3>{model.name}</h3>
-        </div>
-        {model.id === "context-9" ? <span className="research-winner">best mean macro-F1</span> : null}
+        <h3>{model.name}</h3>
+        <div className="research-model-score"><strong>{formatMetric(model.metrics[metric])}</strong><span>{metricLabel}{delta === 0 ? " · epoch-only reference" : ` · ${delta > 0 ? "+" : ""}${delta.toFixed(3)} vs epoch-only`}</span></div>
       </div>
-      <div className="research-inline-metrics research-model-metrics">
-        <span><small>Accuracy</small><strong>{formatMetric(model.metrics.accuracy)}</strong></span>
-        <span><small>vs. baseline</small><strong>{delta === 0 ? "reference" : `+${delta.toFixed(3)}`}</strong></span>
+      <div className="research-model-architecture">
+        <div className="research-model-architecture-flow">
+          {profile.architecture.map((step, index) => (
+            <span key={step}><b>{step}</b>{index < profile.architecture.length - 1 ? <i>→</i> : null}</span>
+          ))}
+        </div>
+        <dl>
+          <div><dt>Input</dt><dd>{profile.input}</dd></div>
+          <div><dt>Context</dt><dd>{profile.context}</dd></div>
+        </dl>
       </div>
-      <div className="research-model-primary">
-        <div className="research-model-architecture">
-          <span className="research-model-kicker">Architecture</span>
-          <div className="research-model-architecture-flow">
-            {profile.architecture.map((step, index) => (
-              <span key={step}><b>{step}</b>{index < profile.architecture.length - 1 ? <i>→</i> : null}</span>
-            ))}
-          </div>
-          <dl>
-            <div><dt>Input</dt><dd>{profile.input}</dd></div>
-            <div><dt>Visible context</dt><dd>{profile.context}</dd></div>
-          </dl>
-        </div>
-        <div className="research-model-overview">
-          <span>Experiment question</span>
-          <h4>{profile.question}</h4>
-          <p>{modelDescriptions[model.id] ?? model.hypothesis}</p>
-          <div>
-            <strong>Result</strong>
-            <p>{profile.lesson}</p>
-          </div>
-        </div>
+      <div className="research-model-method">
+        <article><h4>Method</h4><p>{profile.method}</p></article>
+        <article><h4>Training</h4><p>{profile.training}</p></article>
+        <article><h4>Tradeoff</h4><p>{profile.tradeoff} {profile.sources.map((number) => <Citation key={number} number={number} />)}</p></article>
       </div>
-      <details className="research-model-training-disclosure">
-        <summary><span>Training details</span><small>imbalance, selection, and model-specific setup</small></summary>
-        <div className="research-model-training">
-          <dl>
-            <div><dt>Imbalance handling</dt><dd>{model.id === "raw-ensemble" || model.id.startsWith("context") ? "Balanced class weights." : "Weighted neural sampling."}</dd></div>
-            <div><dt>Model selection</dt><dd>{model.id === "tcn-6s" || model.id === "hierarchical" ? "One training-only subject used for early stopping." : "All tuning remains inside the outer training subjects."}</dd></div>
-            <div><dt>Model-specific setup</dt><dd>{profile.training}</dd></div>
-          </dl>
-        </div>
-      </details>
+      <p className="research-model-conclusion"><strong>{profile.question}</strong> {profile.lesson}</p>
     </div>
   );
 }
 
 function ModelResults() {
   const [selectedId, setSelectedId] = useState("context-9");
+  const [metric, setMetric] = useState<ResultMetric>("macro_f1");
   const selected = data.models.find((model) => model.id === selectedId) ?? data.models[0];
-  const scaleMin = 0.55;
-  const scaleMax = 0.70;
+  const metricLabel = resultMetricOptions.find((item) => item.id === metric)?.label ?? "Macro-F1";
 
   return (
-    <div className="research-results-grid">
-      <div className="research-model-list" role="list" aria-label="Model comparison by macro-F1">
-        <div className="research-model-scale" aria-hidden="true"><span>Mean macro-F1</span><small>0.55</small><small>0.70</small></div>
+      <div className="research-model-results">
+      <div className="research-metric-switch" aria-label="Choose the model comparison metric">
+        {resultMetricOptions.map((option) => (
+          <button key={option.id} type="button" aria-pressed={metric === option.id} onClick={() => setMetric(option.id)}>{option.label}</button>
+        ))}
+      </div>
+      <div className="research-results-grid">
+      <div className="research-model-list" role="list" aria-label={`Model comparison by ${metricLabel}`}>
         {data.models.map((model) => {
           const active = model.id === selected.id;
-          const position = ((model.metrics.macro_f1 - scaleMin) / (scaleMax - scaleMin)) * 100;
+          const position = model.metrics[metric] * 100;
           return (
             <div role="listitem" className="research-model-item" key={model.id}>
               <button
@@ -908,17 +935,18 @@ function ModelResults() {
                 onClick={() => setSelectedId(model.id)}
               >
                 <span className="research-model-label">
-                  <span><strong>{model.name}</strong><small>{model.role}</small></span>
-                  <b>{formatMetric(model.metrics.macro_f1)}</b>
+                  <span><strong>{model.name}</strong></span>
+                  <b>{formatMetric(model.metrics[metric])}</b>
                 </span>
                 <span className="research-model-track"><i style={{ left: `${Math.min(Math.max(position, 0), 100)}%` }} /></span>
               </button>
-              {active ? <ModelDetail model={selected} className="research-model-detail-mobile" /> : null}
+              {active ? <ModelDetail model={selected} metric={metric} className="research-model-detail-mobile" /> : null}
             </div>
           );
         })}
       </div>
-      <ModelDetail key={selected.id} model={selected} className="research-model-detail-desktop" />
+      <ModelDetail key={`${selected.id}-${metric}`} model={selected} metric={metric} className="research-model-detail-desktop" />
+      </div>
     </div>
   );
 }
@@ -936,12 +964,6 @@ function ConfusionExplorer() {
   return (
     <div className="research-error-grid">
       <div className="research-confusion-wrap">
-        <div className="research-figure-header">
-          <div>
-            <h3>Normalized confusion matrix</h3>
-            <p>Select a row to see how that stage was classified.</p>
-          </div>
-        </div>
         <div className="research-confusion">
           <span className="research-confusion-axis">Predicted stage →</span>
           <div className="research-confusion-head">
@@ -1059,42 +1081,36 @@ function SubjectVariability() {
 
 function DiscussionExplorer() {
   return (
-    <div className="research-discussion-body">
+    <div className="research-discussion-summary">
       <article>
-        <h3>Model comparison</h3>
-        <p>The feature ensemble reaches 0.608 mean macro-F1 across the outer folds. The other four models score between 0.654 and 0.683. A small second-stage model has the highest score in this set of experiments. Architecture comparisons on other datasets remain open.</p>
+        <h3>The main gain comes from temporal correction</h3>
+        <p>The epoch-only ensemble reaches 0.608 macro-F1; every temporal model improves it, with the nine-epoch logit-and-confidence smoother reaching 0.683. That pattern says the 34-feature representation already carries useful stage evidence, but independent classification mishandles persistence and boundary ambiguity. The improvement does not require relearning the raw physiology: a second model operating on class evidence is enough to recover much of the sequence structure.</p>
       </article>
       <article>
-        <h3>N2 errors</h3>
-        <p>N2 has the lowest class F1 at 0.469 and is often assigned to Wake or N3. The model may capture broad slow-wave structure more reliably than brief N2 events. Spindle features account for 7% of normalized feature importance. Next, I would replace or ablate the spindle and K-complex detectors and repeat the evaluation.</p>
+        <h3>Why the linear smoother wins</h3>
+        <p>The strongest model is not the deepest one. Balanced logistic regression receives logits, confidence, entropy, margin, and adjacent probability changes across 4.5 minutes. Those inputs expose uncertainty and transition direction while keeping the decision surface low variance. With only 25 subjects, that inductive bias is likely better matched to the sample size than end-to-end temporal representation learning. The result supports a staged system: first estimate physiology, then learn when sequence context should revise it.</p>
       </article>
       <article>
-        <h3>Between-subject variation</h3>
-        <p>Subject-level macro-F1 ranges from 0.431 to 0.823. These results describe UCDDB only. External datasets are needed to assess other cohorts, recording systems, and clinical settings.</p>
+        <h3>Neural sequence models add complexity, not a clear win</h3>
+        <p>The six-second TCN and hierarchical epoch encoder improve the baseline but remain close to the simpler smoother. The TCN sees short events directly through a dilated receptive field; the hierarchical model separates five within-epoch steps from three-epoch context. Neither decisively converts that added capacity into better held-out performance. On this dataset, architecture depth is less valuable than preserving calibrated class evidence and enforcing clean subject-level separation. <Citation number={17} /> <Citation number={18} /></p>
       </article>
-      <details className="research-limitations">
-        <summary>Limitations and next experiments</summary>
-        <ul>
-          <li>Evaluate the locked pipeline on a second PSG dataset without retuning the test cohort.</li>
-          <li>Report calibration and transition-specific performance alongside aggregate metrics.</li>
-          <li>Relate difficult subjects to signal quality and per-stage support.</li>
-          <li>Test improved spindle and K-complex detectors through controlled ablation.</li>
-        </ul>
-      </details>
+      <article>
+        <h3>The next work is representation and calibration</h3>
+        <p>N2 remains the weakest class (F1 0.469), with errors toward Wake and N3. Spindle-family importance is only 7%, suggesting that brief N2 events are less robustly represented than broad slow-wave structure. The next experiments should ablate spindle and K-complex detectors, measure performance specifically at stage transitions, calibrate probabilities before Stage 2, and lock the pipeline for external evaluation. Subject macro-F1 ranges from 0.431 to 0.823, so transportability—not another small architecture sweep—is the larger unresolved risk.</p>
+      </article>
     </div>
   );
 }
 
 function RelatedWork() {
   return (
-    <div className="research-related-work">
-      <h3>Related work</h3>
-      <p>
-        Automatic staging systems commonly combine an epoch representation with a sequence model. DeepSleepNet learns raw-EEG features with multiscale CNNs and then models transitions with bidirectional LSTMs; SeqSleepNet explicitly separates within-epoch encoding from across-epoch sequence modeling. <Citation number={17} /> <Citation number={18} />
-      </p>
-      <p>
-        Published UCDDB studies use different channels, preprocessing, label mappings, and validation designs. Their methods provide context for this work; their headline scores are not placed on the model chart. <Citation number={5} /> <Citation number={8} />
-      </p>
+    <div className="research-related-work research-paper-disclosures">
+      <PaperDisclosure label="R1" title="Sequence modeling in prior work" summary="Epoch encoders are commonly paired with temporal models">
+        <p>DeepSleepNet learns raw-EEG features with multiscale CNNs and then models transitions with bidirectional LSTMs; SeqSleepNet separates within-epoch encoding from across-epoch sequence modeling. <Citation number={17} /> <Citation number={18} /></p>
+      </PaperDisclosure>
+      <PaperDisclosure label="R2" title="Why published scores are not overlaid" summary="Channels, labels, preprocessing, and validation designs differ">
+        <p>Published UCDDB studies provide methodological context, but their headline numbers are not directly comparable to this experiment. <Citation number={5} /> <Citation number={8} /></p>
+      </PaperDisclosure>
       <p className="research-related-position">All five models use the same folds and outcome metrics.</p>
     </div>
   );
@@ -1208,20 +1224,158 @@ const references = [
     citation: "Phan H, Andreotti F, Cooray N, Chen OY, De Vos M. SeqSleepNet: End-to-End Hierarchical Recurrent Neural Network for Sequence-to-Sequence Automatic Sleep Staging. IEEE Transactions on Neural Systems and Rehabilitation Engineering. 2019;27:400–410.",
     href: "https://pmc.ncbi.nlm.nih.gov/articles/PMC6481557/",
     note: "Primary sequence-to-sequence study separating within-epoch encoding from longer-range sleep-stage dynamics."
+  },
+  {
+    number: 19,
+    citation: "Lakens D. Calculating and reporting effect sizes to facilitate cumulative science: a practical primer for t-tests and ANOVAs. Frontiers in Psychology. 2013;4:863.",
+    href: "https://pmc.ncbi.nlm.nih.gov/articles/PMC3840331/",
+    note: "Practical guidance for standardized mean differences, including Cohen’s d and its interpretation."
   }
 ];
+
+const technicalAppendixEntries = [
+  {
+    id: "spindles",
+    label: "P1",
+    title: "Spindle-oriented EEG features",
+    summary: "Spectral power, aperiodic residuals, and sigma-to-beta structure",
+    source: "src/physionet_sleep/algorithms/staging.py · SpindleFeatureGenerator",
+    note: "The displayed spindle index is built from the same sigma, beta, and residual arrays exported to the feature table.",
+    code: `power = np.stack(per_channel_power, axis=2)
+residual = np.stack(per_channel_residual, axis=2)
+sigma_beta_ratio = np.nansum(
+    power[:, 3, :] / np.maximum(power[:, 4, :], 1e-12),
+    axis=1,
+)
+sigma_beta_residual_diff = np.nansum(
+    residual[:, 3, :] - residual[:, 4, :],
+    axis=1,
+)
+splindex = sigma_beta_ratio * sigma_beta_residual_diff`
+  },
+  {
+    id: "slow-waves",
+    label: "P2",
+    title: "Slow-wave representation",
+    summary: "Low-frequency envelope, local baseline removal, and slow-to-fast contrast",
+    source: "src/physionet_sleep/algorithms/staging.py · SlowWaveFeatureGenerator",
+    note: "The local median removes slow baseline drift before the low-frequency signal is compared with faster EEG activity.",
+    code: `slow = _band_envelope(eeg[:, ch], fs, 0.3, 1.5)
+high = _band_envelope(eeg[:, ch], fs, 30.0, 100.0)
+raw = slow - rolling_median(
+    slow,
+    max(int(round(fs * 30.0)), 1),
+)
+ratio = (raw / np.maximum(high, 1e-12)) * (raw - high)`
+  },
+  {
+    id: "eye-movement",
+    label: "P3",
+    title: "Eye-movement activity",
+    summary: "Band-limited EOG activity relative to a rolling local reference",
+    source: "src/physionet_sleep/algorithms/staging.py · EyeMovementActivityGenerator",
+    note: "The activity trace is relative rather than absolute, which makes within-night changes easier to compare.",
+    code: `eye_env = _band_envelope(eog, fs, 0.1, 5.0)
+eye_baseline = rolling_median(
+    eye_env,
+    max(int(round(fs * 30.0)), 1),
+)
+eye_activity = np.maximum(eye_env - eye_baseline, 0.0)
+eye_activity = rolling_mean(
+    eye_activity,
+    max(int(round(fs * 1.0)), 1),
+)`
+  },
+  {
+    id: "muscle-tone",
+    label: "P4",
+    title: "Chin-muscle tone",
+    summary: "A smoothed EMG envelope with a sixty-second local baseline",
+    source: "src/physionet_sleep/algorithms/staging.py · EMGToneFeatureGenerator",
+    note: "Relative tone helps distinguish REM suppression from a subject-specific absolute EMG level.",
+    code: `tone = _band_envelope(emg, fs, 10.0, 100.0)
+tone = rolling_mean(tone, max(int(round(fs * 1.0)), 1))
+tone_baseline = rolling_median(
+    tone,
+    max(int(round(fs * 60.0)), 1),
+)
+suppression_mask = tone < (
+    np.maximum(tone_baseline, 1e-12) * self.suppression_ratio
+)`
+  },
+  {
+    id: "validation",
+    label: "P5",
+    title: "Subject-grouped evaluation",
+    summary: "Every epoch from one person stays on the same side of the split",
+    source: "src/physionet_sleep/experiments/tabular_runner.py · build_validation_splits",
+    note: "The group array contains subject identifiers, preventing epochs from one night from leaking into both development and test data.",
+    code: `splitter = StratifiedGroupKFold(
+    n_splits=effective_folds,
+    shuffle=True,
+    random_state=random_state,
+)
+yield from splitter.split(
+    np.zeros_like(y),
+    y,
+    groups,
+)`
+  },
+  {
+    id: "temporal-context",
+    label: "P6",
+    title: "Temporal probability context",
+    summary: "Build contiguous subject-specific windows around the target epoch",
+    source: "src/physionet_sleep/experiments/runner_utils.py · build_probability_context_frame",
+    note: "Windows are rejected when neighboring timestamps are not contiguous, so context never crosses a gap or subject boundary.",
+    code: `for subject_id, subject_df in pred_frame.groupby(
+    subject_column,
+    sort=False,
+):
+    ordered = subject_df.sort_values(
+        time_column,
+        kind="stable",
+    ).reset_index(drop=True)
+    times = ordered[time_column].to_numpy(dtype=float, copy=False)
+
+    for center in range(context_radius, len(ordered) - context_radius):
+        start = center - context_radius
+        stop = center + context_radius + 1
+        seq_times = times[start:stop]
+        diffs = np.diff(seq_times)
+        if diffs.size and not np.all(
+            np.abs(diffs - expected_step_seconds) <= step_tolerance_seconds
+        ):
+            continue`
+  }
+];
+
+function TechnicalAppendix() {
+  return (
+    <section className="research-section research-technical-appendix" id="technical-appendix">
+      <SectionHeading label="Technical Appendix" title="Python implementation" />
+      <div className="research-paper-disclosures research-code-disclosures">
+        {technicalAppendixEntries.map((entry) => (
+          <PaperDisclosure key={entry.id} label={entry.label} title={entry.title} summary={entry.summary} className="research-code-disclosure">
+            <div className="research-code-source"><span>Canonical source</span><strong>{entry.source}</strong></div>
+            <pre id={`code-${entry.id}`}><code>{entry.code}</code></pre>
+            <p>{entry.note}</p>
+          </PaperDisclosure>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 function ReferencesSection() {
   return (
     <section className="research-section research-references" id="references">
-      <SectionHeading label="References" title="References">
-        Clinical scoring rules, feature-family evidence, dataset documentation, and related models.
-      </SectionHeading>
+      <SectionHeading label="Sources" title="References" />
       <ol className="research-reference-list">
         {references.map((reference) => (
           <li id={`reference-${reference.number}`} key={reference.number}>
             <span>{reference.number}</span>
-            <div><p>{reference.citation}</p><small>{reference.note}</small><a href={reference.href} target="_blank" rel="noreferrer">Open source ↗</a></div>
+            <a href={reference.href} target="_blank" rel="noreferrer">{reference.citation}</a>
           </li>
         ))}
       </ol>
@@ -1243,69 +1397,36 @@ export function StagingResearchDashboard() {
       </section>
 
       <section className="research-section" id="introduction">
-        <SectionHeading label="Introduction" title="Introduction">
-          Clinical context for the prediction task.
-        </SectionHeading>
+        <SectionHeading label="Introduction" title="Introduction" />
         <SleepStudyPrimer />
-        <RelatedWork />
       </section>
 
       <section className="research-section" id="methods">
-        <SectionHeading label="Methods" title="Methods">
-          Data preparation and model evaluation.
-        </SectionHeading>
-
-        <div className="research-method-block">
-          <div className="research-method-block-heading"><span>2.1</span><div><h3>Dataset and prediction task</h3><p>UCDDB provides the overnight signals and expert stage labels.</p></div></div>
-          <CompactStudyProtocol />
-        </div>
-
+        <SectionHeading label="Methods" title="Methods" />
+        <CompactStudyProtocol />
         <div className="research-method-block" id="features">
-          <div className="research-method-block-heading"><span>2.2</span><div><h3>Feature representation</h3><p>Start with an expert label, then trace its targeted inputs from derivation to stage distribution and a real signal segment. The full classifier uses all 34 normalized measurements from EEG, EOG, chin EMG, and ECG.</p></div></div>
+          <div className="research-tool-heading"><h3>Data and feature explorer</h3></div>
           <PhysiologyExplorer />
-        </div>
-
-        <div className="research-method-block">
-          <div className="research-method-block-heading"><span>2.3</span><div><h3>Model comparison</h3><p>The five configurations test a feature ensemble, two compact second-stage models, a six-second TCN, and a hierarchical encoder.</p></div></div>
-          <MethodPipeline />
-          <details className="research-secondary-disclosure research-context-disclosure">
-            <summary><span>Detail</span><strong>Context-window inputs</strong><small>Compare the information available to the 1-, 5-, and 9-epoch configurations</small></summary>
-            <ContextWindowExplorer />
-          </details>
-        </div>
-
-        <div className="research-method-block">
-          <div className="research-method-block-heading"><span>2.4</span><div><h3>Cross-validation</h3><p>Models are compared with five-fold grouped cross-validation. All epochs from one subject remain in the same fold. Neural model selection uses training folds only. Class weights or weighted sampling address imbalance, and macro-F1 is the primary metric.</p></div></div>
         </div>
       </section>
 
       <section className="research-section" id="results">
-        <SectionHeading label="Results" title="Results">
-          Cross-validated performance by model, sleep stage, and subject.
-        </SectionHeading>
+        <SectionHeading label="Results" title="Results" />
         <div className="research-results-block">
-          <div className="research-method-block-heading"><span>3.1</span><div><h3>Model comparison</h3><p>Select a model to compare its architecture, inputs, and result.</p></div></div>
+          <div className="research-tool-heading"><h3>Model explorer</h3></div>
           <ModelResults />
         </div>
         <div className="research-results-block">
-          <div className="research-method-block-heading"><span>3.2</span><div><h3>Class-level errors</h3><p>The confusion matrix shows how predictions are distributed for each expert stage.</p></div></div>
+          <div className="research-tool-heading"><h3>Class errors</h3></div>
           <ConfusionExplorer />
         </div>
-        <details className="research-secondary-disclosure">
-          <summary><span>3.3</span><strong>Additional diagnostics</strong><small>Feature-family importance and variation across subjects</small></summary>
-          <div className="research-secondary-analysis">
-            <FeatureImportance />
-            <SubjectVariability />
-          </div>
-        </details>
       </section>
 
       <section className="research-section research-discussion" id="discussion">
-        <SectionHeading label="Discussion" title="Discussion">
-          Interpretation and limitations.
-        </SectionHeading>
+        <SectionHeading label="Discussion" title="Discussion" />
         <DiscussionExplorer />
       </section>
+      <TechnicalAppendix />
       <ReferencesSection />
     </main>
   );

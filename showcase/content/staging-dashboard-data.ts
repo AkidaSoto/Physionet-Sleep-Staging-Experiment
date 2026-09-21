@@ -45,6 +45,7 @@ export type FeatureStageDistribution = {
   median: number;
   p75: number;
   p90: number;
+  one_vs_rest_cohens_d: number;
 };
 
 export type FeatureDistribution = {
@@ -58,31 +59,23 @@ export type FeatureDistribution = {
 export type FeatureSignalExample = {
   id: string;
   family_id: string;
-  title: string;
   stage: string;
   record_id: string;
   epoch_start_sec: number;
-  excerpt_start_sec: number;
-  excerpt_end_sec: number;
   feature_id: string;
   feature_label: string;
   feature_value: number;
   feature_percentile: number;
+  stage_percentile: number;
   direction: "high" | "low";
   selection_note: string;
-  feature_values: Partial<Record<string, { value: number; percentile: number }>>;
-  signals: Array<{
+  signal: {
     id: string;
     label: string;
     start_sec: number;
     end_sec: number;
     effective_sample_rate_hz: number;
     values: number[];
-  }>;
-  hypnogram: {
-    step_seconds: number;
-    values: number[];
-    end_sec: number;
   };
 };
 
@@ -103,6 +96,11 @@ export type StagingDashboardData = {
     neural_early_stop_subjects: number;
     grouping: string;
     primary_metric: string;
+    folds: Array<{
+      fold: number;
+      train_subjects: string[];
+      test_subjects: string[];
+    }>;
   };
   headline: {
     baseline_macro_f1: number;
