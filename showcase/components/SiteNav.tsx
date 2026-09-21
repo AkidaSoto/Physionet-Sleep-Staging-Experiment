@@ -66,7 +66,7 @@ export function SiteNav() {
     <nav className="site-nav" aria-label="Primary">
       <div className="site-nav-inner">
         <Link href="/#top" className="site-nav-brand">
-          Sleep Staging · ML Study
+          Sleep staging
         </Link>
         <div className="site-nav-links">
           {items.map((item) => (
