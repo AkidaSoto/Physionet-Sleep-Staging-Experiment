@@ -8,6 +8,18 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT / "src") not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT / "src"))
+
+from physionet_sleep.experiments.runner_utils import (
+    apply_featurewise_norm_map,
+    load_selected_norm_map,
+    ordered_prediction_sequences,
+    prepare_model_frame,
+    summarize_numeric_folds,
+)
+
 
 def _log(message: str, *, log_path: Path) -> None:
     stamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -18,14 +30,7 @@ def _log(message: str, *, log_path: Path) -> None:
 
 
 def _load_norm_map(path: Path) -> dict[str, str]:
-    frame = pd.read_parquet(path)
-    if frame.empty:
-        return {}
-    return {
-        str(row["feature_name"]): str(row["selected_norm_name"])
-        for _, row in frame.iterrows()
-        if pd.notna(row.get("feature_name")) and pd.notna(row.get("selected_norm_name"))
-    }
+    return load_selected_norm_map(path)
 
 
 def _apply_featurewise_best_norm(
@@ -36,23 +41,13 @@ def _apply_featurewise_best_norm(
     norm_map: dict[str, str],
     subject_column: str,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    from physionet_sleep.experiments.normalization import apply_normalization
-
-    train = train_df.copy()
-    val = val_df.copy()
-    grouped: dict[str, list[str]] = {}
-    for feature_name in feature_columns:
-        norm_name = norm_map.get(feature_name, "robust_by_subject")
-        grouped.setdefault(norm_name, []).append(feature_name)
-    for norm_name, cols in grouped.items():
-        train, val, _ = apply_normalization(
-            train,
-            val,
-            feature_columns=cols,
-            norm_name=norm_name,
-            group_column=subject_column,
-        )
-    return train, val
+    return apply_featurewise_norm_map(
+        train_df,
+        val_df,
+        feature_columns=feature_columns,
+        norm_map=norm_map,
+        subject_column=subject_column,
+    )
 
 
 def _prepare_frame(
@@ -62,40 +57,21 @@ def _prepare_frame(
     target_column: str,
     feature_columns: list[str],
 ) -> pd.DataFrame:
-    required = [subject_column, target_column, *feature_columns]
-    frame = table[required + (["time_seconds"] if "time_seconds" in table.columns else [])].copy()
-    frame = frame.replace([np.inf, -np.inf], np.nan)
-    frame = frame.dropna(subset=[target_column, subject_column]).copy()
-    frame[target_column] = pd.to_numeric(frame[target_column], errors="coerce")
-    frame = frame.dropna(subset=[target_column]).copy()
-    frame[target_column] = frame[target_column].astype(int)
-    if target_column == "label.stage_seconds":
-        frame = frame.loc[frame[target_column] >= 0].copy()
-    return frame
+    return prepare_model_frame(
+        table,
+        subject_column=subject_column,
+        target_column=target_column,
+        feature_columns=feature_columns,
+        drop_negative_targets=(target_column == "label.stage_seconds"),
+    )
 
 
 def _sequence_arrays(pred_frame: pd.DataFrame, *, subject_column: str) -> tuple[list[np.ndarray], list[np.ndarray]]:
-    true_by_subject: list[np.ndarray] = []
-    pred_by_subject: list[np.ndarray] = []
-    for _, group in pred_frame.groupby(subject_column, sort=False):
-        ordered = group.sort_values("time_seconds", kind="stable") if "time_seconds" in group.columns else group
-        true_by_subject.append(ordered["y_true"].to_numpy())
-        pred_by_subject.append(ordered["y_pred"].to_numpy())
-    return true_by_subject, pred_by_subject
+    return ordered_prediction_sequences(pred_frame, subject_column=subject_column)
 
 
 def _summarize_fold_metrics(fold_df: pd.DataFrame, *, eval_source: str) -> pd.DataFrame:
-    if fold_df.empty:
-        return pd.DataFrame()
-    numeric_cols = [col for col in fold_df.columns if pd.api.types.is_numeric_dtype(fold_df[col]) and col != "fold_index"]
-    row: dict[str, object] = {
-        "eval_source": eval_source,
-        "n_folds": int(len(fold_df)),
-    }
-    for col in numeric_cols:
-        row[f"{col}_mean"] = float(fold_df[col].mean())
-        row[f"{col}_median"] = float(fold_df[col].median())
-    return pd.DataFrame([row])
+    return summarize_numeric_folds(fold_df, eval_source=eval_source)
 
 
 def _run_task(

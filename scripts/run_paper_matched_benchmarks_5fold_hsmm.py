@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from datetime import datetime
@@ -7,6 +8,19 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT / "src") not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT / "src"))
+
+from physionet_sleep.experiments.runner_utils import (
+    apply_featurewise_norm_map,
+    build_split_tag,
+    load_selected_norm_map,
+    ordered_prediction_sequences,
+    prepare_model_frame,
+    summarize_numeric_folds,
+)
 
 
 def _log(message: str, *, log_path: Path) -> None:
@@ -18,14 +32,7 @@ def _log(message: str, *, log_path: Path) -> None:
 
 
 def _load_norm_map(path: Path) -> dict[str, str]:
-    frame = pd.read_parquet(path)
-    if frame.empty:
-        return {}
-    return {
-        str(row["feature_name"]): str(row["selected_norm_name"])
-        for _, row in frame.iterrows()
-        if pd.notna(row.get("feature_name")) and pd.notna(row.get("selected_norm_name"))
-    }
+    return load_selected_norm_map(path)
 
 
 def _apply_featurewise_best_norm(
@@ -36,23 +43,13 @@ def _apply_featurewise_best_norm(
     norm_map: dict[str, str],
     subject_column: str,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    from physionet_sleep.experiments.normalization import apply_normalization
-
-    train = train_df.copy()
-    val = val_df.copy()
-    grouped: dict[str, list[str]] = {}
-    for feature_name in feature_columns:
-        norm_name = norm_map.get(feature_name, "robust_by_subject")
-        grouped.setdefault(norm_name, []).append(feature_name)
-    for norm_name, cols in grouped.items():
-        train, val, _ = apply_normalization(
-            train,
-            val,
-            feature_columns=cols,
-            norm_name=norm_name,
-            group_column=subject_column,
-        )
-    return train, val
+    return apply_featurewise_norm_map(
+        train_df,
+        val_df,
+        feature_columns=feature_columns,
+        norm_map=norm_map,
+        subject_column=subject_column,
+    )
 
 
 def _prepare_frame(
@@ -62,40 +59,44 @@ def _prepare_frame(
     target_column: str,
     feature_columns: list[str],
 ) -> pd.DataFrame:
-    required = [subject_column, target_column, *feature_columns]
-    frame = table[required + (["time_seconds"] if "time_seconds" in table.columns else [])].copy()
-    frame = frame.replace([np.inf, -np.inf], np.nan)
-    frame = frame.dropna(subset=[target_column, subject_column]).copy()
-    frame[target_column] = pd.to_numeric(frame[target_column], errors="coerce")
-    frame = frame.dropna(subset=[target_column]).copy()
-    frame[target_column] = frame[target_column].astype(int)
-    if target_column == "label.stage_30s":
-        frame = frame.loc[frame[target_column] >= 0].copy()
-    return frame
+    return prepare_model_frame(
+        table,
+        subject_column=subject_column,
+        target_column=target_column,
+        feature_columns=feature_columns,
+        drop_negative_targets=(target_column == "label.stage_30s"),
+    )
 
 
 def _sequence_arrays(pred_frame: pd.DataFrame, *, subject_column: str) -> tuple[list[np.ndarray], list[np.ndarray]]:
-    true_by_subject: list[np.ndarray] = []
-    pred_by_subject: list[np.ndarray] = []
-    for _, group in pred_frame.groupby(subject_column, sort=False):
-        ordered = group.sort_values("time_seconds", kind="stable") if "time_seconds" in group.columns else group
-        true_by_subject.append(ordered["y_true"].to_numpy())
-        pred_by_subject.append(ordered["y_pred"].to_numpy())
-    return true_by_subject, pred_by_subject
+    return ordered_prediction_sequences(pred_frame, subject_column=subject_column)
 
 
 def _summarize_fold_metrics(fold_df: pd.DataFrame, *, eval_source: str) -> pd.DataFrame:
-    if fold_df.empty:
-        return pd.DataFrame()
-    numeric_cols = [col for col in fold_df.columns if pd.api.types.is_numeric_dtype(fold_df[col]) and col != "fold_index"]
-    row: dict[str, object] = {
-        "eval_source": eval_source,
-        "n_folds": int(len(fold_df)),
-    }
-    for col in numeric_cols:
-        row[f"{col}_mean"] = float(fold_df[col].mean())
-        row[f"{col}_median"] = float(fold_df[col].median())
-    return pd.DataFrame([row])
+    return summarize_numeric_folds(fold_df, eval_source=eval_source)
+
+
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--outer-validation", choices=("kfold", "loso"), default="kfold")
+    parser.add_argument("--outer-folds", type=int, default=5)
+    parser.add_argument("--inner-validation", choices=("none", "single_subject"), default="none")
+    parser.add_argument("--random-state", type=int, default=7)
+    parser.add_argument(
+        "--tasks",
+        nargs="+",
+        choices=("staging_30s", "apnea_11s_anchor1_drop4"),
+        default=("staging_30s", "apnea_11s_anchor1_drop4"),
+    )
+    return parser.parse_args()
+
+
+def _split_tag(*, outer_validation: str, outer_folds: int, inner_validation: str) -> str:
+    return build_split_tag(
+        outer_validation=outer_validation,
+        outer_folds=outer_folds,
+        inner_validation=inner_validation,
+    )
 
 
 def _run_task(
@@ -107,83 +108,112 @@ def _run_task(
     feature_columns: list[str],
     norm_map: dict[str, str],
     use_hsmm: bool,
+    outer_validation: str,
+    outer_folds: int,
+    inner_validation: str,
+    random_state: int,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     from physionet_sleep.decoders.hsmm import apply_hsmm_viterbi, learn_hsmm_params
-    from physionet_sleep.experiments.tabular_runner import build_model, build_validation_splits, score_predictions
+    from physionet_sleep.experiments.tabular_runner import build_model, build_subject_eval_splits, score_predictions
 
     groups = frame[subject_column].astype(str).to_numpy()
     y = frame[target_column].to_numpy()
-    splits = list(build_validation_splits(groups=groups, y=y, folds=5, validation="kfold", random_state=7))
+    splits = list(
+        build_subject_eval_splits(
+            groups=groups,
+            y=y,
+            outer_validation=outer_validation,
+            outer_folds=outer_folds,
+            inner_validation=inner_validation,
+            random_state=random_state,
+        )
+    )
 
     raw_folds: list[dict[str, object]] = []
     hsmm_folds: list[dict[str, object]] = []
     raw_preds: list[pd.DataFrame] = []
     hsmm_preds: list[pd.DataFrame] = []
 
-    for fold_index, (train_idx, val_idx) in enumerate(splits, start=1):
-        train_df = frame.iloc[train_idx].copy()
-        val_df = frame.iloc[val_idx].copy()
-        train_df, val_df = _apply_featurewise_best_norm(
+    for split in splits:
+        fold_index = split.fold_index
+        train_df = frame.iloc[split.train_idx].copy()
+        test_df = frame.iloc[split.test_idx].copy()
+        calib_df = frame.iloc[split.validation_idx].copy() if split.validation_idx is not None else None
+        train_df, test_df = _apply_featurewise_best_norm(
             train_df,
-            val_df,
+            test_df,
             feature_columns=feature_columns,
             norm_map=norm_map,
             subject_column=subject_column,
         )
+        if calib_df is not None:
+            train_df, calib_df = _apply_featurewise_best_norm(
+                train_df,
+                calib_df,
+                feature_columns=feature_columns,
+                norm_map=norm_map,
+                subject_column=subject_column,
+            )
         usable = [col for col in feature_columns if train_df[col].notna().any()]
         estimator = build_model(
             model_family="ensemble",
             task="classification",
-            random_state=7,
+            random_state=random_state,
             class_weight="balanced",
         )
         estimator.fit(train_df[usable], train_df[target_column])
 
         train_pred = np.asarray(estimator.predict(train_df[usable]))
-        val_pred = np.asarray(estimator.predict(val_df[usable]))
-        val_proba = None
+        test_pred = np.asarray(estimator.predict(test_df[usable]))
+        test_proba = None
         if hasattr(estimator, "predict_proba"):
             try:
-                val_proba = estimator.predict_proba(val_df[usable])
+                test_proba = estimator.predict_proba(test_df[usable])
             except Exception:
-                val_proba = None
+                test_proba = None
 
         raw_metrics = score_predictions(
-            y_true=val_df[target_column].to_numpy(),
-            y_pred=val_pred,
-            proba=val_proba,
+            y_true=test_df[target_column].to_numpy(),
+            y_pred=test_pred,
+            proba=test_proba,
         )
         raw_metrics.update(
             {
                 "fold_index": fold_index,
                 "n_train": int(len(train_df)),
-                "n_val": int(len(val_df)),
+                "n_test": int(len(test_df)),
                 "n_features_used": int(len(usable)),
                 "n_subjects_train": int(train_df[subject_column].nunique()),
-                "n_subjects_val": int(val_df[subject_column].nunique()),
+                "n_subjects_test": int(test_df[subject_column].nunique()),
+                "n_subjects_validation": int(calib_df[subject_column].nunique()) if calib_df is not None else 0,
             }
         )
         raw_folds.append(raw_metrics)
 
-        raw_pred_frame = val_df[[subject_column] + (["time_seconds"] if "time_seconds" in val_df.columns else [])].copy()
-        raw_pred_frame["y_true"] = val_df[target_column].to_numpy()
-        raw_pred_frame["y_pred"] = val_pred
+        raw_pred_frame = test_df[[subject_column] + (["time_seconds"] if "time_seconds" in test_df.columns else [])].copy()
+        raw_pred_frame["y_true"] = test_df[target_column].to_numpy()
+        raw_pred_frame["y_pred"] = test_pred
         raw_pred_frame["fold_index"] = fold_index
         raw_preds.append(raw_pred_frame)
 
         if use_hsmm:
-            train_seq_true, train_seq_pred = _sequence_arrays(
-                train_df.assign(y_true=train_df[target_column].to_numpy(), y_pred=train_pred),
+            calib_source = train_df
+            calib_pred = train_pred
+            if calib_df is not None:
+                calib_source = calib_df
+                calib_pred = np.asarray(estimator.predict(calib_df[usable]))
+            calib_seq_true, calib_seq_pred = _sequence_arrays(
+                calib_source.assign(y_true=calib_source[target_column].to_numpy(), y_pred=calib_pred),
                 subject_column=subject_column,
             )
-            val_seq_true, val_seq_pred = _sequence_arrays(
+            test_seq_true, test_seq_pred = _sequence_arrays(
                 raw_pred_frame,
                 subject_column=subject_column,
             )
-            hsmm_params = learn_hsmm_params(train_seq_true, train_seq_pred)
-            val_seq_hsmm = apply_hsmm_viterbi(val_seq_pred, hsmm_params)
-            hsmm_flat = np.concatenate([np.asarray(seq) for seq in val_seq_hsmm if len(seq)], axis=0) if any(len(seq) for seq in val_seq_hsmm) else np.asarray([])
-            true_flat = np.concatenate([np.asarray(seq) for seq in val_seq_true if len(seq)], axis=0) if any(len(seq) for seq in val_seq_true) else np.asarray([])
+            hsmm_params = learn_hsmm_params(calib_seq_true, calib_seq_pred)
+            test_seq_hsmm = apply_hsmm_viterbi(test_seq_pred, hsmm_params)
+            hsmm_flat = np.concatenate([np.asarray(seq) for seq in test_seq_hsmm if len(seq)], axis=0) if any(len(seq) for seq in test_seq_hsmm) else np.asarray([])
+            true_flat = np.concatenate([np.asarray(seq) for seq in test_seq_true if len(seq)], axis=0) if any(len(seq) for seq in test_seq_true) else np.asarray([])
             hsmm_metrics = score_predictions(
                 y_true=true_flat,
                 y_pred=hsmm_flat,
@@ -193,10 +223,11 @@ def _run_task(
                 {
                     "fold_index": fold_index,
                     "n_train": int(len(train_df)),
-                    "n_val": int(len(val_df)),
+                    "n_test": int(len(test_df)),
                     "n_features_used": int(len(usable)),
                     "n_subjects_train": int(train_df[subject_column].nunique()),
-                    "n_subjects_val": int(val_df[subject_column].nunique()),
+                    "n_subjects_test": int(test_df[subject_column].nunique()),
+                    "n_subjects_validation": int(calib_df[subject_column].nunique()) if calib_df is not None else 0,
                     "dur_d_max": int(hsmm_params.dur_d_max),
                 }
             )
@@ -207,7 +238,7 @@ def _run_task(
             for seq_index, (_, group) in enumerate(raw_pred_frame.groupby(subject_column, sort=False)):
                 ordered = group.sort_values("time_seconds", kind="stable") if "time_seconds" in group.columns else group
                 tmp = ordered.copy()
-                tmp["y_pred"] = np.asarray(val_seq_hsmm[seq_index])[: len(ordered)]
+                tmp["y_pred"] = np.asarray(test_seq_hsmm[seq_index])[: len(ordered)]
                 rebuilt.append(tmp)
             hsmm_pred_frame = pd.concat(rebuilt, axis=0, ignore_index=True)
             hsmm_pred_frame["fold_index"] = fold_index
@@ -231,6 +262,7 @@ def _run_task(
 
 
 def main() -> int:
+    args = _parse_args()
     repo_root = Path(__file__).resolve().parents[1]
     sys.path.insert(0, str(repo_root / "src"))
 
@@ -244,27 +276,38 @@ def main() -> int:
 
     log_dir = repo_root / "artifacts" / "logs"
     log_dir.mkdir(parents=True, exist_ok=True)
-    log_path = log_dir / "paper_matched_benchmarks_5fold_hsmm.log"
-    status_path = log_dir / "paper_matched_benchmarks_5fold_hsmm_status.json"
+    split_tag = _split_tag(
+        outer_validation=args.outer_validation,
+        outer_folds=args.outer_folds,
+        inner_validation=args.inner_validation,
+    )
+    log_path = log_dir / f"paper_matched_benchmarks_hsmm__{split_tag}.log"
+    status_path = log_dir / f"paper_matched_benchmarks_hsmm__{split_tag}_status.json"
 
     _log("run_start", log_path=log_path)
-    table = load_ucddb_reference_dataset(
+    staging_source = load_ucddb_reference_dataset(
         cache_dir=repo_root / "artifacts" / "ucddb_recipe_cache",
         root_dir=repo_root / "data" / "raw" / "ucddb",
     )
-    if table.empty:
+    apnea_source = load_ucddb_reference_dataset(
+        cache_dir=repo_root / "artifacts" / "ucddb_recipe_cache",
+        root_dir=repo_root / "data" / "raw" / "ucddb",
+        feature_table_name="final__feature_table_apnea_1s",
+    )
+    if staging_source.empty or apnea_source.empty:
         status_path.write_text(json.dumps({"status": "failed", "reason": "no_rows"}, indent=2), encoding="utf-8")
         _log("no_rows", log_path=log_path)
         return 1
 
-    specs = build_default_experiment_specs(table)
+    staging_specs = build_default_experiment_specs(staging_source)
+    apnea_specs = build_default_experiment_specs(apnea_source)
     staging_table = build_staging_benchmark_table(
-        table,
-        feature_columns=specs["staging_plus_shared"].feature_columns,
+        staging_source,
+        feature_columns=staging_specs["staging_plus_shared"].feature_columns,
     )
     apnea_table = build_apnea_benchmark_table(
-        table,
-        feature_columns=specs["apnea_plus_shared"].feature_columns,
+        apnea_source,
+        feature_columns=apnea_specs["apnea_plus_shared"].feature_columns,
         dropped_subject_ids=PAPER_APNEA_DROPPED_SUBJECTS,
     )
 
@@ -272,22 +315,29 @@ def main() -> int:
         "staging_30s": {
             "table": staging_table,
             "target_column": "label.stage_30s",
-            "feature_columns": specs["staging_plus_shared"].feature_columns,
+            "feature_columns": staging_specs["staging_plus_shared"].feature_columns,
             "norm_map": _load_norm_map(repo_root / "artifacts" / "reference_diagnostics_by_task" / "staging" / "best_feature_norms.parquet"),
             "use_hsmm": True,
             "dropped_subject_ids": [],
+            "feature_table_name": "final__feature_table",
         },
-        "apnea_60s_gt5s_drop4": {
+        "apnea_11s_anchor1_drop4": {
             "table": apnea_table,
-            "target_column": "label.apnea_60s_gt5s",
-            "feature_columns": specs["apnea_plus_shared"].feature_columns,
+            "target_column": "label.apnea_11s_anchor1_event",
+            "feature_columns": apnea_specs["apnea_plus_shared"].feature_columns,
             "norm_map": _load_norm_map(repo_root / "artifacts" / "reference_diagnostics_by_task" / "apnea" / "best_feature_norms.parquet"),
             "use_hsmm": True,
             "dropped_subject_ids": list(PAPER_APNEA_DROPPED_SUBJECTS),
+            "feature_table_name": "final__feature_table_apnea_1s",
         },
     }
+    tasks = {name: tasks[name] for name in args.tasks if name in tasks}
+    if not tasks:
+        status_path.write_text(json.dumps({"status": "failed", "reason": "no_tasks_selected"}, indent=2), encoding="utf-8")
+        _log("no_tasks_selected", log_path=log_path)
+        return 1
 
-    out_root = repo_root / "artifacts" / "paper_matched_benchmarks_5fold_hsmm"
+    out_root = repo_root / "artifacts" / "paper_matched_benchmarks_hsmm" / split_tag
     out_root.mkdir(parents=True, exist_ok=True)
     overall_status: dict[str, object] = {"status": "running", "tasks": {}}
     status_path.write_text(json.dumps(overall_status, indent=2), encoding="utf-8")
@@ -311,6 +361,10 @@ def main() -> int:
             feature_columns=list(cfg["feature_columns"]),
             norm_map=dict(cfg["norm_map"]),
             use_hsmm=bool(cfg["use_hsmm"]),
+            outer_validation=args.outer_validation,
+            outer_folds=args.outer_folds,
+            inner_validation=args.inner_validation,
+            random_state=args.random_state,
         )
 
         task_dir = out_root / task_name
@@ -326,8 +380,10 @@ def main() -> int:
             "feature_count": len(cfg["feature_columns"]),
             "row_count": int(len(frame)),
             "n_subjects": int(frame["subject_id"].nunique()),
-            "folds": 5,
-            "validation": "grouped_kfold",
+            "feature_table_name": str(cfg["feature_table_name"]),
+            "outer_validation": args.outer_validation,
+            "outer_folds": args.outer_folds,
+            "inner_validation": args.inner_validation,
             "model_family": "ensemble",
             "class_weight": "balanced",
             "sequence_postprocessing": "hsmm" if cfg["use_hsmm"] else "off",

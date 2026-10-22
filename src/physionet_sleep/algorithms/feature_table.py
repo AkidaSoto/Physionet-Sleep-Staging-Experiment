@@ -8,6 +8,9 @@ import pandas as pd
 from physionet_sleep.core.base import BaseAlgorithm
 from physionet_sleep.core.types import AlgorithmResult, SignalRecord, SignalSeries
 
+# Longest analysis window used by any upstream track (30-s EOG spectrogram); bounds edge padding.
+_EDGE_FILL_SECONDS = 30.0
+
 
 class FeatureTableCompiler(BaseAlgorithm):
     def __init__(
@@ -16,12 +19,16 @@ class FeatureTableCompiler(BaseAlgorithm):
         include_algorithms: tuple[str, ...] | None = None,
         window_seconds: float = 6.0,
         include_feature_arrays: bool = False,
+        exclude_signal_units: tuple[str, ...] = ("binary", "class"),
+        exclude_signal_name_tokens: tuple[str, ...] = ("mask", "vector"),
         name: str = "feature_table",
     ) -> None:
         super().__init__(name=name)
         self.include_algorithms = include_algorithms
         self.window_seconds = float(window_seconds)
         self.include_feature_arrays = include_feature_arrays
+        self.exclude_signal_units = tuple(value.lower() for value in exclude_signal_units)
+        self.exclude_signal_name_tokens = tuple(value.lower() for value in exclude_signal_name_tokens)
 
     def required_signals(self) -> tuple[str, ...]:
         return ()
@@ -42,6 +49,13 @@ class FeatureTableCompiler(BaseAlgorithm):
                 continue
 
             for signal_name, signal in result.signals.items():
+                if _should_skip_signal(
+                    signal_name,
+                    signal,
+                    excluded_units=self.exclude_signal_units,
+                    excluded_name_tokens=self.exclude_signal_name_tokens,
+                ):
+                    continue
                 values = _coerce_signal(signal, target_length, self.window_seconds)
                 if values is not None:
                     columns[f"{algo_name}.{signal_name}"] = values
@@ -94,7 +108,40 @@ def _coerce_signal(series: SignalSeries, target_length: int, window_seconds: flo
         window_seconds=window_seconds,
         target_length=target_length,
         mode=mode,
+        sample_times=_signal_sample_times(series, values.shape[0]),
     )
+
+
+def _signal_sample_times(series: SignalSeries, n_samples: int) -> np.ndarray | None:
+    """Time in seconds of each sample, from metadata when the producer knows it.
+
+    `metadata["time_seconds"]` gives explicit per-sample times (e.g. spectrogram frame centres);
+    `metadata["start_seconds"]` gives the time of sample 0 for an otherwise regular series.
+    Without either, sample k sits at k / sample_rate.
+    """
+    explicit = series.metadata.get("time_seconds") if series.metadata else None
+    if explicit is not None:
+        times = np.asarray(explicit, dtype=float)
+        if times.shape == (n_samples,):
+            return times
+    if series.sample_rate <= 0:
+        return None
+    start = float(series.metadata.get("start_seconds", 0.0)) if series.metadata else 0.0
+    return start + np.arange(n_samples, dtype=float) / float(series.sample_rate)
+
+
+def _should_skip_signal(
+    signal_name: str,
+    signal: SignalSeries,
+    *,
+    excluded_units: tuple[str, ...],
+    excluded_name_tokens: tuple[str, ...],
+) -> bool:
+    units = (signal.units or "").lower()
+    if units in excluded_units:
+        return True
+    lowered_name = signal_name.lower()
+    return any(token in lowered_name for token in excluded_name_tokens)
 
 
 def _coerce_feature(name: str, value, target_length: int) -> np.ndarray | None:
@@ -116,24 +163,42 @@ def _window_reduce_1d(
     window_seconds: float,
     target_length: int,
     mode: str,
+    sample_times: np.ndarray | None = None,
 ) -> np.ndarray | None:
+    """Reduce a track to rows of `window_seconds` by sample TIME, not by sample index.
+
+    Row i holds the samples whose time falls in [i * window_seconds, (i + 1) * window_seconds).
+    Index-based binning (round(rate * window) samples per row) drifted for spectrogram tracks whose
+    frame hop does not divide the row width, and ignored the frame-centre offset of the first frame.
+    Empty rows at the start or end of the night that lie within _EDGE_FILL_SECONDS of the track's first
+    or last sample take the nearest row's value (a long analysis window centres its first frame late).
+    """
     if target_length <= 0 or values.size == 0 or sample_rate <= 0 or window_seconds <= 0:
         return None
-    samples_per_window = max(int(round(sample_rate * window_seconds)), 1)
+    if sample_times is None:
+        sample_times = np.arange(values.size, dtype=float) / float(sample_rate)
+    # The small epsilon keeps exact multiples (k / fs == i * window) on row i despite float error.
+    rows = np.floor(np.asarray(sample_times, dtype=float) / float(window_seconds) + 1e-9).astype(np.int64)
+    in_range = (rows >= 0) & (rows < target_length)
+    finite = in_range & np.isfinite(values)
     out = np.full(target_length, np.nan, dtype=float)
-    for idx in range(target_length):
-        start = idx * samples_per_window
-        end = min(start + samples_per_window, values.size)
-        if end <= start:
-            break
-        chunk = values[start:end]
-        finite = chunk[np.isfinite(chunk)]
-        if finite.size == 0:
-            continue
-        if mode == "max":
-            out[idx] = float(np.max(finite))
-        else:
-            out[idx] = float(np.mean(finite))
+    if mode == "max":
+        if np.any(finite):
+            np.fmax.at(out, rows[finite], values[finite])
+        return out
+
+    sums = np.bincount(rows[finite], weights=values[finite], minlength=target_length)
+    counts = np.bincount(rows[finite], minlength=target_length)
+    np.divide(sums, counts, out=out, where=counts > 0)
+
+    covered = np.flatnonzero(np.bincount(rows[in_range], minlength=target_length) > 0)
+    if covered.size:
+        fill_rows = int(np.floor(_EDGE_FILL_SECONDS / float(window_seconds)))
+        first, last = int(covered[0]), int(covered[-1])
+        lead = np.arange(max(first - fill_rows, 0), first)
+        trail = np.arange(last + 1, min(last + 1 + fill_rows, target_length))
+        out[lead] = out[first]
+        out[trail] = out[last]
     return out
 
 

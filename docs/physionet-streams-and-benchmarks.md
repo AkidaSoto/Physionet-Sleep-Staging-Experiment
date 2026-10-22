@@ -118,6 +118,33 @@ Representative reported results:
 | MFCC-based staging method | 73.07% | 0.63 | not reported in snippet |
 | RAPIDEST snippet | ~82% | 0.764 | 74.79% |
 
+### Plain-language paper comparison
+
+This is the practical reading of the UCDDB sleep-staging papers, not just the headline score table.
+
+| Paper | Reported UCDDB score | What the model is | Complexity | Interpretability | Comparison note |
+| --- | --- | --- | --- | --- | --- |
+| Multi-Branch CNN + refinement | ACC 79.4%, macro-F1 78.8%, kappa 0.73 | Four-channel deep model with per-channel CNN branches, attention-based fusion, and a learned stage-refinement block | High | Low | Strongest clean staging benchmark in the tracked papers, but also the most black-box |
+| MFCC + CNN-LSTM | ACC 73.07%, kappa 0.63 | Hand-designed MFCC representation from EEG and EMG, then four conv layers, one LSTM layer, and a classifier using three epochs as input | Medium-high | Medium-low | Easier to compare with a feature pipeline than the end-to-end CNN paper, but still mainly a deep model |
+| RAPIDEST | About ACC 82%, macro-F1 74.79%, kappa 0.764 | EEG-only sleep-stage classifier whose transition patterns are turned into a rarity score for downstream apnea / OSA detection | Medium | Medium | Less apples-to-apples for pure sleep staging because the paper's main goal is apnea severity detection through staging dynamics |
+
+### How to read these papers against our project
+
+- As of **August 22, 2026**, the current internal best staging anchor is the 30-second ensemble plus learned Stage 2 smoother at **macro-F1 68.26%** and **kappa 0.580**, versus the strongest tracked paper anchor at **macro-F1 78.8%** and **kappa 0.73**.
+- The cleanest simpler internal anchor is the lighter `ctx5` learned smoother at **macro-F1 66.81%** and **kappa 0.563**.
+- The strongest connected neural alternative so far is the hierarchical epoch model at **macro-F1 67.14%** and **kappa 0.561**; it did not beat the feature-based smoother path.
+- The highest reported UCDDB staging scores still come from models that are more complex and less interpretable than our current feature-grounded work.
+- The Multi-Branch CNN paper is the strongest benchmark target for raw staging score, but it is a substantially more black-box architecture.
+- The MFCC paper is the easiest "middle ground" comparison because it still uses explicit signal transforms before deep learning.
+- RAPIDEST should be treated carefully in staging comparisons because it is not just a sleep-staging paper; it uses sleep-stage patterns to support apnea detection.
+- If our project goal is to demonstrate interpretable physiological modeling, the fair claim is not "beat every deep model on F1." The fair claim is "trade some top-end score for much smaller, clearer, and more explainable physiology-grounded models."
+
+### Validation caveat
+
+- The MFCC paper states a 70/20/10 train/validation/test split rather than strict subject-wise cross-validation.
+- RAPIDEST reports 25 leave-one-out runs on UCDDB for sleep-stage classification.
+- Published UCDDB scores are therefore not always under the same validation protocol, so direct score comparisons should always mention the split protocol.
+
 ### Practical staging target
 
 - respectable: **kappa >= 0.70**, **macro-F1 near 0.75**

@@ -23,14 +23,14 @@ APNEA_SIGNAL_SPECS = (
 
 APNEA_FEATURE_COLUMNS = (
     "respiration.respiration_rate_bpm",
-    "spo2_drop.spo2_drop3_mask",
-    "spo2_drop.spo2_drop4_mask",
+    "respiration.respiration_envelope",
+    "spo2_drop.spo2_value",
+    "spo2_drop.spo2_drop_amount_30s",
     "effort_snore_features.thoracic_effort_amplitude",
     "effort_snore_features.abdominal_effort_amplitude",
     "airflow_morphology.resp_band_relative_power",
     "paradoxical_breathing.thor_abd_corr",
-    "paradoxical_breathing.paradox_mask",
-    "apnea_events.apnea_event_vector",
+    "pan_tompkins.heart_rate_bpm_track",
 )
 
 STAGE_SIGNAL_SPECS = (

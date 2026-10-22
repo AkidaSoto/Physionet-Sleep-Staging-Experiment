@@ -1,4 +1,4 @@
-import type { StorySectionData } from "./story-types";
+import type { ChapterOverviewData, StorySectionData } from "./story-types";
 
 export const abstractPage = {
   title: "Abstract",
@@ -35,184 +35,126 @@ export const apneaPage = {
     "This branch should read like respiratory-event reasoning: signal trust, detector gates, and grouped evaluation tied back to the same overnight record."
 };
 
+export const apneaOverview: ChapterOverviewData = {
+  eyebrow: "Apnea intro",
+  title: "The overview strip is the apnea intro",
+  summary:
+    "Start on one real event strip. The clinical framing lives there: airflow is reduced by roughly 90% or more for at least 10 seconds, while effort and desaturation explain what kind of respiratory event this is.",
+  takeaway:
+    "The first read stays on the strip. Depth only begins after the user chooses airflow amplitude, SpO2 desaturation, or the thorax-abdomen effort pair."
+};
+
 export const apneaSections: StorySectionData[] = [
   {
-    id: "apnea-overview",
-    eyebrow: "1. Airflow reduction",
-    title: "Airflow reduction is the first read of the obstructive event",
+    id: "apnea-airflow",
+    eyebrow: "1. Airflow amplitude",
+    title: "Airflow amplitude carries the core apnea definition",
     summary:
-      "The chapter should begin on one real obstructive strip and make the airflow reduction legible before anything else is explained.",
+      "This branch should show the airflow drop directly: the amplitude falls by about 90% and stays down for at least 10 seconds.",
     takeaway:
-      "The airflow trace alone makes the event legible, before any detector logic gets involved.",
+      "Airflow is the first focused branch because it holds the actual apnea definition.",
     cards: [
       {
-        title: "Clinical definition",
+        title: "AASM threshold",
         body:
-          "An apnea is scored when airflow drops sharply and stays reduced — the window below shows exactly that pattern, sustained long enough to count as an event."
+          "Keep the focused view on the visible rule itself: airflow amplitude is reduced by about 90% or more and stays reduced for at least 10 seconds."
       },
       {
-        title: "Airflow amplitude",
+        title: "Feature extraction",
         body:
-          "The amplitude drop isn't a brief dip. The reduced breathing pattern holds for more than ten seconds."
-      },
-      {
-        title: "SpO2 drop",
-        body:
-          "Oxygen saturation follows with a short lag, dropping about 3% as the reduced airflow continues."
-      },
-      {
-        title: "Effort pair",
-        body:
-          "Thoracic and abdominal effort keep moving through the event — it's their relationship, not just the airflow drop, that turns this into an obstructive case."
+          "The deeper layer is the extraction logic behind that visible drop: local baseline, envelope, and derived airflow features rather than a separate classifier-first explanation."
       }
     ],
-    layout: "four",
+    layout: "two",
     modules: [
       {
-        id: "apnea-consensus-logic",
-        label: "Consensus logic",
-        title: "How the respiratory consensus is built",
+        id: "apnea-airflow-extraction",
+        label: "Feature extraction",
+        title: "The deeper layer should be airflow extraction, not a second intro",
         description:
-          "The detector filters candidate channels, finds phase extrema, computes per-channel rate tracks, and ranks channels by agreement with the median consensus.",
+          "Once the amplitude drop is visible, the next layer is how the detector extracts that evidence from the signal: local baseline, envelope, and derived airflow measures.",
         whyItMatters:
-          "This is the branch's first credibility check before any apnea or hypopnea decision is made.",
+          "That keeps the site grounded in the same evidence the user already saw instead of jumping sideways into unrelated detector machinery.",
         bullets: [
-          "Consensus peaks and troughs are promoted into the branch's main respiratory track.",
-          "The chosen channel is explicit in the algorithm outputs.",
-          "The same agreement logic can be shown visually in the prototype stage."
-        ]
-      },
-      {
-        id: "apnea-signal-trust",
-        label: "Signal trust",
-        title: "Why channel choice belongs in the story",
-        description:
-          "A respiratory event story is weaker if the site acts as if the input signal were obviously correct from the start.",
-        whyItMatters:
-          "Showing the trust decision helps the reviewer understand why later detector gates deserve confidence.",
-        bullets: [
-          "Different channels can disagree or degrade.",
-          "Consensus ranking keeps the branch physiology-first instead of channel-first.",
-          "This is a better prototype story than opening with a classifier score."
+          "Show the visible threshold first.",
+          "Then show how the signal gets reduced into derived airflow evidence.",
+          "Do not add a redundant event-overview branch above this."
         ]
       }
     ]
   },
   {
-    id: "apnea-signals",
-    eyebrow: "2. Obstructive pattern",
-    title: "Thoracic and abdominal effort turn the event into an obstruction case",
+    id: "apnea-spo2",
+    eyebrow: "2. SpO2 desaturation",
+    title: "SpO2 shows the downstream consequence of the event",
     summary:
-      "The second apnea view should center on the effort channels and the paradox signal so the obstruction pattern is visible without narration.",
+      "This branch should stay simple: reduced airflow is followed by oxygen desaturation, and the deeper layer is the scoring framing around 3% versus 4% drops.",
     takeaway:
-      "Effort behavior, not narration, is what marks this event as obstructive.",
+      "SpO2 is about consequence and scoring framing, not a separate trust story.",
     cards: [
       {
-        title: "Thoracic effort",
+        title: "Desaturation",
         body:
-          "Thoracic effort keeps moving through the reduced-airflow interval instead of pausing with it."
+          "The focused view should show the oxygen drop that follows the respiratory event, not another restatement of the airflow change."
       },
       {
-        title: "Abdominal effort",
+        title: "3% vs 4%",
         body:
-          "Abdominal effort moves against thoracic effort instead of with it — the two pull in opposite directions for the duration of the event."
-      },
-      {
-        title: "Paradox correlation",
-        body:
-          "The paradox signal quantifies that opposition directly: a negative correlation between the two effort channels while the event is active."
-      },
-      {
-        title: "Obstructive label",
-        body:
-          "The obstruction label marks exactly the window where thoracic and abdominal effort move out of phase."
+          "The deeper layer here is the scoring cutpoint: show how the same drop can be framed against 3% and 4% desaturation conventions."
       }
     ],
-    layout: "four",
+    layout: "two",
     modules: [
       {
-        id: "apnea-thresholds",
-        label: "Threshold logic",
-        title: "How apnea and hypopnea thresholds differ",
+        id: "apnea-spo2-thresholds",
+        label: "Desaturation framing",
+        title: "Keep the deeper step on 3% versus 4%",
         description:
-          "The code uses different peak-drop thresholds for apnea and hypopnea and then anchors the resulting masks back to physiologic structure.",
+          "The site should use the deeper step to explain how the visible drop reads under common desaturation cutpoints.",
         whyItMatters:
-          "The reviewer should be able to understand what the detector is asking the signal to prove.",
+          "That is clinically relevant depth. A data-quality side path is not the main story here.",
         bullets: [
-          "Apnea and hypopnea do not use the same drop rule.",
-          "Rolling baselines make the threshold a local physiologic comparison.",
-          "Event masks are anchored, cleaned, and re-tested before they become outputs."
-        ]
-      },
-      {
-        id: "apnea-spo2-gating",
-        label: "SpO2 gating",
-        title: "Why desaturation stays in the main story",
-        description:
-          "SpO2 is not decorative context in this pipeline. It contributes quality exclusion and event confirmation.",
-        whyItMatters:
-          "That makes the detector story more credible than a pure airflow threshold narrative.",
-        bullets: [
-          "Bad SpO2 periods are excluded.",
-          "3-point and 4-point drops are tracked explicitly.",
-          "Candidate events can be filtered by overlap with desaturation evidence."
+          "Lead with the visible drop.",
+          "Use the deeper step to compare 3% and 4% framing.",
+          "Do not turn this branch into an artifact-quality explanation."
         ]
       }
     ]
   },
   {
-    id: "apnea-features",
-    eyebrow: "3. Feature window",
-    title: "The same event, reduced to the features a detector actually uses",
+    id: "apnea-effort",
+    eyebrow: "3. Thorax + abdomen",
+    title: "The effort pair explains why the event reads as obstructive",
     summary:
-      "Once the strip is established, the third apnea view should expose the aligned feature window for that same time segment.",
+      "This branch should show that effort continues through the event and then deepen once into thorax-abdomen correlation or paradoxical motion.",
     takeaway:
-      "These features are computed from the exact window shown above, not a separate summary table.",
+      "Effort ends on correlation. Do not add a later prediction-confirmation step.",
     cards: [
       {
-        title: "Respiration rate",
+        title: "Effort persists",
         body:
-          "Respiration rate is derived from this same time window, so a slowdown lines up with the event you can already see."
+          "The focused view should keep thoracic and abdominal effort visible through the event so the user can see that breathing effort continues instead of stopping."
       },
       {
-        title: "Paradox mask",
+        title: "Correlation / paradox",
         body:
-          "The paradox mask is a binary trace of the same thoracoabdominal opposition seen in the effort channels."
-      },
-      {
-        title: "Event vector",
-        body:
-          "The event vector is what actually reaches the grouped feature table used for evaluation — everything above compresses down to this."
+          "The deeper step is the correlation view itself: thorax and abdomen move out of phase, which is the clean obstruction-specific ending for this branch."
       }
     ],
-    layout: "three",
+    layout: "two",
     modules: [
       {
-        id: "apnea-feature-table",
-        label: "Feature table",
-        title: "How detector outputs become comparable rows",
+        id: "apnea-effort-correlation",
+        label: "Correlation",
+        title: "Stop the branch at thorax-abdomen correlation",
         description:
-          "The feature-table compiler reduces detector outputs into aligned windows, using different aggregation rules for continuous and binary tracks.",
+          "Once the user sees preserved effort, the last meaningful step is the correlation or paradox view between the thoracic and abdominal channels.",
         whyItMatters:
-          "This is the bridge between record-level detector views and grouped experiments.",
+          "That is the obstruction-specific signal logic. A prediction-confirmation layer adds clutter instead of clarity.",
         bullets: [
-          "Detector signals become windowed columns.",
-          "Binary tracks are aggregated differently from continuous tracks.",
-          "The compiled rows are what the grouped experiments actually consume."
-        ]
-      },
-      {
-        id: "apnea-grouped-validation",
-        label: "Grouped validation",
-        title: "Why grouped subject-wise evaluation is visible here",
-        description:
-          "The repo already uses grouped split logic for downstream experiments, and the prototype should make that evaluation discipline part of the branch's visible payoff.",
-        whyItMatters:
-          "A technically strong reviewer will look for leakage-resistant evaluation immediately.",
-        bullets: [
-          "Show subject-aware splits, not random row mixing.",
-          "Keep F1, sensitivity, and specificity near the feature groups they summarize.",
-          "Use benchmark links as optional depth, not as the whole story."
+          "Show preserved effort first.",
+          "Then show the correlation or paradox signal.",
+          "Do not add a prediction-track ending after that."
         ]
       }
     ]
@@ -225,177 +167,152 @@ export const stagingPage = {
     "This branch should read like state reasoning: spectral structure, signal-family roles, and grouped class separation tied back to the same overnight record."
 };
 
+export const stagingOverview: ChapterOverviewData = {
+  eyebrow: "Night structure",
+  title: "The whole-night hypnogram comes first",
+  summary:
+    "Start with the night structure and let the user choose a real stage anchor. The branch should only deepen after a stage has been selected.",
+  takeaway:
+    "Do not force one generic EEG ladder. The first question is always why the chosen stage label makes sense."
+};
+
+const stagingStageBase: StorySectionData = {
+  id: "staging-stage",
+  eyebrow: "1. Stage view",
+  title: "Stage-specific signal view",
+  summary:
+    "A selected stage should open a real excerpt with only the depth that matches that stage.",
+  takeaway:
+    "The staging branch should deepen differently for Wake, N1, N2, N3, and REM.",
+  cards: [
+    {
+      title: "Stage evidence",
+      body: "Show the chosen stage excerpt first."
+    }
+  ],
+  layout: "two",
+  modules: []
+};
+
+const stagingStageByLabel: Record<string, Omit<StorySectionData, "id" | "layout">> = {
+  wake: {
+    eyebrow: "1. Wake",
+    title: "Wake should read like the baseline state",
+    summary:
+      "Wake is the comparison point for everything else: wake-like mixed activity and higher muscle tone before the branch moves deeper.",
+    takeaway:
+      "Wake works best as a clear baseline rather than an overbuilt depth tree.",
+    cards: [
+      {
+        title: "Wake physiology",
+        body:
+          "Keep the first read on wake-like activity and higher chin tone so the user understands what the other stages are diverging from."
+      },
+      {
+        title: "Tone baseline",
+        body:
+          "The deeper step can stay simple here: muscle tone remains higher than it will in deeper sleep or REM."
+      }
+    ],
+    modules: []
+  },
+  n1: {
+    eyebrow: "2. N1",
+    title: "N1 should read like transition into sleep",
+    summary:
+      "The N1 view should feel transitional rather than fully settled: early sleep onset, lighter state structure, and less stable wake-like patterning.",
+    takeaway:
+      "N1 does not need the same depth as N2 or N3. It just needs to read as transition.",
+    cards: [
+      {
+        title: "Sleep onset",
+        body:
+          "Keep the first read on the transition itself: the excerpt should feel less like wake and not yet fully organized like deeper sleep."
+      },
+      {
+        title: "Transition cues",
+        body:
+          "If the branch goes deeper here, keep it on simple transition cues rather than forcing a spindle or slow-wave explanation that belongs to other stages."
+      }
+    ],
+    modules: []
+  },
+  n2: {
+    eyebrow: "3. N2",
+    title: "N2 should deepen into spindle detail",
+    summary:
+      "The N2 excerpt should first make the stage feel defensible, then use spindle detail as the natural deeper layer.",
+    takeaway:
+      "N2 is where spindle detail belongs.",
+    cards: [
+      {
+        title: "Stage evidence",
+        body:
+          "Start with the excerpt itself and let the combination of EEG, EOG, and EMG make the stage label feel readable before adding feature detail."
+      },
+      {
+        title: "Spindle detail",
+        body:
+          "The deeper layer for N2 is spindle activity. Keep the detail attached to the chosen excerpt instead of turning it into a generic EEG explainer."
+      }
+    ],
+    modules: []
+  },
+  n3: {
+    eyebrow: "4. N3",
+    title: "N3 should deepen into slow-wave detail",
+    summary:
+      "The N3 excerpt should make deep sleep obvious first, then deepen into slow-wave detail rather than broad spectral narration.",
+    takeaway:
+      "N3 is where slow-wave detail belongs.",
+    cards: [
+      {
+        title: "Stage evidence",
+        body:
+          "Start with the deep-sleep excerpt itself so the user sees the dominant slow-wave structure before any derived feature explanation."
+      },
+      {
+        title: "Slow-wave detail",
+        body:
+          "The deeper layer for N3 is slow-wave detail tied directly to the selected excerpt."
+      }
+    ],
+    modules: []
+  },
+  rem: {
+    eyebrow: "5. REM",
+    title: "REM should deepen into eye-movement and tone detail",
+    summary:
+      "The REM excerpt should first show why the stage label makes sense, then deepen into the combined EOG and EMG story.",
+    takeaway:
+      "REM is the one stage where eye movement and muscle tone should carry the deeper read together.",
+    cards: [
+      {
+        title: "Stage evidence",
+        body:
+          "Start with the REM excerpt itself: the stage should read from the signal view before the branch opens the feature layer."
+      },
+      {
+        title: "EOG / EMG detail",
+        body:
+          "The deeper layer is the eye-movement and tone combination: rapid eye activity with reduced chin tone."
+      }
+    ],
+    modules: []
+  }
+};
+
+export function getStagingStageSection(stageLabel: string | null): StorySectionData {
+  const resolved = stageLabel ? stagingStageByLabel[stageLabel.toLowerCase()] : null;
+  return {
+    ...stagingStageBase,
+    ...(resolved ?? stagingStageByLabel.n2)
+  };
+}
+
 export const stagingSections: StorySectionData[] = [
   {
-    id: "staging-overview",
-    eyebrow: "1. Night structure",
-    title: "One full night, read as a structure rather than a sequence of guesses",
-    summary:
-      "The staging branch should open on the full night, not on an isolated excerpt. The first read is the structure of the night itself.",
-    takeaway:
-      "The hypnogram is the map; the stage entries below are fixed points into it.",
-    cards: [
-      {
-        title: "Wake entry",
-        body:
-          "Wake bookends the night and sets the EEG, EOG, and EMG baseline everything else is judged against."
-      },
-      {
-        title: "N2 / N3 entry",
-        body:
-          "N2/N3 marks the deep-sleep core of the night, not just its beginning and end."
-      },
-      {
-        title: "REM entry",
-        body:
-          "REM is where eye-movement and muscle-tone signals start to matter as much as EEG."
-      }
-    ],
-    layout: "three",
-    modules: [
-      {
-        id: "staging-spectral-logic",
-        label: "Spectral logic",
-        title: "Why the EEG view should include more than raw bands",
-        description:
-          "The code keeps both canonical band power and residual spectral structure so stage evidence does not collapse into one oversimplified chart.",
-        whyItMatters:
-          "This lets the prototype show real spectral reasoning instead of generic brain-wave decoration.",
-        bullets: [
-          "Band power is the base layer, not the whole story.",
-          "Residual power and aperiodic structure support a more honest spectral view.",
-          "Spindle and slow-wave indices should stay attached to that same scene."
-        ]
-      },
-      {
-        id: "staging-state-reading",
-        label: "State reading",
-        title: "Why stage evidence should appear before the classifier",
-        description:
-          "The prototype should help the reviewer see what differentiates state structure before it asks them to trust a classification summary.",
-        whyItMatters:
-          "That ordering matches both the branch logic and the repo's interpretability goal.",
-        bullets: [
-          "Lead with EEG structure.",
-          "Then add EOG and EMG support.",
-          "Only then move into grouped separation and confusion views."
-        ]
-      }
-    ]
-  },
-  {
-    id: "staging-signals",
-    eyebrow: "2. Stage excerpt",
-    title: "One excerpt, three channels, read together",
-    summary:
-      "The second staging view should stop at one fixed excerpt and let the three signal families carry the explanation.",
-    takeaway:
-      "EEG, EOG, and EMG each carry information the others don't.",
-    cards: [
-      {
-        title: "EEG",
-        body:
-          "EEG carries spectral structure, spindle content, slow-wave behavior, and short-window arousal signals."
-      },
-      {
-        title: "EOG",
-        body:
-          "EOG contributes both continuous eye-movement activity and epoch-level REM / SEM summaries."
-      },
-      {
-        title: "EMG",
-        body:
-          "EMG contributes tone level and suppression events, giving the branch a concrete muscle-tone view instead of a vague 'context' claim."
-      }
-    ],
-    layout: "three",
-    modules: [
-      {
-        id: "staging-eog-emg",
-        label: "EOG / EMG logic",
-        title: "What the non-EEG channels actually contribute",
-        description:
-          "The staging code does not treat EOG and EMG as side notes. It turns them into explicit tracks and events that can be shown directly in the prototype.",
-        whyItMatters:
-          "This is what keeps the branch from drifting into EEG-only staging language.",
-        bullets: [
-          "Eye-movement activity is continuous and local.",
-          "REM / SEM power is aggregated at epoch scale.",
-          "EMG suppression gives the branch an event-style muscle-tone signal."
-        ]
-      },
-      {
-        id: "staging-arousal",
-        label: "Arousal signal",
-        title: "Why short-window arousal belongs in the stage story",
-        description:
-          "The branch also computes an EEG arousal signal, giving the prototype a micro-state disturbance layer that can sit beside slower epoch-level stage summaries.",
-        whyItMatters:
-          "It helps the staging story feel like state physiology rather than just static label prediction.",
-        bullets: [
-          "Arousal is computed from short-window spectral power.",
-          "The resulting events can be shown directly on the focused scene.",
-          "That makes the stage branch feel more alive and less table-first."
-        ]
-      }
-    ]
-  },
-  {
-    id: "staging-features",
-    eyebrow: "3. Feature window",
-    title: "Feature windows, drawn from the same excerpt just shown",
-    summary:
-      "The third staging view should show the aligned feature window for the fixed excerpt so the frontend can bridge from raw signals into derived structure.",
-    takeaway:
-      "This feature window is the bridge from raw signals to the derived structure evaluation actually uses.",
-    cards: [
-      {
-        title: "Spindle index",
-        body:
-          "Spindle-related features are pulled from the same excerpt shown above."
-      },
-      {
-        title: "Slow-wave index",
-        body:
-          "Slow-wave features stay tied to this concrete excerpt rather than a detached summary chart."
-      },
-      {
-        title: "REM / tone features",
-        body:
-          "REM power and muscle-tone features round out the picture EEG alone can't provide."
-      }
-    ],
-    layout: "three",
-    modules: [
-      {
-        id: "staging-feature-screen",
-        label: "Feature screen",
-        title: "How the repo already screens stage features",
-        description:
-          "Per-feature Cohen's d and AUC-style separation are already available as diagnostics and should become first-class chart material in the prototype.",
-        whyItMatters:
-          "That keeps the branch from pretending all extracted features matter equally.",
-        bullets: [
-          "Show which features separate which classes.",
-          "Keep the ranking tied to actual harvested series.",
-          "Use popup depth for benchmark caveats, not for the core interpretation."
-        ]
-      },
-      {
-        id: "staging-grouped-eval",
-        label: "Grouped evaluation",
-        title: "Why grouped subject-wise staging results matter",
-        description:
-          "The experiment runner supports grouped splits and branch-specific summaries, so the prototype should visibly reward honest subject-aware evaluation.",
-        whyItMatters:
-          "A reviewer's trust goes up when grouped evaluation is part of the visible story rather than buried in a footer.",
-        bullets: [
-          "Keep grouped split logic visible.",
-          "Treat macro-F1 and kappa as consequence views, not starting points.",
-          "Use confusion and pairwise difficulty views to explain where the branch is strong or weak."
-        ]
-      }
-    ]
+    ...stagingStageBase
   }
 ];
 

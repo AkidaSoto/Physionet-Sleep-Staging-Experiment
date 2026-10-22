@@ -44,8 +44,14 @@ def run_ucddb_algorithms_recipe(
     *,
     root_dir: str | Path = "data/raw/ucddb",
     cache_dir: str | Path = "artifacts/ucddb_recipe_cache",
+    ecg_detector_backend: str = "wfdb_xqrs",
 ):
-    study = UCDDBApneaStudyDef(subjects=[record_id], root_dir=root_dir, cache_dir=cache_dir)
+    study = UCDDBApneaStudyDef(
+        subjects=[record_id],
+        root_dir=root_dir,
+        cache_dir=cache_dir,
+        ecg_detector_backend=ecg_detector_backend,
+    )
     built = study.run_build({"no_save": True, "force": True})
     if not built["cache"]:
         raise RuntimeError(f"Recipe runner did not complete subject '{record_id}'")
@@ -77,12 +83,20 @@ def run_ucddb_pipeline(
     diagnostics: list[BaseDiagnostic] | None = None,
     experiments: list[BaseExperiment] | None = None,
     engine: str = "recipe",
+    ecg_detector_backend: str = "wfdb_xqrs",
 ) -> DatasetRun:
     paths, record, labels = load_ucddb_inputs(record_id, root_dir=root_dir)
     if engine == "recipe" and pipeline is None:
-        results = run_ucddb_algorithms_recipe(record_id, root_dir=root_dir)
+        results = run_ucddb_algorithms_recipe(
+            record_id,
+            root_dir=root_dir,
+            ecg_detector_backend=ecg_detector_backend,
+        )
     else:
-        results = run_ucddb_algorithms(record, pipeline=pipeline)
+        results = run_ucddb_algorithms(
+            record,
+            pipeline=pipeline or build_apnea_pipeline(ecg_detector_backend=ecg_detector_backend),
+        )
     alignment = align_ucddb_labels_to_results(record, labels, results)
     dataset_run = DatasetRun(
         record=record,

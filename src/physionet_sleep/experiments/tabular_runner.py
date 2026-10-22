@@ -7,6 +7,8 @@ from typing import Any
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import BaggingClassifier
+from sklearn.ensemble import ExtraTreesClassifier
+from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
@@ -33,6 +35,16 @@ class TabularRunResult:
     fold_metrics: pd.DataFrame
     predictions: pd.DataFrame
     metadata: dict[str, Any]
+
+
+@dataclass(slots=True)
+class SubjectEvalSplit:
+    fold_index: int
+    train_idx: np.ndarray
+    test_idx: np.ndarray
+    validation_idx: np.ndarray | None
+    outer_validation: str
+    inner_validation: str
 
 
 def run_tabular_experiments(
@@ -229,6 +241,47 @@ def build_validation_splits(
         yield from splitter.split(np.zeros_like(y), y, groups)
 
 
+def build_subject_eval_splits(
+    *,
+    groups: np.ndarray,
+    y: np.ndarray,
+    outer_validation: str,
+    outer_folds: int,
+    random_state: int,
+    inner_validation: str = "none",
+):
+    outer_iter = list(
+        build_validation_splits(
+            groups=groups,
+            y=y,
+            folds=outer_folds,
+            validation=outer_validation,
+            random_state=random_state,
+        )
+    )
+    for fold_index, (dev_idx, test_idx) in enumerate(outer_iter, start=1):
+        train_idx = np.asarray(dev_idx, dtype=int)
+        test_idx = np.asarray(test_idx, dtype=int)
+        validation_idx: np.ndarray | None = None
+        if inner_validation == "single_subject":
+            train_idx, validation_idx = _split_single_validation_subject(
+                groups=groups,
+                candidate_idx=train_idx,
+                fold_index=fold_index,
+                random_state=random_state,
+            )
+        elif inner_validation != "none":
+            raise ValueError(f"Unsupported inner_validation: {inner_validation}")
+        yield SubjectEvalSplit(
+            fold_index=fold_index,
+            train_idx=train_idx,
+            test_idx=test_idx,
+            validation_idx=validation_idx,
+            outer_validation=outer_validation,
+            inner_validation=inner_validation,
+        )
+
+
 def build_model(
     *,
     model_family: str,
@@ -263,6 +316,36 @@ def build_model(
             n_estimators=200,
             random_state=random_state,
             n_jobs=1,
+        )
+    elif model_family == "random_forest":
+        estimator = RandomForestClassifier(
+            n_estimators=400,
+            min_samples_leaf=5,
+            random_state=random_state,
+            class_weight=class_weight,
+            n_jobs=1,
+        )
+    elif model_family == "extra_trees":
+        estimator = ExtraTreesClassifier(
+            n_estimators=400,
+            min_samples_leaf=5,
+            random_state=random_state,
+            class_weight=class_weight,
+            n_jobs=1,
+        )
+    elif model_family == "hgb":
+        # Library defaults; HistGradientBoosting handles NaN natively, so no imputer. class_weight="balanced"
+        # is applied as balanced sample weights inside fit, so callers keep calling .fit(X, y).
+        return Pipeline(
+            steps=[
+                (
+                    "model",
+                    HistGradientBoostingClassifier(
+                        random_state=random_state,
+                        class_weight="balanced" if class_weight is None else class_weight,
+                    ),
+                ),
+            ]
         )
     else:
         raise ValueError(f"Unsupported model family: {model_family}")
@@ -327,3 +410,22 @@ def _specificity(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     fp = int(np.sum((y_true == 0) & (y_pred == 1)))
     denom = tn + fp
     return float(tn / denom) if denom else float("nan")
+
+
+def _split_single_validation_subject(
+    *,
+    groups: np.ndarray,
+    candidate_idx: np.ndarray,
+    fold_index: int,
+    random_state: int,
+) -> tuple[np.ndarray, np.ndarray]:
+    candidate_groups = groups[candidate_idx].astype(str)
+    unique_groups = sorted(np.unique(candidate_groups).tolist())
+    if len(unique_groups) < 2:
+        raise ValueError("single_subject inner validation requires at least two candidate subjects")
+    offset = int((fold_index - 1 + random_state) % len(unique_groups))
+    validation_group = unique_groups[offset]
+    val_mask = candidate_groups == validation_group
+    validation_idx = candidate_idx[val_mask]
+    train_idx = candidate_idx[~val_mask]
+    return np.asarray(train_idx, dtype=int), np.asarray(validation_idx, dtype=int)

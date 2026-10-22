@@ -95,3 +95,57 @@ def _normalize_rows(values: np.ndarray) -> np.ndarray:
     row_sum = values.sum(axis=1, keepdims=True)
     row_sum[row_sum == 0] = 1.0
     return values / row_sum
+
+
+# ---------------------------------------------------------------- probabilistic HMM over stage-1 probabilities
+@dataclass(slots=True)
+class TransitionModel:
+    """Stage-to-stage transition matrix and initial distribution counted from labelled nights."""
+
+    trans: np.ndarray
+    initial: np.ndarray
+    n_states: int
+
+
+def learn_transition_matrix(label_nights: list[np.ndarray], n_states: int = 5, prior: float = 1.0) -> TransitionModel:
+    """Count epoch-to-epoch transitions in time-ordered label sequences, with a Laplace prior."""
+    trans = np.full((n_states, n_states), prior, dtype=float)
+    initial = np.full(n_states, prior, dtype=float)
+    for y in label_nights:
+        y = np.asarray(y, dtype=int)
+        if y.size == 0:
+            continue
+        initial[y[0]] += 1.0
+        np.add.at(trans, (y[:-1], y[1:]), 1.0)
+    return TransitionModel(trans=_normalize_rows(trans), initial=initial / initial.sum(), n_states=n_states)
+
+
+def posterior_decode(proba: np.ndarray, model: TransitionModel, eps: float = 1e-6) -> np.ndarray:
+    """Forward-backward state posteriors for one night, using class-balanced stage-1 probabilities as emissions."""
+    emis = np.asarray(proba, dtype=float) + eps
+    n_steps = len(emis)
+    if n_steps == 0:
+        return np.zeros((0, model.n_states))
+    alpha = np.zeros_like(emis)
+    beta = np.ones_like(emis)
+    scale = np.zeros(n_steps)
+    a = model.initial * emis[0]
+    scale[0] = a.sum()
+    alpha[0] = a / scale[0]
+    for t in range(1, n_steps):
+        a = (alpha[t - 1] @ model.trans) * emis[t]
+        scale[t] = a.sum()
+        alpha[t] = a / scale[t]
+    for t in range(n_steps - 2, -1, -1):
+        beta[t] = (model.trans @ (emis[t + 1] * beta[t + 1])) / scale[t + 1]
+    gamma = alpha * beta
+    return gamma / gamma.sum(axis=1, keepdims=True)
+
+
+def bout_lengths(y: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """(stage, length in epochs) of each run of identical labels."""
+    y = np.asarray(y)
+    if y.size == 0:
+        return np.asarray([], dtype=int), np.asarray([], dtype=int)
+    change = np.flatnonzero(np.r_[True, y[1:] != y[:-1]])
+    return y[change], np.diff(np.r_[change, y.size])

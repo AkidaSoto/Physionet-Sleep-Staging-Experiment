@@ -4,8 +4,23 @@ from physionet_sleep.experiments.sequence_data import (
     SequenceDataset,
     build_centered_sequence_dataset,
     build_flat_context_frame,
+    build_hierarchical_epoch_sequence_dataset,
     build_mean_context_frame,
     flatten_sequence_tensor,
+)
+from physionet_sleep.experiments.stage_expert_temporal import (
+    StageExpertSpec,
+    StageExpertTemporalRunResult,
+    StageExpertTemporalSpec,
+    build_default_stage_expert_specs,
+    run_stage_expert_temporal_experiment,
+)
+from physionet_sleep.experiments.stage_signal_expert_temporal import (
+    StageSignalExpertSpec,
+    StageSignalExpertTemporalRunResult,
+    StageSignalExpertTemporalSpec,
+    build_default_stage_signal_expert_specs,
+    run_stage_signal_expert_temporal_experiment,
 )
 from physionet_sleep.experiments.tabular_specs import (
     DEFAULT_NORM_CANDIDATES,
@@ -20,12 +35,23 @@ __all__ = [
     "SequenceDataset",
     "SequenceExperimentSpec",
     "SequenceRunResult",
+    "StageExpertSpec",
+    "StageExpertTemporalRunResult",
+    "StageExpertTemporalSpec",
+    "StageSignalExpertSpec",
+    "StageSignalExpertTemporalRunResult",
+    "StageSignalExpertTemporalSpec",
     "TabularExperimentSpec",
     "build_default_experiment_specs",
+    "build_default_stage_expert_specs",
+    "build_default_stage_signal_expert_specs",
     "build_centered_sequence_dataset",
     "build_flat_context_frame",
+    "build_hierarchical_epoch_sequence_dataset",
     "build_mean_context_frame",
     "flatten_sequence_tensor",
+    "run_stage_expert_temporal_experiment",
+    "run_stage_signal_expert_temporal_experiment",
     "run_sequence_cnn_experiment",
 ]
 

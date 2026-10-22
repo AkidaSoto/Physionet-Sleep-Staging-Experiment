@@ -8,14 +8,20 @@ from physionet_sleep.core.types import Event, LabelTrack, RecordLabels
 from physionet_sleep.io.ucddb import UCDDBRecordPaths
 
 
+# PhysioNet UCDDB stage codes: 0 Wake, 1 REM, 2 S1, 3 S2, 4 S3, 5 S4,
+# 6 artifact, 7 indeterminate. R&K S3 and S4 are merged into AASM N3.
 UCDDB_STAGE_CLASS_MAP = {
     0: "wake",
-    1: "n1",
-    2: "n2",
-    3: "n3",
+    1: "rem",
+    2: "n1",
+    3: "n2",
     4: "n3",
-    5: "rem",
+    5: "n3",
 }
+
+# Collapsed integer codes used by downstream tracks and feature tables.
+COLLAPSED_STAGE_CLASS_MAP = {0: "wake", 1: "n1", 2: "n2", 3: "n3", 4: "rem"}
+_RAW_TO_COLLAPSED = {0: 0, 1: 4, 2: 1, 3: 2, 4: 3, 5: 3}
 
 RESP_EVENT_LABELS = {
     "HYP-C": "hypopnea_central",
@@ -46,7 +52,7 @@ def load_ucddb_labels(paths: UCDDBRecordPaths) -> RecordLabels:
         labels.tracks["stage_seconds_collapsed"] = LabelTrack(
             values=second_collapsed,
             step_seconds=1.0,
-            class_map={0: "wake", 1: "n1", 2: "n2", 3: "n3", 4: "rem"},
+            class_map=COLLAPSED_STAGE_CLASS_MAP,
             metadata={"representation": "collapsed_second_codes"},
         )
         labels.metadata["stage_labels"] = collapsed.tolist()
@@ -117,10 +123,4 @@ def _is_numeric_token(value: str) -> bool:
 
 
 def _collapse_stage_code(code: int) -> int:
-    if code in (0, 1, 2):
-        return code
-    if code in (3, 4):
-        return 3
-    if code == 5:
-        return 4
-    return -1
+    return _RAW_TO_COLLAPSED.get(int(code), -1)

@@ -4,7 +4,9 @@ from typing import Mapping
 
 import numpy as np
 from scipy.interpolate import interp1d
-from scipy.signal import find_peaks, hilbert, peak_widths
+from scipy.signal import find_peaks, hilbert, peak_prominences, peak_widths
+import pandas as pd
+from scipy.signal import butter, coherence, sosfiltfilt, welch
 
 from physionet_sleep.core.base import BaseAlgorithm
 from physionet_sleep.core.types import AlgorithmResult, Event, SignalRecord, SignalSeries
@@ -143,8 +145,6 @@ class RespirationDetector(BaseAlgorithm):
                 "respiration_filtered": SignalSeries(filtered_signals[selected_key], sample_rate=selected_fs),
                 "respiration_phase_cos": SignalSeries(phase_signals[selected_key], sample_rate=selected_fs),
                 "respiration_envelope": SignalSeries(envelopes[selected_key], sample_rate=selected_fs),
-                "respiration_rate_peak_bpm": SignalSeries(rr_peak_full, sample_rate=selected_fs, units="bpm"),
-                "respiration_rate_trough_bpm": SignalSeries(rr_trough_full, sample_rate=selected_fs, units="bpm"),
                 "respiration_rate_bpm": SignalSeries(rr_consensus, sample_rate=selected_fs, units="bpm"),
             },
             events={"breaths": breath_events, "troughs": trough_events},
@@ -166,13 +166,11 @@ class RespirationDetector(BaseAlgorithm):
 
 def _find_phase_extrema(phase_cos: np.ndarray, *, positive: bool) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     work = phase_cos if positive else -phase_cos
-    idx, props = find_peaks(work)
+    idx, _ = find_peaks(work)
     if idx.size == 0:
         return np.array([], dtype=int), np.array([], dtype=float), np.array([], dtype=float)
     widths = peak_widths(work, idx, rel_height=0.5)[0]
-    prominences = props.get("prominences")
-    if prominences is None:
-        prominences = peak_widths(work, idx, rel_height=1.0)[1]
+    prominences = peak_prominences(work, idx)[0]
     return idx.astype(int), widths.astype(float), np.asarray(prominences, dtype=float)
 
 
@@ -305,3 +303,232 @@ def _nanmean_or_nan(values: np.ndarray) -> float:
     if finite.size == 0:
         return float("nan")
     return float(np.mean(finite))
+
+
+# --- Breathing regularity and cardiorespiratory coupling --------------------------------------------------------------
+# Exploration and evidence: artifacts/exploration/hrv-features/FINDINGS.md. Tracks are sampled on a 1-s grid; the value at
+# sample k describes the window centred on t = (k + 0.5) * step_seconds.
+
+
+class BreathRegularityFeatureGenerator(BaseAlgorithm):
+    """Breath-to-breath interval and amplitude variability (coefficient of variation over 60 s) from RIP effort."""
+
+    def __init__(self, *, signal_key: str = "effort_sum", step_seconds: float = 1.0, window_seconds: float = 60.0) -> None:
+        super().__init__(name="breath_regularity", references=("artifacts/exploration/hrv-features/FINDINGS.md",))
+        self.signal_key = signal_key
+        self.step_seconds = float(step_seconds)
+        self.window_seconds = float(window_seconds)
+
+    def required_signals(self) -> tuple[str, ...]:
+        return (self.signal_key,)
+
+    def _run(
+        self,
+        record: SignalRecord,
+        *,
+        prior: Mapping[str, AlgorithmResult],
+    ) -> AlgorithmResult:
+        series = record.get(self.signal_key)
+        signal = np.asarray(series.values, dtype=float).squeeze()
+        fs = float(series.sample_rate)
+        times, amplitudes = detect_breaths(signal, fs)
+        duration = signal.size / fs if fs > 0 else 0.0
+        n_out = max(int(np.ceil(duration / self.step_seconds)), 0)
+        centres = (np.arange(n_out) + 0.5) * self.step_seconds
+        half = self.window_seconds / 2.0
+        intervals = np.diff(times)
+        interval_cv = windowed_cv(times[1:], intervals, centres, half)
+        amp_cv = windowed_cv(times, amplitudes, centres, half)
+        rate = 1.0 / self.step_seconds
+        return AlgorithmResult(
+            name=self.name,
+            signals={
+                "breath_interval_cv_60s": SignalSeries(interval_cv, sample_rate=rate, units="cv"),
+                "breath_amp_cv_60s": SignalSeries(amp_cv, sample_rate=rate, units="cv"),
+            },
+            features={
+                "input_signal_key": self.signal_key,
+                "breath_times_sec": times,
+                "breath_amplitudes": amplitudes,
+                "breath_count": int(times.size),
+            },
+            metadata={
+                "status": "breath_regularity_v1",
+                "step_seconds": self.step_seconds,
+                "track_time_reference": "window centre = (sample + 0.5) * step_seconds",
+            },
+        )
+
+
+class CardioRespiratoryCouplingGenerator(BaseAlgorithm):
+    """Magnitude-squared coherence between the clean NN series and RIP effort at the breathing frequency (120 s).
+
+    Needs a prior ``HRVFeatureGenerator`` result (``nn_times_sec``, ``nn_ms``, ``nn_clean``) and the RIP effort channel.
+    """
+
+    def __init__(
+        self,
+        *,
+        signal_key: str = "effort_sum",
+        nn_source: str = "hrv_features",
+        step_seconds: float = 1.0,
+        window_seconds: float = 120.0,
+        min_clean_fraction: float = 0.8,
+    ) -> None:
+        super().__init__(name="cardiorespiratory_coupling", references=("artifacts/exploration/hrv-features/FINDINGS.md",))
+        self.signal_key = signal_key
+        self.nn_source = nn_source
+        self.step_seconds = float(step_seconds)
+        self.window_seconds = float(window_seconds)
+        self.min_clean_fraction = float(min_clean_fraction)
+
+    def required_signals(self) -> tuple[str, ...]:
+        return (self.signal_key,)
+
+    def _run(
+        self,
+        record: SignalRecord,
+        *,
+        prior: Mapping[str, AlgorithmResult],
+    ) -> AlgorithmResult:
+        if self.nn_source not in prior:
+            raise ValueError(f"{self.name} requires a prior '{self.nn_source}' result with NN intervals")
+        nn = prior[self.nn_source].features
+        series = record.get(self.signal_key)
+        signal = np.asarray(series.values, dtype=float).squeeze()
+        fs = float(series.sample_rate)
+        duration = signal.size / fs if fs > 0 else 0.0
+        coherence_track = hr_resp_coherence_track(
+            np.asarray(nn["nn_times_sec"], dtype=float),
+            np.asarray(nn["nn_ms"], dtype=float),
+            np.asarray(nn["nn_clean"], dtype=bool),
+            signal,
+            fs,
+            duration_seconds=duration,
+            step_seconds=self.step_seconds,
+            window_seconds=self.window_seconds,
+            min_clean_fraction=self.min_clean_fraction,
+        )
+        return AlgorithmResult(
+            name=self.name,
+            signals={"hr_resp_coherence_120s": SignalSeries(coherence_track, sample_rate=1.0 / self.step_seconds, units="coherence")},
+            features={"input_signal_key": self.signal_key, "nn_source": self.nn_source},
+            metadata={
+                "status": "cardiorespiratory_coupling_v1",
+                "step_seconds": self.step_seconds,
+                "track_time_reference": "window centre = (sample + 0.5) * step_seconds",
+            },
+        )
+
+
+BREATH_BAND_HZ = (0.1, 0.7)
+COUPLING_GRID_HZ = 4.0
+
+
+def detect_breaths(
+    signal: np.ndarray,
+    fs: float,
+    *,
+    band: tuple[float, float] = BREATH_BAND_HZ,
+    min_interval_seconds: float = 1.5,
+    rel_prominence: float = 0.3,
+    robust_window_seconds: float = 300.0,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Inspiratory peaks of the band-passed effort signal: times (s) and prominences.
+
+    A peak is kept when its prominence is >= ``rel_prominence`` x the local robust SD (1.4826 x rolling median absolute
+    deviation over ``robust_window_seconds``), which ignores small cardiac and noise ripples.
+    """
+    x = np.asarray(signal, dtype=float).squeeze()
+    if x.size < int(10 * fs) or fs <= 0:
+        return np.array([], dtype=float), np.array([], dtype=float)
+    y = _bandpass_sos(x - np.nanmean(x), fs, band)
+    peaks, props = find_peaks(y, distance=max(int(min_interval_seconds * fs), 1), prominence=1e-12)
+    if peaks.size == 0:
+        return np.array([], dtype=float), np.array([], dtype=float)
+    win = max(int(robust_window_seconds * fs), 3)
+    min_periods = max(int(win / 5), 1)
+    centred = pd.Series(y).rolling(win, center=True, min_periods=min_periods).median().to_numpy()
+    mad = pd.Series(np.abs(y - centred)).rolling(win, center=True, min_periods=min_periods).median().to_numpy()
+    robust_sd = 1.4826 * mad
+    keep = props["prominences"] >= rel_prominence * robust_sd[peaks]
+    return peaks[keep] / fs, props["prominences"][keep].astype(float)
+
+
+def windowed_cv(times: np.ndarray, values: np.ndarray, centres: np.ndarray, half_width: float, *, min_count: int = 5) -> np.ndarray:
+    """Coefficient of variation (SD / mean, ddof=1) of ``values`` whose ``times`` fall in [centre - half, centre + half)."""
+    times = np.asarray(times, dtype=float)
+    values = np.asarray(values, dtype=float)
+    out = np.full(centres.size, np.nan)
+    if times.size < min_count:
+        return out
+    lo = np.searchsorted(times, centres - half_width)
+    hi = np.searchsorted(times, centres + half_width)
+    c1 = np.concatenate(([0.0], np.cumsum(values)))
+    c2 = np.concatenate(([0.0], np.cumsum(values**2)))
+    n = hi - lo
+    mean = (c1[hi] - c1[lo]) / np.maximum(n, 1)
+    var = ((c2[hi] - c2[lo]) - n * mean**2) / np.maximum(n - 1, 1)
+    valid = (n >= min_count) & (mean > 0)
+    out[valid] = np.sqrt(np.maximum(var[valid], 0.0)) / mean[valid]
+    return out
+
+
+def hr_resp_coherence_track(
+    nn_times_sec: np.ndarray,
+    nn_ms: np.ndarray,
+    nn_clean: np.ndarray,
+    effort: np.ndarray,
+    effort_fs: float,
+    *,
+    duration_seconds: float,
+    step_seconds: float = 1.0,
+    window_seconds: float = 120.0,
+    min_clean_fraction: float = 0.8,
+) -> np.ndarray:
+    """Coherence of NN and effort at the dominant breathing frequency (0.1-0.5 Hz), mean of the 3 nearest bins.
+
+    Both signals are put on a 4-Hz grid; each window is split into 32-s half-overlapping Welch segments.
+    """
+    g_hz = COUPLING_GRID_HZ
+    n_out = max(int(np.ceil(duration_seconds / step_seconds)), 0)
+    out = np.full(n_out, np.nan)
+    ok = np.asarray(nn_clean, dtype=bool)
+    if ok.sum() < 10 or n_out == 0 or effort_fs <= 0:
+        return out
+    grid = np.arange(0.0, duration_seconds, 1.0 / g_hz)
+    nn_grid = np.interp(grid, nn_times_sec[ok], nn_ms[ok])
+    resp = _bandpass_sos(np.asarray(effort, dtype=float) - np.nanmean(effort), effort_fs, BREATH_BAND_HZ)
+    resp_grid = np.interp(grid, np.arange(resp.size) / effort_fs, resp)
+    ok_cum = np.concatenate(([0], np.cumsum(ok)))
+    half = window_seconds / 2.0
+    nper = int(32 * g_hz)
+    centres = (np.arange(n_out) + 0.5) * step_seconds
+    lo = np.searchsorted(nn_times_sec, centres - half)
+    hi = np.searchsorted(nn_times_sec, centres + half)
+    min_beats = 0.5 * window_seconds  # >= 30 bpm on average
+    for k, c in enumerate(centres):
+        n = hi[k] - lo[k]
+        if n < min_beats or (ok_cum[hi[k]] - ok_cum[lo[k]]) / n < min_clean_fraction:
+            continue
+        g0, g1 = int(round((c - half) * g_hz)), int(round((c + half) * g_hz))
+        if g0 < 0 or g1 > grid.size:
+            continue
+        x = np.arange(g1 - g0)
+        n_seg = nn_grid[g0:g1] - np.polyval(np.polyfit(x, nn_grid[g0:g1], 1), x)
+        r_seg = resp_grid[g0:g1]
+        f, pr = welch(r_seg, fs=g_hz, nperseg=nper, noverlap=nper // 2)
+        band = (f >= 0.1) & (f <= 0.5)
+        if pr[band].sum() <= 0:
+            continue
+        f_resp = f[band][np.argmax(pr[band])]
+        fc, coh = coherence(n_seg, r_seg, fs=g_hz, nperseg=nper, noverlap=nper // 2)
+        j = int(np.argmin(np.abs(fc - f_resp)))
+        out[k] = float(np.mean(coh[max(j - 1, 0) : j + 2]))
+    return out
+
+
+def _bandpass_sos(x: np.ndarray, fs: float, band: tuple[float, float]) -> np.ndarray:
+    high = min(band[1], 0.45 * fs)
+    sos = butter(2, [band[0], high], btype="bandpass", fs=fs, output="sos")
+    return sosfiltfilt(sos, x)

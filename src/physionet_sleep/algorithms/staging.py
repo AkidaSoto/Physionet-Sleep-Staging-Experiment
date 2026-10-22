@@ -4,7 +4,7 @@ from typing import Mapping
 
 import numpy as np
 from scipy.ndimage import binary_closing
-from scipy.signal import hilbert, spectrogram
+from scipy.signal import hilbert, spectrogram, welch
 
 from physionet_sleep.core.base import BaseAlgorithm
 from physionet_sleep.core.types import AlgorithmResult, Event, SignalRecord, SignalSeries
@@ -64,19 +64,26 @@ class SpindleFeatureGenerator(BaseAlgorithm):
         sigma_beta_residual_diff = np.nansum(residual[:, 3, :] - residual[:, 4, :], axis=1)
         splindex = sigma_beta_ratio * sigma_beta_residual_diff
         out_fs = _time_series_rate(time_sec_ref)
+        # Sample k is the spectrogram frame centred at time_sec_ref[0] + k / out_fs (feature_table bins by time).
+        start_seconds = float(time_sec_ref[0])
 
         signals = {
-            "splindex": SignalSeries(splindex, sample_rate=out_fs),
-            "sigma_beta_ratio": SignalSeries(sigma_beta_ratio, sample_rate=out_fs),
-            "sigma_beta_residual_diff": SignalSeries(sigma_beta_residual_diff, sample_rate=out_fs),
-            "aperiodic_exponent": SignalSeries(exponent, sample_rate=out_fs),
-            "aperiodic_intercept": SignalSeries(intercept, sample_rate=out_fs),
+            "splindex": SignalSeries(splindex, sample_rate=out_fs, metadata={"start_seconds": start_seconds}),
+            "sigma_beta_ratio": SignalSeries(sigma_beta_ratio, sample_rate=out_fs, metadata={"start_seconds": start_seconds}),
+            "sigma_beta_residual_diff": SignalSeries(
+                sigma_beta_residual_diff, sample_rate=out_fs, metadata={"start_seconds": start_seconds}
+            ),
+            "aperiodic_exponent": SignalSeries(exponent, sample_rate=out_fs, metadata={"start_seconds": start_seconds}),
+            "aperiodic_intercept": SignalSeries(intercept, sample_rate=out_fs, metadata={"start_seconds": start_seconds}),
         }
         for i, band_name in enumerate(band_names):
-            signals[f"{band_name}_power"] = SignalSeries(np.nanmean(power[:, i, :], axis=1), sample_rate=out_fs)
+            signals[f"{band_name}_power"] = SignalSeries(
+                np.nanmean(power[:, i, :], axis=1), sample_rate=out_fs, metadata={"start_seconds": start_seconds}
+            )
             signals[f"{band_name}_residual_power"] = SignalSeries(
                 np.nanmean(residual[:, i, :], axis=1),
                 sample_rate=out_fs,
+                metadata={"start_seconds": start_seconds},
             )
 
         return AlgorithmResult(
@@ -208,8 +215,15 @@ class EEGArousalFeatureGenerator(BaseAlgorithm):
         return AlgorithmResult(
             name=self.name,
             signals={
-                "eeg_arousal_signal": SignalSeries(eeg_signal, sample_rate=out_fs),
-                "eeg_arousal_mask": SignalSeries(arousal_mask.astype(float), sample_rate=out_fs, units="binary"),
+                "eeg_arousal_signal": SignalSeries(
+                    eeg_signal, sample_rate=out_fs, metadata={"start_seconds": float(time_sec_ref[0])}
+                ),
+                "eeg_arousal_mask": SignalSeries(
+                    arousal_mask.astype(float),
+                    sample_rate=out_fs,
+                    units="binary",
+                    metadata={"start_seconds": float(time_sec_ref[0])},
+                ),
             },
             events={"eeg_arousal": events},
             features={
@@ -342,6 +356,10 @@ class EOGRemFeatureGenerator(BaseAlgorithm):
         noise_fast = _safe_log10(_band_mean(ps, freqs, 5.0, 30.0))
         fast_fs = _time_series_rate(time_sec)
         bins_per_epoch = max(int(round(30.0 * fast_fs)), 1)
+        fast_meta = {"start_seconds": float(time_sec[0])}
+        # Block k averages frames [k*b, (k+1)*b); stamp it at the centre of its frames, on the true block rate.
+        epoch_fs = fast_fs / bins_per_epoch
+        epoch_meta = {"start_seconds": float(time_sec[0]) + 0.5 * (bins_per_epoch - 1) / fast_fs}
 
         rem_epoch = _aggregate_blocks(rem_fast, bins_per_epoch, agg="mean")
         rem_var_epoch = _aggregate_blocks(rem_fast, bins_per_epoch, agg="var")
@@ -351,13 +369,13 @@ class EOGRemFeatureGenerator(BaseAlgorithm):
         return AlgorithmResult(
             name=self.name,
             signals={
-                "rem_band_power_fast": SignalSeries(rem_fast, sample_rate=fast_fs),
-                "sem_band_power_fast": SignalSeries(sem_fast, sample_rate=fast_fs),
-                "noise_band_power_fast": SignalSeries(noise_fast, sample_rate=fast_fs),
-                "rem_power_epoch": SignalSeries(rem_epoch, sample_rate=1.0 / 30.0),
-                "rem_variance_epoch": SignalSeries(rem_var_epoch, sample_rate=1.0 / 30.0),
-                "sem_power_epoch": SignalSeries(sem_epoch, sample_rate=1.0 / 30.0),
-                "noise_power_epoch": SignalSeries(noise_epoch, sample_rate=1.0 / 30.0),
+                "rem_band_power_fast": SignalSeries(rem_fast, sample_rate=fast_fs, metadata=dict(fast_meta)),
+                "sem_band_power_fast": SignalSeries(sem_fast, sample_rate=fast_fs, metadata=dict(fast_meta)),
+                "noise_band_power_fast": SignalSeries(noise_fast, sample_rate=fast_fs, metadata=dict(fast_meta)),
+                "rem_power_epoch": SignalSeries(rem_epoch, sample_rate=epoch_fs, metadata=dict(epoch_meta)),
+                "rem_variance_epoch": SignalSeries(rem_var_epoch, sample_rate=epoch_fs, metadata=dict(epoch_meta)),
+                "sem_power_epoch": SignalSeries(sem_epoch, sample_rate=epoch_fs, metadata=dict(epoch_meta)),
+                "noise_power_epoch": SignalSeries(noise_epoch, sample_rate=epoch_fs, metadata=dict(epoch_meta)),
             },
             features={
                 "signal_key": self.signal_key,
@@ -367,6 +385,171 @@ class EOGRemFeatureGenerator(BaseAlgorithm):
             },
             metadata={"status": "ported_feature_extraction"},
         )
+
+
+class EpochRatioFeatureGenerator(BaseAlgorithm):
+    """Gain-free ratio features computed on the 30-s scoring-epoch grid (exploration set R5).
+
+    Epoch k covers [k * epoch_seconds, (k + 1) * epoch_seconds) from the start of the record. Each epoch value is
+    emitted on a row grid of row_seconds (sample k * epochs_per_row ... is the row starting at k * row_seconds), so
+    the 6-s feature table picks it up without drift and a 30-s median recovers the epoch value exactly. Incomplete
+    trailing epochs are NaN.
+
+    EEG (mean over channels of per-channel ratios; Welch, 4-s Hann segments, half-open bands):
+      rel_theta/alpha/sigma/beta = band power / 1-30 Hz power (4-8, 8-11, 11-16, 16-30 Hz)
+      spindle_rel = sigma / (theta + beta)
+      muscle_frac_db = 10 log10(P[30-47 Hz] / P[1-30 Hz])  (47 Hz upper edge avoids 50 Hz mains)
+    EOG (single 30-s STFT frame per epoch of the eog channel, mean spectral magnitude per band, as EOGRemFeatureGenerator):
+      eog_rem_vs_noise_db = 10 log10(mean|X| 0.5-5 Hz) - 10 log10(mean|X| 5-30 Hz)
+      eog_rem_vs_sem_db   = 10 log10(mean|X| 0.5-5 Hz) - 10 log10(mean|X| 0.1-0.5 Hz)
+    EMG (tone and baseline exactly as EMGToneFeatureGenerator; epoch value = median of the row means):
+      emg_floor_db / emg_baseline_floor_db = 10 log10(epoch value / 5th percentile of all epoch values in the record)
+    """
+
+    BANDS = {"theta": (4.0, 8.0), "alpha": (8.0, 11.0), "sigma": (11.0, 16.0), "beta": (16.0, 30.0)}
+
+    def __init__(
+        self,
+        *,
+        eeg_key: str = "eeg",
+        eog_key: str = "eog",
+        emg_key: str = "emg",
+        epoch_seconds: float = 30.0,
+        row_seconds: float = 6.0,
+        floor_percentile: float = 5.0,
+    ) -> None:
+        super().__init__(name="epoch_ratio_features")
+        self.eeg_key = eeg_key
+        self.eog_key = eog_key
+        self.emg_key = emg_key
+        self.epoch_seconds = float(epoch_seconds)
+        self.row_seconds = float(row_seconds)
+        self.floor_percentile = float(floor_percentile)
+        rows = self.epoch_seconds / self.row_seconds
+        if abs(rows - round(rows)) > 1e-9:
+            raise ValueError("epoch_seconds must be an integer multiple of row_seconds")
+        self.rows_per_epoch = int(round(rows))
+
+    def required_signals(self) -> tuple[str, ...]:
+        return (self.eeg_key, self.eog_key, self.emg_key)
+
+    def _run(
+        self,
+        record: SignalRecord,
+        *,
+        prior: Mapping[str, AlgorithmResult],
+    ) -> AlgorithmResult:
+        eeg_series, eog_series, emg_series = record.require(self.eeg_key, self.eog_key, self.emg_key)
+        n_epochs = int(
+            np.ceil(max(s.duration_seconds for s in (eeg_series, eog_series, emg_series)) / self.epoch_seconds)
+        )
+        epoch_values = {
+            **self._eeg_ratios(_as_2d_signal(eeg_series.values), float(eeg_series.sample_rate), n_epochs),
+            **self._eog_ratios(np.asarray(eog_series.values, dtype=float).squeeze(), float(eog_series.sample_rate), n_epochs),
+            **self._emg_floor(np.asarray(emg_series.values, dtype=float).squeeze(), float(emg_series.sample_rate), n_epochs),
+        }
+        row_fs = 1.0 / self.row_seconds
+        units = {"muscle_frac_db": "dB", "eog_rem_vs_noise_db": "dB", "eog_rem_vs_sem_db": "dB",
+                 "emg_floor_db": "dB", "emg_baseline_floor_db": "dB"}
+        time_reference = {"start_seconds": 0.0,
+                          "time_reference": "sample i starts at i * row_seconds; value of the epoch containing it",
+                          "epoch_seconds": self.epoch_seconds, "row_seconds": self.row_seconds}
+        signals = {
+            name: SignalSeries(
+                np.repeat(values, self.rows_per_epoch),
+                sample_rate=row_fs,
+                units=units.get(name, "ratio"),
+                metadata=dict(time_reference),
+            )
+            for name, values in epoch_values.items()
+        }
+        return AlgorithmResult(
+            name=self.name,
+            signals=signals,
+            features={
+                "epoch_seconds": self.epoch_seconds,
+                "row_seconds": self.row_seconds,
+                "num_epochs": n_epochs,
+                "floor_percentile": self.floor_percentile,
+            },
+            metadata={"status": "epoch_grid_ratio_features", "recommended_norm": "none"},
+        )
+
+    def _epoch_segment(self, values: np.ndarray, fs: float, k: int) -> np.ndarray | None:
+        start = int(round(k * self.epoch_seconds * fs))
+        n = int(round(self.epoch_seconds * fs))
+        seg = values[start:start + n]
+        return seg if seg.shape[0] == n else None
+
+    def _eeg_ratios(self, eeg: np.ndarray, fs: float, n_epochs: int) -> dict[str, np.ndarray]:
+        names = [f"rel_{b}" for b in self.BANDS] + ["spindle_rel", "muscle_frac_db"]
+        out = {name: np.full(n_epochs, np.nan) for name in names}
+        nperseg = int(round(4.0 * fs))
+        for k in range(n_epochs):
+            seg_all = self._epoch_segment(eeg, fs, k)
+            if seg_all is None:
+                continue
+            per_channel = []
+            for ch in range(seg_all.shape[1]):
+                seg = seg_all[:, ch]
+                if not np.all(np.isfinite(seg)) or np.std(seg) == 0:
+                    continue
+                freqs, psd = welch(seg, fs=fs, nperseg=min(nperseg, seg.size))
+                total = _half_open_band_sum(psd, freqs, 1.0, 30.0)
+                if total <= 0:
+                    continue
+                band = {b: _half_open_band_sum(psd, freqs, lo, hi) for b, (lo, hi) in self.BANDS.items()}
+                values = {f"rel_{b}": band[b] / total for b in self.BANDS}
+                flank = band["theta"] + band["beta"]
+                values["spindle_rel"] = band["sigma"] / flank if flank > 0 else np.nan
+                muscle = _half_open_band_sum(psd, freqs, 30.0, 47.0)
+                values["muscle_frac_db"] = 10.0 * np.log10(muscle / total) if muscle > 0 else np.nan
+                per_channel.append(values)
+            if per_channel:
+                for name in names:
+                    out[name][k] = float(np.mean([v[name] for v in per_channel]))
+        return out
+
+    def _eog_ratios(self, eog: np.ndarray, fs: float, n_epochs: int) -> dict[str, np.ndarray]:
+        out = {"eog_rem_vs_noise_db": np.full(n_epochs, np.nan), "eog_rem_vs_sem_db": np.full(n_epochs, np.nan)}
+        for k in range(n_epochs):
+            seg = self._epoch_segment(eog, fs, k)
+            if seg is None or not np.all(np.isfinite(seg)):
+                continue
+            freqs, _, mag = _spectrogram_abs(seg, fs, window_seconds=self.epoch_seconds, overlap_fraction=0.0)
+            rem = _safe_log10(_band_mean(mag, freqs, 0.5, 5.0))[0]
+            sem = _safe_log10(_band_mean(mag, freqs, 0.1, 0.5))[0]
+            noise = _safe_log10(_band_mean(mag, freqs, 5.0, 30.0))[0]
+            out["eog_rem_vs_noise_db"][k] = rem - noise
+            out["eog_rem_vs_sem_db"][k] = rem - sem
+        return out
+
+    def _emg_floor(self, emg: np.ndarray, fs: float, n_epochs: int) -> dict[str, np.ndarray]:
+        tone = _band_envelope(emg, fs, 10.0, 100.0)
+        tone = rolling_mean(tone, max(int(round(fs * 1.0)), 1))
+        tone_baseline = rolling_median(tone, max(int(round(fs * 60.0)), 1))
+        out = {}
+        row_len = int(round(self.row_seconds * fs))
+        for name, track in (("emg_floor_db", tone), ("emg_baseline_floor_db", tone_baseline)):
+            epoch_vals = np.full(n_epochs, np.nan)
+            for k in range(n_epochs):
+                seg = self._epoch_segment(track, fs, k)
+                if seg is None:
+                    continue
+                row_means = [np.nanmean(seg[i:i + row_len]) for i in range(0, seg.size, row_len) if np.any(np.isfinite(seg[i:i + row_len]))]
+                if row_means:
+                    epoch_vals[k] = float(np.median(row_means))
+            finite = epoch_vals[np.isfinite(epoch_vals)]
+            if finite.size == 0:
+                out[name] = epoch_vals
+                continue
+            floor = max(float(np.percentile(finite, self.floor_percentile)), 1e-12)
+            out[name] = 10.0 * np.log10(np.maximum(epoch_vals, 1e-12) / floor)
+        return out
+
+
+def _half_open_band_sum(psd: np.ndarray, freqs: np.ndarray, low_hz: float, high_hz: float) -> float:
+    return float(psd[(freqs >= low_hz) & (freqs < high_hz)].sum())
 
 
 def _as_2d_signal(values: np.ndarray) -> np.ndarray:

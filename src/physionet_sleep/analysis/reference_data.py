@@ -30,7 +30,7 @@ def load_ucddb_reference_dataset(
     root_dir: str | Path = "data/raw/ucddb",
     subject_ids: list[str] | None = None,
     feature_table_name: str = "final__feature_table",
-    window_seconds: float = 6.0,
+    window_seconds: float | None = None,
 ) -> pd.DataFrame:
     cache_root = Path(cache_dir)
     root = Path(root_dir)
@@ -71,15 +71,17 @@ def attach_ucddb_labels_to_feature_table(
     *,
     labels: RecordLabels,
     subject_id: str,
-    window_seconds: float = 6.0,
+    window_seconds: float | None = None,
 ) -> pd.DataFrame:
     out = table.copy()
     if "time_seconds" not in out.columns:
-        out.insert(0, "time_seconds", np.arange(len(out), dtype=float) * window_seconds)
+        fallback_window_seconds = float(window_seconds if window_seconds is not None else 6.0)
+        out.insert(0, "time_seconds", np.arange(len(out), dtype=float) * fallback_window_seconds)
     out.insert(0, "subject_id", subject_id)
 
     time_seconds = out["time_seconds"].to_numpy(dtype=float, copy=False)
-    window_seconds_int = max(int(round(window_seconds)), 1)
+    inferred_window_seconds = _infer_time_step_seconds(time_seconds, fallback_seconds=window_seconds if window_seconds is not None else 6.0)
+    window_seconds_int = max(int(round(inferred_window_seconds)), 1)
 
     if "stage_seconds_collapsed" in labels.tracks:
         stage_track = np.asarray(labels.tracks["stage_seconds_collapsed"].values, dtype=float)
@@ -89,6 +91,10 @@ def attach_ucddb_labels_to_feature_table(
             window_seconds=window_seconds_int,
             mode="mode",
         )
+        if "signal_quality.flat_dropout" in out.columns:
+            # Recording dropouts (every channel flat) are scored Wake in UCDDB but carry no physiology.
+            dropout = out["signal_quality.flat_dropout"].to_numpy(dtype=float) >= 0.5
+            stage_values = np.where(dropout, -1.0, stage_values)
         out["label.stage_seconds"] = stage_values
         class_map = labels.tracks["stage_seconds_collapsed"].class_map
         out["label.stage_seconds_name"] = [
@@ -237,3 +243,13 @@ def _infer_total_seconds(labels: RecordLabels, time_seconds: np.ndarray, window_
     if "respiratory" in labels.events and labels.events["respiratory"]:
         candidates.append(max(int(event.end) + 1 for event in labels.events["respiratory"]))
     return max(candidates + [0])
+
+
+def _infer_time_step_seconds(time_seconds: np.ndarray, *, fallback_seconds: float) -> float:
+    if time_seconds.size < 2:
+        return float(fallback_seconds)
+    diffs = np.diff(time_seconds.astype(float, copy=False))
+    finite = diffs[np.isfinite(diffs) & (diffs > 0)]
+    if finite.size == 0:
+        return float(fallback_seconds)
+    return float(np.median(finite))

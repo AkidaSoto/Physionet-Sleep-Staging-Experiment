@@ -27,3 +27,11 @@ export type StorySectionData = {
   modules: PopupModule[];
   layout?: "two" | "three" | "four";
 };
+
+export type ChapterOverviewData = {
+  eyebrow: string;
+  title: string;
+  summary: string;
+  takeaway: string;
+  modules?: PopupModule[];
+};

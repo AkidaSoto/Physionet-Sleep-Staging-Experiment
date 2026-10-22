@@ -4,13 +4,35 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 const items = [
-  { id: "introduction", href: "/#introduction", label: "Introduction" },
-  { id: "methods", href: "/#methods", label: "Methods" },
-  { id: "results", href: "/#results", label: "Results" },
-  { id: "discussion", href: "/#discussion", label: "Discussion" },
-  { id: "technical-appendix", href: "/#technical-appendix", label: "Python" },
+  { id: "summary", href: "/#summary", label: "Abstract" },
+  { id: "introduction", href: "/#introduction", label: "1 Introduction" },
+  { id: "methods", href: "/#methods", label: "2 Methods" },
+  { id: "results", href: "/#results", label: "3 Results" },
+  { id: "comparison", href: "/#comparison", label: "4 Comparison" },
+  { id: "discussion", href: "/#discussion", label: "5 Discussion" },
+  { id: "supplementary", href: "/#supplementary", label: "Supplementary" },
   { id: "references", href: "/#references", label: "References" }
 ];
+
+// Subsections listed, indented, in the jump menu.
+const subsections: Record<string, Array<{ id: string; label: string }>> = {
+  introduction: [
+    { id: "staging", label: "1.1 Sleep staging" }, { id: "stages", label: "1.2 The physiology of each stage" }
+  ],
+  methods: [
+    { id: "data", label: "2.1 Data and testing" }, { id: "features", label: "2.2 Features" },
+    { id: "model", label: "2.3 Model" }
+  ],
+  results: [
+    { id: "evidence", label: "3.1 What the model relies on" }, { id: "performance", label: "3.2 How well it scores" },
+    { id: "robustness", label: "3.3 Does it hold up?" }
+  ],
+  supplementary: [
+    { id: "history-details", label: "S1 How the work was run" }, { id: "supp-models", label: "S2 How the adopted model was reached" },
+    { id: "night", label: "S3 How a night is organised" }, { id: "supp-cardio", label: "S4 Heart and breathing" },
+    { id: "supp-simplify", label: "S5 Simpler models" }, { id: "supp-code", label: "S6 Python implementation" }
+  ]
+};
 
 export function SiteNav() {
   const [activeId, setActiveId] = useState("top");
@@ -55,6 +77,11 @@ export function SiteNav() {
   function handleMobileSection(value: string) {
     const target = document.getElementById(value);
     if (!target) return;
+    let node: HTMLElement | null = target;
+    while (node) {  // open a collapsed panel the target sits in
+      if (node instanceof HTMLDetailsElement) node.open = true;
+      node = node.parentElement;
+    }
     setActiveId(value);
     const previousBehavior = document.documentElement.style.scrollBehavior;
     document.documentElement.style.scrollBehavior = "auto";
@@ -83,9 +110,12 @@ export function SiteNav() {
         <label className="site-nav-mobile">
           <span className="sr-only">Jump to section</span>
           <select value="" onChange={(event) => handleMobileSection(event.target.value)}>
-            <option value="" disabled>Sections</option>
+            <option value="" disabled>Jump to…</option>
             <option value="top">Overview</option>
-            {items.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+            {items.flatMap((item) => [
+              <option key={item.id} value={item.id}>{item.label}</option>,
+              ...(subsections[item.id] ?? []).map((sub) => <option key={sub.id} value={sub.id}>{"\u00a0\u00a0\u00a0\u00a0" + sub.label}</option>)
+            ])}
           </select>
         </label>
       </div>

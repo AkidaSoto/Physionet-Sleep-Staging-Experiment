@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
+import { getStagingStageSection } from "../../content/branches";
 import { showcaseCase } from "../../content/showcase-case";
 import type { ShowcaseChapter, ShowcaseSection } from "../../content/showcase-flow";
 import { getShowcaseSiteData } from "../../lib/artifacts";
@@ -39,6 +40,46 @@ function getFixedExampleId(sectionId: string | null): string | null {
     return showcaseCase.sectionExampleIds[sectionId as FixedSectionExampleId];
   }
   return null;
+}
+
+function getResolvedStageLabel(
+  selectedAnchor: StagingOverviewAnchor | null,
+  example: StagingExample | null
+) {
+  return selectedAnchor?.class_label ?? example?.class_label ?? null;
+}
+
+function getStagingFeatureKeywords(stageLabel: string | null) {
+  switch ((stageLabel ?? "").toLowerCase()) {
+    case "wake":
+      return [["emg_tone", "eeg_arousal"]];
+    case "n1":
+      return [["sem_power", "eeg_arousal", "emg_tone"]];
+    case "n2":
+      return [["splindex", "spindle"]];
+    case "n3":
+      return [["slow_wave"]];
+    case "rem":
+      return [["rem_power", "sem_power", "emg_tone", "emg_suppression"]];
+    default:
+      return [["splindex", "spindle"]];
+  }
+}
+
+function resolveActiveSection(
+  section: ShowcaseSection | null,
+  stageLabel: string | null
+): ShowcaseSection | null {
+  if (!section) {
+    return null;
+  }
+  if (section.id !== "staging-stage") {
+    return section;
+  }
+  return {
+    ...section,
+    ...getStagingStageSection(stageLabel)
+  };
 }
 
 function buildLinePath(values: number[], width: number, height: number) {
@@ -419,20 +460,15 @@ function getIndexEmphasis(activeCardIndex: number, hoveredCardIndex: number | nu
 function EffortCorrelationGraphic({
   example,
   activeCardIndex,
-  hoveredCardIndex,
-  onCardHover,
-  onCardSelect
+  hoveredCardIndex
 }: {
   example: ApneaExample;
   activeCardIndex: number;
   hoveredCardIndex: number | null;
-  onCardHover?: (cardIndex: number | null) => void;
-  onCardSelect?: (cardIndex: number) => void;
 }) {
   const thoracic = getSignalById(example, "effort_thoracic");
   const abdominal = getSignalById(example, "effort_abdominal");
   const correlation = getSignalById(example, "thor_abd_corr");
-  const obstruction = getTrackById(example, "respiratory_obstruction_truth");
   const eventWindow = findPrimaryEventWindow(example);
 
   if (!thoracic || !abdominal) {
@@ -444,57 +480,30 @@ function EffortCorrelationGraphic({
       <SignalTrace
         signal={thoracic}
         eventWindow={eventWindow}
-        emphasis={getIndexEmphasis(activeCardIndex, hoveredCardIndex, 0)}
-        onMouseEnter={() => onCardHover?.(0)}
-        onMouseLeave={() => onCardHover?.(null)}
-        onClick={() => onCardSelect?.(0)}
+        emphasis={activeCardIndex === 0 ? getIndexEmphasis(activeCardIndex, hoveredCardIndex, 0) : "active"}
       />
       <SignalTrace
         signal={abdominal}
         eventWindow={eventWindow}
-        emphasis={getIndexEmphasis(activeCardIndex, hoveredCardIndex, 1)}
-        onMouseEnter={() => onCardHover?.(1)}
-        onMouseLeave={() => onCardHover?.(null)}
-        onClick={() => onCardSelect?.(1)}
+        emphasis={activeCardIndex === 0 ? getIndexEmphasis(activeCardIndex, hoveredCardIndex, 1) : "active"}
       />
-      {correlation ? (
+      {activeCardIndex > 0 && correlation ? (
         <SignalTrace
           signal={correlation}
-          emphasis={getIndexEmphasis(activeCardIndex, hoveredCardIndex, 2)}
-          onMouseEnter={() => onCardHover?.(2)}
-          onMouseLeave={() => onCardHover?.(null)}
-          onClick={() => onCardSelect?.(2)}
-        />
-      ) : null}
-      {obstruction ? (
-        <TrackBand
-          track={obstruction}
-          active={(hoveredCardIndex ?? activeCardIndex) === 3}
-          onClick={() => onCardSelect?.(3)}
+          emphasis="active"
         />
       ) : null}
     </div>
   );
 }
 
-const APNEA_TRACK_SECTION: Record<string, string> = {
-  respiratory_obstruction_truth: "apnea-signals",
-  apnea_event_prediction_sec: "apnea-features"
-};
-
 function ApneaOverviewGraphic({
   example,
-  activeCardIndex,
-  hoveredCardIndex,
   onCardHover,
-  onCardSelect,
   onNavigateSection
 }: {
   example: ApneaExample | null;
-  activeCardIndex: number;
-  hoveredCardIndex: number | null;
   onCardHover?: (cardIndex: number | null) => void;
-  onCardSelect?: (cardIndex: number) => void;
   onNavigateSection?: (sectionId: string) => void;
 }) {
   if (!example) {
@@ -507,38 +516,6 @@ function ApneaOverviewGraphic({
   const thoracic = getSignalById(example, "effort_thoracic");
   const abdominal = getSignalById(example, "effort_abdominal");
 
-  if (activeCardIndex === 1 && airflow) {
-    return (
-      <div className="real-scene-stack real-scene-stack-focus">
-        <SignalTrace signal={airflow} eventWindow={eventWindow} emphasis="active" overlay={<AirflowAnnotation signal={airflow} eventWindow={eventWindow} />} />
-      </div>
-    );
-  }
-
-  if (activeCardIndex === 2 && spo2) {
-    return (
-      <div className="real-scene-stack real-scene-stack-focus">
-        <SignalTrace signal={spo2} emphasis="active" overlay={<Spo2Annotation signal={spo2} eventWindow={eventWindow} />} />
-      </div>
-    );
-  }
-
-  if (activeCardIndex === 3) {
-    const cardThoracic = getSignalById(example, "effort_thoracic");
-    const cardAbdominal = getSignalById(example, "effort_abdominal");
-    const cardCorrelation = getSignalById(example, "thor_abd_corr");
-    if (!cardThoracic || !cardAbdominal) {
-      return null;
-    }
-    return (
-      <div className="real-scene-stack real-scene-stack-focus">
-        <SignalTrace signal={cardThoracic} eventWindow={eventWindow} emphasis="active" />
-        <SignalTrace signal={cardAbdominal} eventWindow={eventWindow} emphasis="active" />
-        {cardCorrelation ? <SignalTrace signal={cardCorrelation} emphasis="active" /> : null}
-      </div>
-    );
-  }
-
   return (
     <div className="real-scene-stack">
       {airflow ? (
@@ -546,10 +523,10 @@ function ApneaOverviewGraphic({
           signal={airflow}
           compact
           eventWindow={eventWindow}
-          emphasis={getApneaOverviewRowState(activeCardIndex, hoveredCardIndex, airflow.id)}
-          onMouseEnter={() => onCardHover?.(1)}
+          emphasis="neutral"
+          onMouseEnter={() => onCardHover?.(0)}
           onMouseLeave={() => onCardHover?.(null)}
-          onClick={() => onCardSelect?.(1)}
+          onClick={() => onNavigateSection?.("apnea-airflow")}
         />
       ) : null}
       {thoracic ? (
@@ -557,10 +534,10 @@ function ApneaOverviewGraphic({
           signal={thoracic}
           compact
           eventWindow={eventWindow}
-          emphasis={getApneaOverviewRowState(activeCardIndex, hoveredCardIndex, thoracic.id)}
-          onMouseEnter={() => onCardHover?.(3)}
+          emphasis="neutral"
+          onMouseEnter={() => onCardHover?.(2)}
           onMouseLeave={() => onCardHover?.(null)}
-          onClick={() => onCardSelect?.(3)}
+          onClick={() => onNavigateSection?.("apnea-effort")}
         />
       ) : null}
       {abdominal ? (
@@ -568,55 +545,35 @@ function ApneaOverviewGraphic({
           signal={abdominal}
           compact
           eventWindow={eventWindow}
-          emphasis={getApneaOverviewRowState(activeCardIndex, hoveredCardIndex, abdominal.id)}
-          onMouseEnter={() => onCardHover?.(3)}
+          emphasis="neutral"
+          onMouseEnter={() => onCardHover?.(2)}
           onMouseLeave={() => onCardHover?.(null)}
-          onClick={() => onCardSelect?.(3)}
+          onClick={() => onNavigateSection?.("apnea-effort")}
         />
       ) : null}
       {spo2 ? (
         <SignalTrace
           signal={spo2}
           compact
-          emphasis={getApneaOverviewRowState(activeCardIndex, hoveredCardIndex, spo2.id)}
-          onMouseEnter={() => onCardHover?.(2)}
+          emphasis="neutral"
+          onMouseEnter={() => onCardHover?.(1)}
           onMouseLeave={() => onCardHover?.(null)}
-          onClick={() => onCardSelect?.(2)}
+          onClick={() => onNavigateSection?.("apnea-spo2")}
         />
       ) : null}
-      {example.tracks
-        .filter((track) => track.id !== "respiratory_event_truth")
-        .map((track) => {
-          const targetSection = APNEA_TRACK_SECTION[track.id];
-          return (
-            <TrackBand
-              key={track.id}
-              track={track}
-              onClick={targetSection ? () => onNavigateSection?.(targetSection) : undefined}
-            />
-          );
-        })}
     </div>
   );
-}
-
-function getStageCardIndex(stageValue: number) {
-  if (stageValue === 0) return 0;
-  if (stageValue === 5) return 2;
-  return 1;
 }
 
 function HypnogramGraphic({
   hypnogram,
   anchors,
   onAnchorSelect,
-  onOverviewSelect,
   selectedExampleId
 }: {
   hypnogram: ShowcaseTrackSlice | undefined;
   anchors: StagingOverviewAnchor[];
   onAnchorSelect?: (exampleId: string) => void;
-  onOverviewSelect?: (cardIndex: number) => void;
   selectedExampleId?: string | null;
 }) {
   if (!hypnogram) {
@@ -625,7 +582,6 @@ function HypnogramGraphic({
 
   const duration = Math.max(hypnogram.end_sec - hypnogram.start_sec, 1);
   const barWidth = hypnogram.values.length > 0 ? 760 / hypnogram.values.length : 760;
-  const barsInteractive = typeof onOverviewSelect === "function";
 
   return (
     <div className="hypnogram-scene">
@@ -640,8 +596,6 @@ function HypnogramGraphic({
             rx={6}
             fill={getStageColor(Number(value))}
             opacity={0.94}
-            className={barsInteractive ? "hypnogram-bar-interactive" : undefined}
-            onClick={barsInteractive ? () => onOverviewSelect?.(getStageCardIndex(Number(value))) : undefined}
           />
         ))}
         {anchors.map((anchor) => {
@@ -735,12 +689,8 @@ function ZoomOverviewScene({
   apneaExample,
   hypnogram,
   stagingAnchors,
-  activeCardIndex,
-  hoveredCardIndex,
   onCardHover,
-  onApneaOverviewSelect,
   onStageAnchorSelect,
-  onStageOverviewSelect,
   selectedStagingExampleId
 }: {
   chapter: ShowcaseChapter;
@@ -748,12 +698,8 @@ function ZoomOverviewScene({
   apneaExample: ApneaExample | null;
   hypnogram: ShowcaseTrackSlice | undefined;
   stagingAnchors: StagingOverviewAnchor[];
-  activeCardIndex: number;
-  hoveredCardIndex: number | null;
   onCardHover: (cardIndex: number | null) => void;
-  onApneaOverviewSelect: (cardIndex: number) => void;
   onStageAnchorSelect: (exampleId: string) => void;
-  onStageOverviewSelect: (cardIndex: number) => void;
   selectedStagingExampleId: string | null;
 }) {
   return (
@@ -768,10 +714,7 @@ function ZoomOverviewScene({
       {chapter.id === "apnea" ? (
         <ApneaOverviewGraphic
           example={apneaExample}
-          activeCardIndex={activeCardIndex}
-          hoveredCardIndex={hoveredCardIndex}
           onCardHover={onCardHover}
-          onCardSelect={onApneaOverviewSelect}
           onNavigateSection={onSectionSelect}
         />
       ) : (
@@ -779,7 +722,6 @@ function ZoomOverviewScene({
           hypnogram={hypnogram}
           anchors={stagingAnchors}
           onAnchorSelect={onStageAnchorSelect}
-          onOverviewSelect={onStageOverviewSelect}
           selectedExampleId={selectedStagingExampleId}
         />
       )}
@@ -834,74 +776,95 @@ function renderFocusScene(
   stagingExample: StagingExample | null,
   hypnogram: ShowcaseTrackSlice | undefined,
   stagingAnchors: StagingOverviewAnchor[],
+  stageLabel: string | null,
   activeCardIndex: number,
   hoveredCardIndex: number | null,
   onCardHover: (cardIndex: number | null) => void,
   onCardSelect: (cardIndex: number) => void,
   onSectionSelect: (sectionId: string) => void,
   onStageAnchorSelect: (exampleId: string) => void,
-  onStageOverviewSelect: (cardIndex: number) => void,
   selectedStagingExampleId: string | null
 ) {
   switch (section.id) {
-    case "apnea-overview":
+    case "apnea-airflow":
       return (
-        <ApneaOverviewGraphic
-          example={apneaExample}
-          activeCardIndex={activeCardIndex}
-          hoveredCardIndex={hoveredCardIndex}
-          onCardHover={onCardHover}
-          onCardSelect={onCardSelect}
-          onNavigateSection={onSectionSelect}
-        />
+        activeCardIndex === 0 && apneaExample ? (
+          <div className="real-scene-stack real-scene-stack-focus">
+            {getSignalById(apneaExample, "airflow_pressure") ? (
+              <SignalTrace
+                signal={getSignalById(apneaExample, "airflow_pressure") as ShowcaseSignalSlice}
+                eventWindow={findPrimaryEventWindow(apneaExample)}
+                emphasis="active"
+                overlay={
+                  <AirflowAnnotation
+                    signal={getSignalById(apneaExample, "airflow_pressure") as ShowcaseSignalSlice}
+                    eventWindow={findPrimaryEventWindow(apneaExample)}
+                  />
+                }
+              />
+            ) : null}
+          </div>
+        ) : (
+          <FeatureWindowScene
+            featureWindow={apneaExample?.feature_window ?? null}
+            title="No airflow-derived features available for this window."
+            activeCardIndex={0}
+            cardKeywords={[["resp_band_relative_power", "respiration_rate", "airflow", "apnea_event_vector"]]}
+          />
+        )
       );
-    case "apnea-signals":
+    case "apnea-spo2":
+      return (
+        activeCardIndex === 0 && apneaExample ? (
+          <div className="real-scene-stack real-scene-stack-focus">
+            {getSignalById(apneaExample, "spo2") ? (
+              <SignalTrace
+                signal={getSignalById(apneaExample, "spo2") as ShowcaseSignalSlice}
+                emphasis="active"
+                overlay={
+                  <Spo2Annotation
+                    signal={getSignalById(apneaExample, "spo2") as ShowcaseSignalSlice}
+                    eventWindow={findPrimaryEventWindow(apneaExample)}
+                  />
+                }
+              />
+            ) : null}
+          </div>
+        ) : (
+          <FeatureWindowScene
+            featureWindow={apneaExample?.feature_window ?? null}
+            title="No SpO2 desaturation features available for this window."
+            activeCardIndex={0}
+            cardKeywords={[["spo2_drop3_mask", "spo2_drop4_mask", "spo2"]]}
+          />
+        )
+      );
+    case "apnea-effort":
       return apneaExample ? (
         <EffortCorrelationGraphic
           example={apneaExample}
           activeCardIndex={activeCardIndex}
           hoveredCardIndex={hoveredCardIndex}
-          onCardHover={onCardHover}
-          onCardSelect={onCardSelect}
         />
       ) : null;
-    case "apnea-features":
+    case "staging-stage":
       return (
-        <FeatureWindowScene
-          featureWindow={apneaExample?.feature_window ?? null}
-          title="No apnea features available for this window."
-          activeCardIndex={activeCardIndex}
-          cardKeywords={[["respiration_rate"], ["paradox_mask"], ["event_vector"]]}
-        />
-      );
-    case "staging-overview":
-      return (
-        <HypnogramGraphic
-          hypnogram={hypnogram}
-          anchors={stagingAnchors}
-          onAnchorSelect={onStageAnchorSelect}
-          onOverviewSelect={onStageOverviewSelect}
-          selectedExampleId={selectedStagingExampleId}
-        />
-      );
-    case "staging-signals":
-      return (
-        <StagingSignalsGraphic
-          example={stagingExample}
-          activeCardIndex={activeCardIndex}
-          hoveredCardIndex={hoveredCardIndex}
-          onCardHover={onCardHover}
-          onCardSelect={onCardSelect}
-        />
-      );
-    case "staging-features":
-      return (
-        <FeatureWindowScene
-          featureWindow={stagingExample?.feature_window ?? null}
-          title="No staging features available for this window."
-          activeCardIndex={activeCardIndex}
-          cardKeywords={[["splindex", "spindle"], ["slow_wave"], ["rem_power", "sem_power", "emg_tone", "emg_suppression"]]}
-        />
+        activeCardIndex === 0 ? (
+          <StagingSignalsGraphic
+            example={stagingExample}
+            activeCardIndex={activeCardIndex}
+            hoveredCardIndex={hoveredCardIndex}
+            onCardHover={onCardHover}
+            onCardSelect={onCardSelect}
+          />
+        ) : (
+          <FeatureWindowScene
+            featureWindow={stagingExample?.feature_window ?? null}
+            title="No stage-specific features available for this excerpt."
+            activeCardIndex={0}
+            cardKeywords={getStagingFeatureKeywords(stageLabel)}
+          />
+        )
       );
     default:
       return null;
@@ -914,13 +877,13 @@ function ZoomFocusScene({
   stagingExample,
   hypnogram,
   stagingAnchors,
+  stageLabel,
   activeCardIndex,
   hoveredCardIndex,
   onCardHover,
   onCardSelect,
   onSectionSelect,
   onStageAnchorSelect,
-  onStageOverviewSelect,
   selectedStagingExampleId
 }: {
   section: ShowcaseSection;
@@ -928,13 +891,13 @@ function ZoomFocusScene({
   stagingExample: StagingExample | null;
   hypnogram: ShowcaseTrackSlice | undefined;
   stagingAnchors: StagingOverviewAnchor[];
+  stageLabel: string | null;
   activeCardIndex: number;
   hoveredCardIndex: number | null;
   onCardHover: (cardIndex: number | null) => void;
   onCardSelect: (cardIndex: number) => void;
   onSectionSelect: (sectionId: string) => void;
   onStageAnchorSelect: (exampleId: string) => void;
-  onStageOverviewSelect: (cardIndex: number) => void;
   selectedStagingExampleId: string | null;
 }) {
   return (
@@ -952,13 +915,13 @@ function ZoomFocusScene({
         stagingExample,
         hypnogram,
         stagingAnchors,
+        stageLabel,
         activeCardIndex,
         hoveredCardIndex,
         onCardHover,
         onCardSelect,
         onSectionSelect,
         onStageAnchorSelect,
-        onStageOverviewSelect,
         selectedStagingExampleId
       )}
     </motion.div>
@@ -1006,7 +969,7 @@ export function ZoomChapterStage({ chapter, activeSectionId, onSectionSelect }: 
   const activeApneaExample =
     chapter.id === "apnea"
       ? apneaExamples.find((example) => example.id === fixedExampleId) ??
-        apneaExamples.find((example) => example.id === showcaseCase.sectionExampleIds["apnea-overview"]) ??
+        apneaExamples.find((example) => example.id === showcaseCase.sectionExampleIds["apnea-airflow"]) ??
         apneaExamples[0] ??
         null
       : null;
@@ -1014,7 +977,7 @@ export function ZoomChapterStage({ chapter, activeSectionId, onSectionSelect }: 
     chapter.id === "staging"
       ? stagingExamples.find((example) => example.id === selectedStagingExampleId) ??
         stagingExamples.find((example) => example.id === fixedExampleId) ??
-        stagingExamples.find((example) => example.id === showcaseCase.sectionExampleIds["staging-signals"]) ??
+        stagingExamples.find((example) => example.id === showcaseCase.sectionExampleIds["staging-stage"]) ??
         stagingExamples[0] ??
         null
       : null;
@@ -1033,11 +996,13 @@ export function ZoomChapterStage({ chapter, activeSectionId, onSectionSelect }: 
     chapter.id === "staging" && selectedStagingExampleId
       ? stagingAnchors.find((anchor) => anchor.exampleId === selectedStagingExampleId) ?? null
       : null;
+  const resolvedStageLabel = getResolvedStageLabel(selectedStageAnchor, activeStagingExample);
+  const resolvedActiveSection = resolveActiveSection(activeSection, resolvedStageLabel);
 
-  function handleApneaOverviewSelect(cardIndex: number) {
+  function handleApneaOverviewSelect(sectionId: string) {
     setHoveredCardIndex(null);
-    setActiveCardIndex(cardIndex);
-    onSectionSelect("apnea-overview");
+    setActiveCardIndex(0);
+    onSectionSelect(sectionId);
   }
 
   function handleNavigateSection(sectionId: string) {
@@ -1053,13 +1018,7 @@ export function ZoomChapterStage({ chapter, activeSectionId, onSectionSelect }: 
     setHoveredCardIndex(null);
     setActiveCardIndex(0);
     setSelectedStagingExampleId(exampleId);
-    onSectionSelect("staging-signals");
-  }
-
-  function handleStageOverviewSelect(cardIndex: number) {
-    setHoveredCardIndex(null);
-    setActiveCardIndex(cardIndex);
-    onSectionSelect("staging-overview");
+    onSectionSelect("staging-stage");
   }
 
   function handleBack() {
@@ -1077,20 +1036,20 @@ export function ZoomChapterStage({ chapter, activeSectionId, onSectionSelect }: 
       <div className="zoom-stage-frame">
         <div className="zoom-scene-shell">
           <AnimatePresence initial={false} mode="sync">
-            {activeSection ? (
+            {resolvedActiveSection ? (
               <ZoomFocusScene
-                section={activeSection}
+                section={resolvedActiveSection}
                 apneaExample={activeApneaExample}
                 stagingExample={activeStagingExample}
                 hypnogram={siteData.staging.hypnogram}
                 stagingAnchors={stagingAnchors}
+                stageLabel={resolvedStageLabel}
                 activeCardIndex={activeCardIndex}
                 hoveredCardIndex={hoveredCardIndex}
                 onCardHover={setHoveredCardIndex}
                 onCardSelect={setActiveCardIndex}
                 onSectionSelect={handleNavigateSection}
                 onStageAnchorSelect={handleStageAnchorSelect}
-                onStageOverviewSelect={handleStageOverviewSelect}
                 selectedStagingExampleId={selectedStagingExampleId}
               />
             ) : (
@@ -1100,21 +1059,17 @@ export function ZoomChapterStage({ chapter, activeSectionId, onSectionSelect }: 
                 apneaExample={activeApneaExample}
                 hypnogram={siteData.staging.hypnogram}
                 stagingAnchors={stagingAnchors}
-                activeCardIndex={activeCardIndex}
-                hoveredCardIndex={hoveredCardIndex}
                 onCardHover={setHoveredCardIndex}
-                onApneaOverviewSelect={handleApneaOverviewSelect}
                 onStageAnchorSelect={handleStageAnchorSelect}
-                onStageOverviewSelect={handleStageOverviewSelect}
                 selectedStagingExampleId={selectedStagingExampleId}
               />
             )}
           </AnimatePresence>
 
           <AnimatePresence initial={false}>
-            {activeSection ? (
+            {resolvedActiveSection ? (
               <motion.div
-                key={activeSection.id}
+                key={resolvedActiveSection.id}
                 className="zoom-detail-rail"
                 initial={{ opacity: 0, x: 28 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -1128,8 +1083,8 @@ export function ZoomChapterStage({ chapter, activeSectionId, onSectionSelect }: 
 
                   <div className="zoom-detail-copy">
                     <div className="zoom-detail-title-row">
-                      <span className="zoom-detail-title-pill">{getPreviewLabel(activeSection)}</span>
-                      {activeSection.id === "staging-signals" && selectedStageAnchor ? (
+                      <span className="zoom-detail-title-pill">{getPreviewLabel(resolvedActiveSection)}</span>
+                      {resolvedActiveSection.id === "staging-stage" && selectedStageAnchor ? (
                         <span
                           className="zoom-detail-stage-badge"
                           style={{ background: getStageColorByLabel(selectedStageAnchor.class_label) }}
@@ -1139,19 +1094,44 @@ export function ZoomChapterStage({ chapter, activeSectionId, onSectionSelect }: 
                       ) : null}
                     </div>
                     <Text as="p" variant="bodyStrong" className="zoom-detail-takeaway">
-                      {activeSection.takeaway}
+                      {resolvedActiveSection.takeaway}
                     </Text>
                   </div>
                 </div>
 
                 <ZoomCardTabs
-                  cards={activeSection.cards}
+                  cards={resolvedActiveSection.cards}
                   activeCardIndex={activeCardIndex}
                   onCardSelect={setActiveCardIndex}
                   onCardHover={setHoveredCardIndex}
                 />
-                <ZoomDetailCard section={activeSection} activeCardIndex={activeCardIndex} />
-                <PopupModuleTray modules={activeSection.modules} />
+                <ZoomDetailCard section={resolvedActiveSection} activeCardIndex={activeCardIndex} />
+                <PopupModuleTray modules={resolvedActiveSection.modules} />
+                {chapter.references?.length ? <ReferenceList links={chapter.references} /> : null}
+              </motion.div>
+            ) : chapter.overview ? (
+              <motion.div
+                key={`${chapter.id}-overview`}
+                className="zoom-detail-rail"
+                initial={{ opacity: 0, x: 18 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 18 }}
+                transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <div className="zoom-detail-header">
+                  <div className="zoom-detail-copy">
+                    <div className="zoom-detail-title-row">
+                      <span className="zoom-detail-title-pill">{chapter.overview.eyebrow}</span>
+                    </div>
+                    <Text as="p" variant="bodyStrong" className="zoom-detail-takeaway">
+                      {chapter.overview.takeaway}
+                    </Text>
+                    <Text as="p" tone="secondary">
+                      {chapter.overview.summary}
+                    </Text>
+                  </div>
+                </div>
+                {chapter.overview.modules?.length ? <PopupModuleTray modules={chapter.overview.modules} /> : null}
                 {chapter.references?.length ? <ReferenceList links={chapter.references} /> : null}
               </motion.div>
             ) : null}

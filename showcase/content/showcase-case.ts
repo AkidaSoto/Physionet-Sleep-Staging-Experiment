@@ -1,11 +1,10 @@
 export const showcaseCase = {
   recordId: "ucddb023",
   sectionExampleIds: {
-    "apnea-overview": "apnea-example-1",
-    "apnea-signals": "apnea-example-1",
-    "apnea-features": "apnea-example-1",
-    "staging-signals": "stage-rem-1",
-    "staging-features": "stage-n3-1"
+    "apnea-airflow": "apnea-example-1",
+    "apnea-spo2": "apnea-example-1",
+    "apnea-effort": "apnea-example-1",
+    "staging-stage": "stage-rem-1"
   },
   stagingOverviewAnchorIds: [
     "stage-wake-1",

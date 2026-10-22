@@ -5,7 +5,7 @@ from typing import Mapping
 import numpy as np
 from scipy.ndimage import binary_closing
 from scipy.interpolate import interp1d
-from scipy.signal import find_peaks, hilbert, peak_widths, spectrogram
+from scipy.signal import find_peaks, hilbert, peak_prominences, peak_widths, spectrogram
 
 from physionet_sleep.core.base import BaseAlgorithm
 from physionet_sleep.core.types import AlgorithmResult, Event, SignalRecord, SignalSeries
@@ -18,7 +18,7 @@ class EffortSnoreFeatureGenerator(BaseAlgorithm):
     def __init__(
         self,
         *,
-        snore_key: str = "snore",
+        snore_key: str | None = None,
         effort_keys: tuple[str, ...] = ("effort_sum", "effort_thoracic", "effort_abdominal"),
     ) -> None:
         super().__init__(
@@ -32,7 +32,8 @@ class EffortSnoreFeatureGenerator(BaseAlgorithm):
         return ()
 
     def validate(self, record: SignalRecord) -> None:
-        if self.snore_key not in record.channels and not any(key in record.channels for key in self.effort_keys):
+        has_snore = self.snore_key is not None and self.snore_key in record.channels
+        if not has_snore and not any(key in record.channels for key in self.effort_keys):
             raise ValueError(f"{self.name} requires snore and/or effort channels")
 
     def _run(
@@ -45,7 +46,7 @@ class EffortSnoreFeatureGenerator(BaseAlgorithm):
         events: dict[str, list[Event]] = {}
         features: dict[str, object] = {}
 
-        if self.snore_key in record.channels:
+        if self.snore_key is not None and self.snore_key in record.channels:
             snore_series = record.get(self.snore_key)
             snore = np.asarray(snore_series.values, dtype=float).squeeze()
             snore_fs = float(snore_series.sample_rate)
@@ -244,8 +245,8 @@ class ApneaEventDetector(BaseAlgorithm):
     def __init__(
         self,
         *,
-        thermal_key: str = "airflow_thermal",
-        pressure_key: str = "airflow_pressure",
+        thermal_key: str = "flow",
+        pressure_key: str | None = None,
         respiration_result_key: str = "respiration",
         spo2_result_key: str = "spo2_drop",
     ) -> None:
@@ -265,8 +266,13 @@ class ApneaEventDetector(BaseAlgorithm):
         return ()
 
     def validate(self, record: SignalRecord) -> None:
-        if self.thermal_key not in record.channels and self.pressure_key not in record.channels:
-            raise ValueError(f"{self.name} requires at least one of: {self.thermal_key}, {self.pressure_key}")
+        thermal_present = self.thermal_key in record.channels
+        pressure_present = self.pressure_key is not None and self.pressure_key in record.channels
+        if not thermal_present and not pressure_present:
+            expected = [self.thermal_key]
+            if self.pressure_key is not None:
+                expected.append(self.pressure_key)
+            raise ValueError(f"{self.name} requires at least one of: {', '.join(expected)}")
 
     def _run(
         self,
@@ -486,7 +492,8 @@ def _phase_extrema(phase_cos: np.ndarray, *, positive: bool) -> tuple[np.ndarray
     idx, _ = find_peaks(work)
     if idx.size == 0:
         return np.array([], dtype=int), np.array([], dtype=float), np.array([], dtype=float)
-    widths, prominences = peak_widths(work, idx, rel_height=0.5)[0], peak_widths(work, idx, rel_height=1.0)[1]
+    widths = peak_widths(work, idx, rel_height=0.5)[0]
+    prominences = peak_prominences(work, idx)[0]
     return idx.astype(int), widths.astype(float), np.asarray(prominences, dtype=float)
 
 

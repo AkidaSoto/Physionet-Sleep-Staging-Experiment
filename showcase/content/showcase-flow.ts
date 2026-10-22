@@ -1,5 +1,12 @@
-import { abstractCards, apneaSections, stagingSections, aboutCards } from "./branches";
-import type { StorySectionData } from "./story-types";
+import {
+  abstractCards,
+  apneaOverview,
+  apneaSections,
+  stagingOverview,
+  stagingSections,
+  aboutCards
+} from "./branches";
+import type { ChapterOverviewData, StorySectionData } from "./story-types";
 
 export type ResearchLink = {
   id: string;
@@ -30,6 +37,7 @@ export type ShowcaseSection = StorySectionData & {
 export type ShowcaseChapter = {
   id: "abstract" | "apnea" | "staging" | "about";
   title: string;
+  overview?: ChapterOverviewData;
   sections: ShowcaseSection[];
   references?: ResearchLink[];
 };
@@ -124,15 +132,13 @@ const abstractSections: ShowcaseSection[] = [
 ];
 
 const apneaSceneById = {
-  "apnea-overview": "apnea-event",
-  "apnea-signals": "respiratory-signals",
-  "apnea-features": "apnea-features"
+  "apnea-airflow": "respiratory-signals",
+  "apnea-spo2": "respiratory-signals",
+  "apnea-effort": "respiratory-signals"
 } as const satisfies Record<string, ShowcaseSceneKind>;
 
 const stagingSceneById = {
-  "staging-overview": "staging-arc",
-  "staging-signals": "staging-signals",
-  "staging-features": "staging-matrix"
+  "staging-stage": "staging-signals"
 } as const satisfies Record<string, ShowcaseSceneKind>;
 
 const apneaShowcaseSections: ShowcaseSection[] = apneaSections.map((section) => ({
@@ -198,12 +204,14 @@ export function getShowcaseChapters(researchLinks: ResearchLink[]): ShowcaseChap
     {
       id: "apnea",
       title: "Sleep Apnea",
+      overview: apneaOverview,
       sections: apneaShowcaseSections,
       references: chapterLinks.apnea
     },
     {
       id: "staging",
       title: "Sleep Staging",
+      overview: stagingOverview,
       sections: stagingShowcaseSections,
       references: chapterLinks.staging
     },

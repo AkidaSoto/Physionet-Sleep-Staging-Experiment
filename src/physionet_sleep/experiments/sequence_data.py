@@ -16,6 +16,241 @@ class SequenceDataset:
     window_length: int
 
 
+def build_epoch_aligned_sequence_dataset(
+    feature_table: pd.DataFrame,
+    *,
+    feature_columns: list[str],
+    target_column: str,
+    subject_column: str = "subject_id",
+    time_column: str = "time_seconds",
+    history_steps: int,
+    current_steps: int,
+    future_steps: int,
+    expected_step_seconds: float = 6.0,
+    step_tolerance_seconds: float = 0.25,
+) -> SequenceDataset:
+    required = [subject_column, time_column, target_column, *feature_columns]
+    missing = [col for col in required if col not in feature_table.columns]
+    if missing:
+        raise KeyError(f"Missing columns for sequence dataset: {missing}")
+
+    history_steps = int(history_steps)
+    current_steps = int(current_steps)
+    future_steps = int(future_steps)
+    if history_steps < 0 or current_steps <= 0 or future_steps < 0:
+        raise ValueError("history_steps/future_steps must be non-negative and current_steps must be positive")
+
+    window_length = history_steps + current_steps + future_steps
+    frame = feature_table[required].copy()
+    frame = frame.replace([np.inf, -np.inf], np.nan)
+    frame = frame.dropna(subset=[subject_column, time_column, target_column])
+
+    seq_list: list[np.ndarray] = []
+    y_list: list[float] = []
+    meta_rows: list[dict[str, object]] = []
+
+    for subject_id, subject_df in frame.groupby(subject_column, sort=False):
+        ordered = subject_df.sort_values(time_column, kind="stable").reset_index(drop=True)
+        times = ordered[time_column].to_numpy(dtype=float, copy=False)
+        y = ordered[target_column].to_numpy(copy=False)
+        X = ordered[feature_columns].to_numpy(dtype=float, copy=False)
+        slot_index = np.rint(times / float(expected_step_seconds)).astype(int)
+
+        if len(ordered) < window_length:
+            continue
+
+        max_anchor_start = len(ordered) - current_steps - future_steps
+        for anchor_start in range(history_steps, max_anchor_start + 1):
+            current_slot = slot_index[anchor_start]
+            if current_slot % current_steps != 0:
+                continue
+            seq_start = anchor_start - history_steps
+            seq_stop = anchor_start + current_steps + future_steps
+            seq_times = times[seq_start:seq_stop]
+            if seq_times.size != window_length:
+                continue
+            if not _is_contiguous_sequence(
+                seq_times,
+                expected_step_seconds=expected_step_seconds,
+                step_tolerance_seconds=step_tolerance_seconds,
+            ):
+                continue
+
+            target_values = pd.to_numeric(pd.Series(y[anchor_start : anchor_start + current_steps]), errors="coerce").to_numpy(dtype=float)
+            finite_target = target_values[np.isfinite(target_values)]
+            finite_target = finite_target[finite_target >= 0]
+            if finite_target.size == 0:
+                continue
+            rounded = np.rint(finite_target).astype(int)
+            unique, counts = np.unique(rounded, return_counts=True)
+            target_value = float(unique[int(np.argmax(counts))])
+
+            seq_list.append(X[seq_start:seq_stop])
+            y_list.append(target_value)
+            meta_rows.append(
+                {
+                    subject_column: str(subject_id),
+                    time_column: float(times[anchor_start]),
+                    "sequence_start_seconds": float(seq_times[0]),
+                    "sequence_end_seconds": float(seq_times[-1]),
+                    "target_start_seconds": float(times[anchor_start]),
+                    "target_end_seconds": float(times[anchor_start + current_steps - 1] + expected_step_seconds),
+                }
+            )
+
+    if not seq_list:
+        return SequenceDataset(
+            X=np.empty((0, window_length, len(feature_columns)), dtype=float),
+            y=np.empty((0,), dtype=float),
+            metadata=pd.DataFrame(
+                columns=[
+                    subject_column,
+                    time_column,
+                    "sequence_start_seconds",
+                    "sequence_end_seconds",
+                    "target_start_seconds",
+                    "target_end_seconds",
+                ]
+            ),
+            feature_columns=list(feature_columns),
+            context_radius=history_steps,
+            window_length=window_length,
+        )
+
+    return SequenceDataset(
+        X=np.stack(seq_list, axis=0),
+        y=np.asarray(y_list),
+        metadata=pd.DataFrame(meta_rows),
+        feature_columns=list(feature_columns),
+        context_radius=history_steps,
+        window_length=window_length,
+    )
+
+
+def build_hierarchical_epoch_sequence_dataset(
+    feature_table: pd.DataFrame,
+    *,
+    feature_columns: list[str],
+    target_column: str,
+    subject_column: str = "subject_id",
+    time_column: str = "time_seconds",
+    history_epochs: int,
+    current_epochs: int,
+    future_epochs: int,
+    epoch_steps: int,
+    expected_step_seconds: float = 6.0,
+    step_tolerance_seconds: float = 0.25,
+) -> SequenceDataset:
+    required = [subject_column, time_column, target_column, *feature_columns]
+    missing = [col for col in required if col not in feature_table.columns]
+    if missing:
+        raise KeyError(f"Missing columns for sequence dataset: {missing}")
+
+    history_epochs = int(history_epochs)
+    current_epochs = int(current_epochs)
+    future_epochs = int(future_epochs)
+    epoch_steps = int(epoch_steps)
+    if history_epochs < 0 or current_epochs <= 0 or future_epochs < 0:
+        raise ValueError("history_epochs/future_epochs must be non-negative and current_epochs must be positive")
+    if epoch_steps <= 0:
+        raise ValueError("epoch_steps must be positive")
+
+    total_epochs = history_epochs + current_epochs + future_epochs
+    total_steps = total_epochs * epoch_steps
+    frame = feature_table[required].copy()
+    frame = frame.replace([np.inf, -np.inf], np.nan)
+    frame = frame.dropna(subset=[subject_column, time_column, target_column])
+
+    seq_list: list[np.ndarray] = []
+    y_list: list[float] = []
+    meta_rows: list[dict[str, object]] = []
+
+    history_step_count = history_epochs * epoch_steps
+    current_step_count = current_epochs * epoch_steps
+    future_step_count = future_epochs * epoch_steps
+
+    for subject_id, subject_df in frame.groupby(subject_column, sort=False):
+        ordered = subject_df.sort_values(time_column, kind="stable").reset_index(drop=True)
+        times = ordered[time_column].to_numpy(dtype=float, copy=False)
+        y = ordered[target_column].to_numpy(copy=False)
+        X = ordered[feature_columns].to_numpy(dtype=float, copy=False)
+        slot_index = np.rint(times / float(expected_step_seconds)).astype(int)
+
+        if len(ordered) < total_steps:
+            continue
+
+        max_anchor_start = len(ordered) - current_step_count - future_step_count
+        for anchor_start in range(history_step_count, max_anchor_start + 1):
+            current_slot = slot_index[anchor_start]
+            if current_slot % epoch_steps != 0:
+                continue
+            seq_start = anchor_start - history_step_count
+            seq_stop = anchor_start + current_step_count + future_step_count
+            seq_times = times[seq_start:seq_stop]
+            if seq_times.size != total_steps:
+                continue
+            if not _is_contiguous_sequence(
+                seq_times,
+                expected_step_seconds=expected_step_seconds,
+                step_tolerance_seconds=step_tolerance_seconds,
+            ):
+                continue
+
+            target_values = pd.to_numeric(
+                pd.Series(y[anchor_start : anchor_start + current_step_count]),
+                errors="coerce",
+            ).to_numpy(dtype=float)
+            finite_target = target_values[np.isfinite(target_values)]
+            finite_target = finite_target[finite_target >= 0]
+            if finite_target.size == 0:
+                continue
+            rounded = np.rint(finite_target).astype(int)
+            unique, counts = np.unique(rounded, return_counts=True)
+            target_value = float(unique[int(np.argmax(counts))])
+
+            epoch_tensor = X[seq_start:seq_stop].reshape(total_epochs, epoch_steps, len(feature_columns))
+            seq_list.append(epoch_tensor)
+            y_list.append(target_value)
+            meta_rows.append(
+                {
+                    subject_column: str(subject_id),
+                    time_column: float(times[anchor_start]),
+                    "sequence_start_seconds": float(seq_times[0]),
+                    "sequence_end_seconds": float(seq_times[-1]),
+                    "target_start_seconds": float(times[anchor_start]),
+                    "target_end_seconds": float(times[anchor_start + current_step_count - 1] + expected_step_seconds),
+                }
+            )
+
+    if not seq_list:
+        return SequenceDataset(
+            X=np.empty((0, total_epochs, epoch_steps, len(feature_columns)), dtype=float),
+            y=np.empty((0,), dtype=float),
+            metadata=pd.DataFrame(
+                columns=[
+                    subject_column,
+                    time_column,
+                    "sequence_start_seconds",
+                    "sequence_end_seconds",
+                    "target_start_seconds",
+                    "target_end_seconds",
+                ]
+            ),
+            feature_columns=list(feature_columns),
+            context_radius=history_epochs,
+            window_length=total_epochs,
+        )
+
+    return SequenceDataset(
+        X=np.stack(seq_list, axis=0),
+        y=np.asarray(y_list),
+        metadata=pd.DataFrame(meta_rows),
+        feature_columns=list(feature_columns),
+        context_radius=history_epochs,
+        window_length=total_epochs,
+    )
+
+
 def build_flat_context_frame(
     feature_table: pd.DataFrame,
     *,

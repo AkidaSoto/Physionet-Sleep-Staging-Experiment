@@ -1,55 +1,42 @@
 from __future__ import annotations
 
-import json
+import argparse
+import sys
 from pathlib import Path
 
-import pandas as pd
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT / "src") not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT / "src"))
+
+from physionet_sleep.runners import build_modeling_context, run_sequence_baseline_job
 
 
-def main() -> None:
-    from physionet_sleep.analysis.reference_data import load_ucddb_reference_dataset
-    from physionet_sleep.experiments.sequence_cnn import SequenceExperimentSpec, run_sequence_cnn_experiment
-    from physionet_sleep.experiments.tabular_specs import build_default_experiment_specs
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--context-radius", type=int, default=2)
+    parser.add_argument("--outer-validation", choices=("kfold", "loso"), default="kfold")
+    parser.add_argument("--outer-folds", type=int, default=5)
+    parser.add_argument("--random-state", type=int, default=7)
+    return parser.parse_args()
 
-    output_root = Path("artifacts/sequence_cnn_baseline")
-    output_root.mkdir(parents=True, exist_ok=True)
 
-    table = load_ucddb_reference_dataset()
-    specs = build_default_experiment_specs(table)
-    base_spec = specs["staging_plus_shared"]
-
-    sequence_spec = SequenceExperimentSpec(
-        name="staging_plus_shared_cnn_ctx5",
-        target_column=base_spec.target_column,
-        feature_columns=base_spec.feature_columns,
-        context_radius=2,
-        normalization="medianiqr",
-        cv_folds=5,
-        epochs=20,
-        batch_size=256,
-        learning_rate=1e-3,
-        hidden_channels=32,
-        kernel_size=3,
+def main() -> int:
+    args = _parse_args()
+    outcome = run_sequence_baseline_job(
+        build_modeling_context(REPO_ROOT),
+        context_radius=args.context_radius,
+        outer_validation=args.outer_validation,
+        outer_folds=args.outer_folds,
+        random_state=args.random_state,
     )
-
-    result = run_sequence_cnn_experiment(
-        table,
-        spec=sequence_spec,
-        validation="kfold",
-        random_state=7,
-    )
-
-    result.summary.to_parquet(output_root / "summary.parquet", index=False)
-    result.fold_metrics.to_parquet(output_root / "fold_metrics.parquet", index=False)
-    result.predictions.to_parquet(output_root / "predictions.parquet", index=False)
-    with (output_root / "metadata.json").open("w", encoding="utf-8") as fh:
-        json.dump(result.metadata, fh, indent=2)
-
-    if not result.summary.empty:
-        print(result.summary.to_string(index=False))
+    if not outcome.summary.empty:
+        print(outcome.summary.to_string(index=False))
     else:
         print("No sequence CNN results produced.")
+    print(outcome.message)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

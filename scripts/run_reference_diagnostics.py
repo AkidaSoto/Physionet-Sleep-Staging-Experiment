@@ -4,27 +4,18 @@ import sys
 from pathlib import Path
 
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT / "src") not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT / "src"))
+
+from physionet_sleep.runners import build_modeling_context, run_reference_diagnostics_job
+
+
 def main() -> int:
-    repo_root = Path(__file__).resolve().parents[1]
-    sys.path.insert(0, str(repo_root / "src"))
-
-    from physionet_sleep.analysis import load_ucddb_reference_dataset
-    from physionet_sleep.diagnostics.reference_runner import run_reference_diagnostics
-
-    table = load_ucddb_reference_dataset(
-        cache_dir=repo_root / "artifacts" / "ucddb_recipe_cache",
-        root_dir=repo_root / "data" / "raw" / "ucddb",
-    )
-    if table.empty:
-        print("no_rows")
-        return 1
-
-    result = run_reference_diagnostics(table)
-    out_dir = repo_root / "artifacts" / "reference_diagnostics"
-    result.save(out_dir)
-    print(f"saved={out_dir}")
-    print(f"rows={len(table)}")
-    print(f"features={result.metadata['feature_count']}")
+    outcome = run_reference_diagnostics_job(build_modeling_context(REPO_ROOT))
+    if not outcome.summary.empty:
+        print(outcome.summary.to_string(index=False))
+    print(outcome.message)
     return 0
 
 

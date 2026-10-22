@@ -52,10 +52,13 @@ class SpO2DropDetector(BaseAlgorithm):
 
         clean_drop3 = expand_runs(d3_starts, d3_lengths, spo2.size)
         clean_drop4 = expand_runs(d4_starts, d4_lengths, spo2.size)
+        drop_amount_30s = _desaturation_depth_track(spo2, fs, window_seconds=30.0)
 
         return AlgorithmResult(
             name=self.name,
             signals={
+                "spo2_value": SignalSeries(spo2, sample_rate=fs, units=series.units),
+                "spo2_drop_amount_30s": SignalSeries(drop_amount_30s, sample_rate=fs, units=series.units),
                 "spo2_bad_mask": SignalSeries(bad_mask.astype(float), sample_rate=fs, units="binary"),
                 "spo2_drop3_mask": SignalSeries(clean_drop3.astype(float), sample_rate=fs, units="binary"),
                 "spo2_drop4_mask": SignalSeries(clean_drop4.astype(float), sample_rate=fs, units="binary"),
@@ -132,6 +135,12 @@ def _jagged_drop_mask(spo2: np.ndarray, sample_rate_hz: float, *, threshold: flo
         min_offset = int(np.argmin(local))
         out[run_end : run_end + min_offset + 1] = True
     return out
+
+
+def _desaturation_depth_track(spo2: np.ndarray, sample_rate_hz: float, *, window_seconds: float) -> np.ndarray:
+    window = max(int(round(window_seconds * sample_rate_hz)), 1)
+    future_min = future_rolling_min(spo2, window)
+    return np.maximum(spo2 - future_min, 0.0)
 
 
 def _build_period_events(
