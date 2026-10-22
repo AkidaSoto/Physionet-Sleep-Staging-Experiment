@@ -1094,12 +1094,12 @@ function CompactStudyProtocol() {
         <div className="research-ablation-row research-data-row" role="row">
           <span role="cell"><strong>Boston · CinC 2018, held out</strong><small className="research-row-note">Same hospital, set aside before modelling</small></span>
           <span role="cell">{data.generalisation?.holdout_subjects || 200} nights<small className="research-row-note">more apnea: 59% moderate or severe</small></span>
-          <span role="cell"><b>Held-out test.</b> Model C fitted on all {data.source.subjects} development patients; {data.generalisation?.holdout_looks ?? 0} evaluation looks. <Exp ids={[30]} /></span>
+          <span role="cell"><b>Two evaluation looks.</b> Look 1: the earlier 27-input model, alongside the 33-input, single-epoch and decoder comparisons <Exp ids={[30]} />. Look 2: final Model C, with 20 inputs <Exp ids={[37]} />.</span>
         </div>
         <div className="research-ablation-row research-data-row" role="row">
           <span role="cell"><strong>Coimbra · ISRUC-Sleep</strong><small className="research-row-note">Coimbra, Portugal; subgroup I; two scorers per night</small></span>
           <span role="cell">{isrucStatus.final_complete ? isrucStatus.evaluated : 100} nights</span>
-          <span role="cell"><b>External evaluation.</b> One recorded evaluation look; predictions compared with both scorers.</span>
+          <span role="cell"><b>One recorded evaluation look.</b> Final Model C (20 inputs); the same predictions compared with each of the two scorers.</span>
         </div>
       </div>
       <p className="research-dataset-line"><span>Stage distribution in the development set:</span></p>
