@@ -8,8 +8,7 @@ const items = [
   { id: "introduction", href: "/#introduction", label: "1 Introduction" },
   { id: "methods", href: "/#methods", label: "2 Methods" },
   { id: "results", href: "/#results", label: "3 Results" },
-  { id: "comparison", href: "/#comparison", label: "4 Comparison" },
-  { id: "discussion", href: "/#discussion", label: "5 Discussion" },
+  { id: "discussion", href: "/#discussion", label: "4 Discussion and conclusion" },
   { id: "supplementary", href: "/#supplementary", label: "Supplementary" },
   { id: "references", href: "/#references", label: "References" }
 ];
@@ -24,13 +23,15 @@ const subsections: Record<string, Array<{ id: string; label: string }>> = {
     { id: "model", label: "2.3 Model" }
   ],
   results: [
-    { id: "evidence", label: "3.1 What the model relies on" }, { id: "performance", label: "3.2 How well it scores" },
+    { id: "performance", label: "3.1 How well it scores" }, { id: "evidence", label: "3.2 What the model relies on" },
     { id: "robustness", label: "3.3 Does it hold up?" }
   ],
   supplementary: [
-    { id: "history-details", label: "S1 How the work was run" }, { id: "supp-models", label: "S2 How the adopted model was reached" },
-    { id: "night", label: "S3 How a night is organised" }, { id: "supp-cardio", label: "S4 Heart and breathing" },
-    { id: "supp-simplify", label: "S5 Simpler models" }, { id: "supp-code", label: "S6 Python implementation" }
+    { id: "supp-patients", label: "S1 Patient variation and validation" },
+    { id: "supp-models", label: "S2 Model development and size" },
+    { id: "supp-importance", label: "S3 Signal reliance and sleep structure" },
+    { id: "supp-cardio", label: "S4 Alternative sensor models" },
+    { id: "history-details", label: "S5 History and implementation" }
   ]
 };
 

@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import saliencyData from "../../content/generated/staging-saliency.json";
+import isrucStatus from "../../content/generated/isruc-status.json";
+import holdoutDistribution from "../../content/generated/holdout-distribution.json";
 import {
   stagingDashboardData,
   type FeatureDistribution,
@@ -11,6 +13,10 @@ import {
 } from "../../content/staging-dashboard-data";
 
 const data = stagingDashboardData;
+const sensorColors: Record<string, string> = {
+  Brain: "#78d8ff", Eyes: "#ef8ab5", "Chin muscle": "#b49cf0", Heart: "#ff7d7d", Breathing: "#9fd36f"
+};
+
 const stageColors: Record<string, string> = {
   Wake: "#91a9ce",
   N1: "#72d2ff",
@@ -105,7 +111,7 @@ const eegSpectrumFeatures: FeatureSpec[] = [
     ["beta", "16–30 Hz", "High in wake and arousals."]
   ] as const).map(([band, edges, use]) => ({
     id: `track.c_rel_${band}`,
-    name: `Central ${band} share (1 s)`,
+    name: `Central ${band} share`,
     signal: "EEG",
     summary: `Share of each second's 0.5–30 Hz central EEG power that falls in ${edges}.`,
     measurement: `${trackMethod} Band power over 0.5–30 Hz power, from the average of the C3 and C4 spectra.`,
@@ -113,7 +119,7 @@ const eegSpectrumFeatures: FeatureSpec[] = [
   })),
   {
     id: "track.c_log_power",
-    name: "Central EEG power (1 s)",
+    name: "Central EEG power",
     signal: "EEG",
     summary: "Total 0.5–30 Hz central EEG power each second, on a log scale.",
     measurement: `${trackMethod} log10 of 0.5–30 Hz power, C3 and C4 spectra averaged. Scaled per subject (median and IQR) before modelling.`,
@@ -126,7 +132,7 @@ const featureFamilies: FeatureFamily[] = [
     id: "spectrum",
     label: "EEG spectrum",
     signal: "EEG",
-    summary: "Nine 6-second features describe the shape of the central EEG spectrum: its 1/f slope, delta power, the share of power in theta and beta, and band power above the 1/f background. Five 1-second tracks follow the same spectrum second by second.",
+    summary: "Measurements describe the central EEG spectrum: its background slope, overall power, and activity in different frequency bands.",
     evidence: "Sleep depth changes the shape of the EEG spectrum: delta tends to rise with deeper non-REM sleep while alpha falls. Spectral ratios can separate some stages strongly, but no single measure separates all five reliably.",
     limitation: "Spectral summaries describe a window, not a waveform: a K-complex and a burst of movement can raise the same band. Muscle activity inflates beta and gamma on the scalp.",
     sources: [1, 6],
@@ -136,35 +142,35 @@ const featureFamilies: FeatureFamily[] = [
     id: "spindles",
     label: "Spindles",
     signal: "EEG",
-    summary: "One 1-second track: the share of central EEG power in the spindle band (11–16 Hz).",
-    evidence: "Sleep spindles are 0.5–2 second bursts of 11–16 Hz activity and the defining feature of N2. Averaged over 30 seconds a few spindles barely move the spindle-band share; at 1-second resolution each one is a separate peak. That is why the epoch-level spindle features were dropped and this track kept.",
+    summary: "Spindle-band power and detected spindle bursts describe brief N2 activity.",
+    evidence: "Sleep spindles are 0.5–2 second bursts of 11–16 Hz activity and the defining feature of N2. Averaged over 30 seconds a few spindles barely move the spindle-band share; at 1-second resolution each one is a separate peak. Model C includes both spindle-band share and a spindle-burst detector; the latter more directly targets brief events.",
     limitation: "Sigma-band power suggests spindle activity but does not detect individual spindle events. Alpha bursts at 11–12 Hz overlap the band, and spindle density falls with age.",
     sources: [1, 7],
     features: [
       { id: "spindle_bursts", name: "Spindle bursts", signal: "EEG", summary: "Seconds in the epoch with a spindle-band burst.", measurement: `${trackMethod} Per second, the 11–16 Hz share divided by the 8–12 Hz plus 16–30 Hz shares (C3 and C4 spectra averaged); a burst is a second more than two robust SDs above that night's median, counted per 30-second epoch.`, stageUse: "Several per epoch in N2 (and N3, where spindles also occur), rare in wake, N1 and REM." },
-      { id: "track.c_rel_sigma", name: "Spindle-band share (1 s)", signal: "EEG", summary: "Share of each second's 0.5–30 Hz central EEG power that falls in 11–16 Hz.", measurement: `${trackMethod} 11–16 Hz power over 0.5–30 Hz power, C3 and C4 spectra averaged.`, stageUse: "Brief peaks during N2 spindles." }
+      { id: "track.c_rel_sigma", name: "Spindle-band share", signal: "EEG", summary: "Share of each second's 0.5–30 Hz central EEG power that falls in 11–16 Hz.", measurement: `${trackMethod} 11–16 Hz power over 0.5–30 Hz power, C3 and C4 spectra averaged.`, stageUse: "Brief peaks during N2 spindles." }
     ]
   },
   {
     id: "topography",
     label: "Frontal slow waves / occipital alpha",
     signal: "EEG",
-    summary: "Two features and two one-second signals based on the electrode locations and calibrated amplitudes that the AASM rules specify.",
+    summary: "Frontal slow waves and occipital alpha describe the location and amplitude of EEG staging cues.",
     evidence: "AASM scores N3 from slow waves of at least 75 µV at 0.5–2 Hz on frontal leads, and wake from posterior alpha that attenuates at sleep onset. Calibrated microvolts make the amplitude rule possible.",
     limitation: "The amplitude rule assumes adult slow-wave amplitudes; slow waves shrink with age, so older patients can reach N3 by expert judgement with fewer waves above 75 µV. Eyes-open wake shows little alpha.",
     sources: [1],
     features: [
       { id: "topography_features.frontal_slow_wave_fraction", name: "Frontal slow-wave fraction", signal: "EEG", summary: "Share of the epoch covered by 0.5–2 Hz waves of at least 75 µV peak-to-peak on F3/F4.", measurement: "Band-pass 0.5–2 Hz, split into full waves at upward zero crossings, keep waves of 0.5–2 s with peak-to-peak ≥ 75 µV; fraction of the epoch they cover, averaged over F3-M2 and F4-M1.", stageUse: "AASM scores N3 when this reaches 20%." },
       { id: "topography_features.occipital_rel_alpha", name: "Occipital alpha share", signal: "EEG", summary: "Share of occipital EEG power at 8–12 Hz.", measurement: "Welch spectrum (4-s segments) per epoch on O1-M2 and O2-M1, 8–12 Hz over 1–30 Hz power, averaged.", stageUse: "High in relaxed wake, drops out at sleep onset (N1)." },
-      { id: "track.f_rel_delta", name: "Frontal delta share (1 s)", signal: "EEG", summary: "Share of each second's 0.5–30 Hz frontal EEG power in 0.5–4 Hz.", measurement: `${trackMethod} From the average of the F3 and F4 spectra.`, stageUse: "Highest in N3, where slow waves are largest frontally." },
-      { id: "track.o_rel_alpha", name: "Occipital alpha share (1 s)", signal: "EEG", summary: "Share of each second's 0.5–30 Hz occipital EEG power in 8–12 Hz.", measurement: `${trackMethod} From the average of the O1 and O2 spectra.`, stageUse: "High in eyes-closed wake; returns briefly during arousals." }
+      { id: "track.f_rel_delta", name: "Frontal delta share", signal: "EEG", summary: "Share of each second's 0.5–30 Hz frontal EEG power in 0.5–4 Hz.", measurement: `${trackMethod} From the average of the F3 and F4 spectra.`, stageUse: "Highest in N3, where slow waves are largest frontally." },
+      { id: "track.o_rel_alpha", name: "Occipital alpha share", signal: "EEG", summary: "Share of each second's 0.5–30 Hz occipital EEG power in 8–12 Hz.", measurement: `${trackMethod} From the average of the O1 and O2 spectra.`, stageUse: "High in eyes-closed wake; returns briefly during arousals." }
     ]
   },
   {
     id: "eye-movement",
     label: "Eye movement",
     signal: "EOG",
-    summary: "Four 6-second features describe eye activity and the shape of the EOG spectrum; two 1-second tracks split eye-channel power into slow and fast bands.",
+    summary: "Eye activity and slow- and fast-band EOG power describe movement and the shape of the eye-channel spectrum.",
     evidence: "EOG carries slow-eye-movement evidence around sleep onset and rapid-eye-movement evidence in REM. Subject-independent studies have shown that two EOG channels alone contain substantial five-stage information.",
     limitation: "Eye movements also occur during wake, and EOG electrodes pick up frontal EEG, so N3 slow waves leak into the slow EOG band. This dataset records a single eye channel (E1-M2).",
     sources: [1, 8, 9],
@@ -173,21 +179,21 @@ const featureFamilies: FeatureFamily[] = [
       { id: "eye_movement_activity.eye_movement_baseline", name: "Eye-movement baseline", signal: "EOG", summary: "The local baseline itself.", measurement: "30-second rolling median of the 0.1–5 Hz EOG envelope." },
       { id: "epoch_ratio_features.eog_rem_vs_noise_db", name: "Eye-movement power", signal: "EOG", summary: "Eye-movement-range EOG power (0.5–5 Hz) relative to the same channel's 5–30 Hz floor, in decibels.", measurement: "One 30-second spectrum of the E1-M2 channel per epoch; mean magnitude 0.5–5 Hz over 5–30 Hz, in dB.", stageUse: "Rapid eye movements over a quiet, atonic floor." },
       { id: "epoch_ratio_features.eog_rem_vs_sem_db", name: "Fast-to-slow eye movement ratio", signal: "EOG", summary: "0.5–5 Hz against 0.1–0.5 Hz EOG power, in decibels.", measurement: "From the same per-epoch EOG spectrum.", stageUse: "Low when slow rolling eye movements dominate, as at sleep onset." },
-      { id: "track.eog_low", name: "Slow EOG power (1 s)", signal: "EOG", summary: "EOG power at 0.5–2 Hz each second, on a log scale.", measurement: `${trackMethod} log10 of 0.5–2 Hz power on E1-M2.`, stageUse: "Slow rolling eye movements at sleep onset; also frontal slow waves in N3." },
-      { id: "track.eog_high", name: "Fast EOG power (1 s)", signal: "EOG", summary: "EOG power at 2–8 Hz each second, on a log scale.", measurement: `${trackMethod} log10 of 2–8 Hz power on E1-M2.`, stageUse: "The sharp deflections of rapid eye movements in REM and blinks in wake." }
+      { id: "track.eog_low", name: "Slow EOG power", signal: "EOG", summary: "EOG power at 0.5–2 Hz each second, on a log scale.", measurement: `${trackMethod} log10 of 0.5–2 Hz power on E1-M2.`, stageUse: "Slow rolling eye movements at sleep onset; also frontal slow waves in N3." },
+      { id: "track.eog_high", name: "Fast EOG power", signal: "EOG", summary: "EOG power at 2–8 Hz each second, on a log scale.", measurement: `${trackMethod} log10 of 2–8 Hz power on E1-M2.`, stageUse: "The sharp deflections of rapid eye movements in REM and blinks in wake." }
     ]
   },
   {
     id: "muscle-tone",
     label: "Muscle tone",
     signal: "Chin EMG",
-    summary: "One 6-second feature compares chin tone with the same night's quietest epochs; one 1-second track follows the chin EMG level.",
+    summary: "Chin-tone measurements describe muscle activity relative to the night’s quietest periods.",
     evidence: "Chin tone typically falls from wake through non-REM and is lowest in REM. Combined EOG and EMG features can recover much of the information used in multichannel staging.",
     limitation: "Movement, snoring, electrode contact, and REM sleep without atonia can break the expected pattern. Mains interference on the chin lead can mask atonia in a few recordings.",
     sources: [1, 9, 10],
     features: [
       { id: "epoch_ratio_features.emg_floor_db", name: "Chin muscle tone", signal: "Chin EMG", summary: "Chin EMG tone relative to the night's quietest epochs, in decibels.", measurement: "10·log10 of the epoch's 10–100 Hz tone over the 5th percentile of all epochs in the recording. No labels are used.", stageUse: "High in wake, lowest in REM." },
-      { id: "track.emg_log_rms", name: "Chin EMG level (1 s)", signal: "Chin EMG", summary: "RMS of 10–80 Hz chin EMG each second, on a log scale.", measurement: `${trackMethod} Half the log10 of 10–80 Hz power on Chin1-Chin2. Scaled per subject before modelling, so it reads relative to that night.`, stageUse: "Drops at REM onset; brief bursts mark movements and arousals." }
+      { id: "track.emg_log_rms", name: "Chin EMG level", signal: "Chin EMG", summary: "RMS of 10–80 Hz chin EMG each second, on a log scale.", measurement: `${trackMethod} Half the log10 of 10–80 Hz power on Chin1-Chin2. Scaled per subject before modelling, so it reads relative to that night.`, stageUse: "Drops at REM onset; brief bursts mark movements and arousals." }
     ]
   },
   {
@@ -200,7 +206,7 @@ const featureFamilies: FeatureFamily[] = [
     sources: [11, 14, 15],
     features: [
       { id: "hrv_features.hr_slow_sd_300s", name: "Slow heart-rate swings", signal: "ECG", summary: "How much the 10-second average heart rate wanders over 5 minutes.", measurement: "Standard deviation of 10-second mean heart rate across ±150 s (at least 20 of 30 bins), from cleaned beat intervals.", stageUse: "Lower in N3 than in REM in almost every subject with both stages." },
-      { id: "track.hr", name: "Heart rate (1 s)", signal: "ECG", summary: "Instantaneous heart rate at each second.", measurement: "Beat-to-beat rate (60 / RR) from Pan–Tompkins R-peaks, intervals of 0.3–2.0 s, linearly interpolated to the centre of each second.", stageUse: "Higher and more variable in wake and REM; surges mark arousals." }
+      { id: "track.hr", name: "Heart rate", signal: "ECG", summary: "Instantaneous heart rate at each second.", measurement: "Beat-to-beat rate (60 / RR) from Pan–Tompkins R-peaks, intervals of 0.3–2.0 s, linearly interpolated to the centre of each second.", stageUse: "Higher and more variable in wake and REM; surges mark arousals." }
     ]
   },
   {
@@ -214,8 +220,8 @@ const featureFamilies: FeatureFamily[] = [
     features: [
       { id: "breath_regularity.breath_interval_cv_60s", name: "Breath timing variability", signal: "Respiratory effort", summary: "Variation of breath-to-breath intervals over 1 minute.", measurement: "Inspiratory peaks of the 0.1–0.7 Hz band-passed effort-belt sum, at least 1.5 s apart; coefficient of variation of intervals within ±30 s.", stageUse: "Regular in N3, irregular in REM and wake." },
       { id: "cardiorespiratory_coupling.hr_resp_coherence_120s", name: "Heart–breathing coupling", signal: "ECG + effort", summary: "How strongly heart rate is phase-locked to breathing over 2 minutes.", measurement: "Magnitude-squared coherence between the cleaned 4-Hz NN series and the effort signal at the dominant breathing frequency, 32-s Welch segments within ±60 s.", stageUse: "High in N3 and N2, lower in REM and wake." },
-      { id: "track.resp_effort", name: "Breathing effort (1 s)", signal: "Respiratory effort", summary: "The band-passed effort-belt sum, averaged over each second.", measurement: "Abdomen + chest belts, averaged to 10 Hz, band-passed 0.1–0.7 Hz (4th-order Butterworth, zero phase), then averaged per second.", stageUse: "The breathing waveform itself, so the model can see pauses and irregular breaths." },
-      { id: "track.resp_env", name: "Breathing amplitude (1 s)", signal: "Respiratory effort", summary: "Breath-by-breath amplitude of the same signal, on a log scale.", measurement: "log10 of the Hilbert envelope of the band-passed effort signal, averaged per second.", stageUse: "Steady in NREM, variable in REM and wake; drops with hypopneas." }
+      { id: "track.resp_effort", name: "Breathing effort", signal: "Respiratory effort", summary: "The band-passed effort-belt sum, averaged over each second.", measurement: "Abdomen + chest belts, averaged to 10 Hz, band-passed 0.1–0.7 Hz (4th-order Butterworth, zero phase), then averaged per second.", stageUse: "The breathing waveform itself, so the model can see pauses and irregular breaths." },
+      { id: "track.resp_env", name: "Breathing amplitude", signal: "Respiratory effort", summary: "Breath-by-breath amplitude of the same signal, on a log scale.", measurement: "log10 of the Hilbert envelope of the band-passed effort signal, averaged per second.", stageUse: "Steady in NREM, variable in REM and wake; drops with hypopneas." }
     ]
   }
 ];
@@ -377,7 +383,7 @@ const stageFeatureTargets: StageFeatureTarget[] = [
   },
   {
     stage: "N2",
-    cue: "N2 is identified by sleep spindles and K-complexes. Both last only a second or two, so they appear as brief peaks in the one-second signals. Heart rate also follows breathing closely in stable NREM.",
+    cue: "N2 is identified by sleep spindles and K-complexes. Both are brief events, so event detection complements average band power. Heart rate also follows breathing closely in stable NREM.",
     featureIds: ["spindle_bursts", "track.c_rel_sigma", "cardiorespiratory_coupling.hr_resp_coherence_120s"],
     expect: { "spindle_bursts": "high", "track.c_rel_sigma": "high", "cardiorespiratory_coupling.hr_resp_coherence_120s": "high" }
   },
@@ -398,11 +404,13 @@ const stageFeatureTargets: StageFeatureTarget[] = [
 // How the observed distribution compares with the direction the physiology predicts for the selected stage.
 function featureBehaviour(distribution: { stages: Array<{ stage: string; median: number; one_vs_rest_cohens_d: number }> }, stage: string, direction: "high" | "low") {
   const byMedian = [...distribution.stages].sort((x, y) => x.median - y.median);
-  const highest = byMedian[byMedian.length - 1].stage;
-  const lowest = byMedian[0].stage;
+  const highestStages = byMedian.filter((row) => Math.abs(row.median - byMedian[byMedian.length - 1].median) < 1e-9).map((row) => row.stage);
+  const lowestStages = byMedian.filter((row) => Math.abs(row.median - byMedian[0].median) < 1e-9).map((row) => row.stage);
+  const highest = highestStages.join(" and ");
+  const lowest = lowestStages.join(" and ");
   const d = distribution.stages.find((row) => row.stage === stage)?.one_vs_rest_cohens_d ?? 0;
   const signed = direction === "high" ? d : -d;
-  const extreme = (direction === "high" ? highest : lowest) === stage;
+  const extreme = (direction === "high" ? highestStages : lowestStages).includes(stage);
   const verdict: "expected" | "partly" | "unexpected" = signed >= 0.5 && extreme ? "expected" : signed >= 0.2 ? "partly" : "unexpected";
   return { verdict, highest, lowest, d };
 }
@@ -442,7 +450,7 @@ const featureDerivations: Record<string, { method: string }> = {
   }
 };
 
-const trackDerivation = "Every track is one number per second, so a 30-second epoch and its two neighbours on each side give 150 values per track. Before modelling, each track is scaled by that subject's median and interquartile range over the night, then averaged into 6-second steps.";
+const trackDerivation = "Before modelling, values are scaled by the night’s median and interquartile range, then averaged into six-second steps.";
 
 type ModelProfile = {
   input: string;
@@ -479,7 +487,7 @@ const modelProfiles: Record<string, ModelProfile> = {
     sources: [4]
   },
   "window-all": {
-    input: "14 one-second tracks and the 19 features, including heart and breathing, every 6 seconds over 150 seconds",
+    input: "33 measurements, including heart and breathing, every 6 seconds over 150 seconds",
     context: "150 seconds · 25 six-second steps",
     architecture: ["33 signals × 25 steps", "gradient-boosted trees", "stage label"],
     fit: "825 inputs per epoch. Tracks and features are scaled per subject, then standardized with the training subjects' mean and SD and clipped at ±10. Library-default gradient boosting, class-balanced, no tuning.",
@@ -487,7 +495,7 @@ const modelProfiles: Record<string, ModelProfile> = {
     sources: [4]
   },
   window: {
-    input: "11 one-second tracks and 16 features from the EEG, eyes and chin, every 6 seconds over 150 seconds",
+    input: "27 EEG, eye and chin measurements, every 6 seconds over 150 seconds",
     context: "150 seconds · 25 six-second steps",
     architecture: ["27 signals × 25 steps", "gradient-boosted trees", "stage label"],
     fit: "675 inputs per epoch (27 signals × 25 steps), scaled per subject, then standardized with the training subjects' mean and SD. Library-default gradient boosting, class-balanced, no tuning.",
@@ -499,7 +507,7 @@ const modelProfiles: Record<string, ModelProfile> = {
     context: "90 seconds · 90 one-second steps",
     architecture: ["30 signals × 90 s", "dilated convolutions", "attention pooling", "stage label"],
     fit: "Three residual dilated convolution blocks (32 channels, kernel 5, dilation 1–4) and attention pooling over seconds, class-weighted, early stopped on 10% of training subjects; two seeds averaged.",
-    tradeoff: "It learns its own temporal filters and lands just below the boosted window, with inputs to its classifier that no longer have names. What it relies on is compared with the trees in the comparison section.",
+    tradeoff: "It learns its own temporal filters and lands just below the boosted window, with inputs to its classifier that no longer have names.",
     sources: [4, 13]
   }
 };
@@ -588,9 +596,9 @@ function SleepStudyPrimer() {
     <div className="research-introduction">
       <div className="research-introduction-copy">
         <p>
-          Sleep staging turns an overnight <strong>polysomnogram (PSG)</strong> into a hypnogram showing when a patient is awake or in N1, N2, N3, or REM sleep. Clinicians use it to calculate total sleep time, sleep efficiency, sleep onset, REM latency, stage proportions, and fragmentation. Apneas, oxygen desaturations, arousals and limb movements are also interpreted against it. <Citation number={2} />
+          Sleep staging turns an overnight <strong>polysomnogram (PSG)</strong> into a timeline of wake, N1, N2, N3 and REM. That timeline establishes how much a patient slept, how fragmented sleep was, and the sleep state in which respiratory events and arousals occurred. Accurate staging therefore underpins the interpretation of the rest of the study. <Citation number={2} />
         </p>
-        <p>Manual scoring is slow and partly subjective. In the AASM inter-scorer reliability program, experienced scorers agreed with the majority on 83% of epochs, but on only 63% of N1 and 67% of N3 epochs. <Citation number={29} /> Deep networks now perform about as well as human scorers. They learn their own features from the raw signals; explaining their decisions is not part of their design, and post-hoc methods such as saliency maps give only approximate explanations. <Citation number={26} /></p>
+        <p>Manual scoring is slow and partly subjective. In the AASM inter-scorer reliability program, experienced scorers agreed with the majority on 83% of epochs, but on only 63% of N1 and 67% of N3 epochs. <Citation number={29} /> Deep networks report strong performance on sleep staging. They learn representations from signals; connecting those representations to physiological events remains a separate task, and saliency maps provide approximate explanations. <Citation number={26} /></p>
       </div>
 
       <div className="research-introduction-figure" role="img" aria-label="EEG, EOG, and chin EMG are scored in 30-second epochs to produce a whole-night hypnogram">
@@ -683,7 +691,7 @@ function StagePrimer() {
   return (
     <div className="research-stage-primer">
       <p className="research-stage-primer-lede">
-        Each stage is a distinct state of the brain and body. Scorers use the first three rows to assign stages. Heart rate and breathing change with the same states but do not define them, which makes them useful when no EEG is available.
+        Sleep stages are identified by combinations of brain activity, eye movements and muscle tone. Heart rate and breathing change alongside them, but do not define the stages. These physiological patterns motivate the features; their overlap explains why no single measurement can identify every stage.
       </p>
       <div className="research-stage-primer-scroll">
         <table>
@@ -697,7 +705,7 @@ function StagePrimer() {
             {stagePrimerRows.map((row) => (
               <tr key={row.system}>
                 <th scope="row">
-                  <strong>{row.system}</strong>
+                  <strong><i className="research-sensor-dot" style={{ background: sensorColors[row.system] }} aria-hidden="true" />{row.system}</strong>
                   <small>{row.signal}</small>
                   <em className={row.scoring ? "is-scoring" : "is-supporting"}>{row.scoring ? "AASM scoring" : "Follows stage"}</em>
                   <span className="research-row-cites">{row.cites.map((number) => <Citation key={number} number={number} />)}</span>
@@ -799,7 +807,7 @@ function FeatureStory({ feature, stageTarget, distribution }: {
   const verdictBlock = (
     <div className={`research-behaviour is-${b.verdict}`}>
       <h5>Expected {direction === "high" ? "higher" : "lower"} in {stageTarget.stage} <em>{behaviourLabel[b.verdict]}</em></h5>
-      <p>{feature.stageUse ? `${feature.stageUse} ` : ""}In this data: highest in {b.highest}, lowest in {b.lowest} ({stageTarget.stage} vs the rest, d = {sign(b.d)}).</p>
+      <p>{feature.stageUse ? `${feature.stageUse} ` : ""}In this data: highest in {b.highest}, lowest in {b.lowest} ({stageTarget.stage} vs the rest, <abbr title="Standardized difference between this stage and the other stages; positive means higher values in this stage">d</abbr> = {sign(b.d)}).</p>
     </div>
   );
   return (
@@ -857,7 +865,7 @@ const featureUnits: Record<string, string> = {
 const basisOrder: Record<FeatureBasis, number> = { aasm: 0, published: 1, adapted: 2 };
 
 // Families measured but left out of the adopted model.
-const notInFinalModel = new Set(["heart", "breathing"]);
+const modelCFeatureIds = new Set(data.signal_importance.map((item) => item.id));
 
 function PhysiologyExplorer() {
   const [stageId, setStageId] = useState("N2");
@@ -869,8 +877,8 @@ function PhysiologyExplorer() {
     const family = featureFamilies.find((item) => item.features.some((feature) => feature.id === id));
     const feature = family?.features.find((item) => item.id === id);
     return family && feature ? [{ family, feature }] : [];
-  }).sort((x, y) => basisOrder[featureBasis[x.feature.id]?.basis ?? "adapted"] - basisOrder[featureBasis[y.feature.id]?.basis ?? "adapted"]);
-  const [featureId, setFeatureId] = useState("track.c_rel_sigma");
+  });
+  const [featureId, setFeatureId] = useState("spindle_bursts");
   const selectedTarget = targetedFeatures.find((item) => item.feature.id === featureId) ?? targetedFeatures[0];
   const family = selectedTarget?.family ?? featureFamilies[0];
   const feature = selectedTarget?.feature ?? family.features[0];
@@ -883,8 +891,8 @@ function PhysiologyExplorer() {
   ].filter((item): item is { kind: "target" | "contrast"; example: FeatureSignalExample } => item !== null);
   const distribution = data.feature_evidence.distributions.find((item) => item.id === feature.id) ?? data.feature_evidence.distributions[0];
   const isTrack = feature.id.startsWith("track.");
-  const method = isTrack ? `${feature.measurement} ${trackDerivation}` : featureDerivations[family.id].method;
-  const anchor = isTrack ? "tracks" : codeAnchor[family.id];
+  const method = isTrack ? `${feature.measurement} ${trackDerivation}` : feature.measurement;
+  const anchor = feature.id === "spindle_bursts" ? "spindle-bursts" : isTrack ? "tracks" : codeAnchor[family.id];
 
   useEffect(() => {
     let cancelled = false;
@@ -934,8 +942,8 @@ function PhysiologyExplorer() {
       <div className="research-feature-picker" role="listbox" aria-label={`${stageId} features`}>
         {targetedFeatures.map((item) => (
           <button key={item.feature.id} type="button" role="option" aria-selected={item.feature.id === feature.id} onClick={() => setFeatureId(item.feature.id)}>
-            <strong>{item.feature.name}</strong>
-            <span>{item.family.signal} <BasisTag featureId={item.feature.id} compact />{notInFinalModel.has(item.family.id) ? <em className="research-not-in-model">not in final model</em> : null}</span>
+            <strong><i className="research-feature-sensor-dot" aria-hidden="true" style={{ background: item.family.id === "eye-movement" ? sensorColors.Eyes : item.family.id === "muscle-tone" ? sensorColors["Chin muscle"] : item.family.id === "heart" ? sensorColors.Heart : item.family.id === "breathing" ? sensorColors.Breathing : sensorColors.Brain }} />{item.feature.name}</strong>
+            <span><BasisTag featureId={item.feature.id} compact />{!modelCFeatureIds.has(item.feature.id) ? <em className="research-not-in-model">not in final model</em> : null}</span>
           </button>
         ))}
       </div>
@@ -965,8 +973,9 @@ function PhysiologyExplorer() {
       ) : (
         <div className="research-feature-epoch">
           <div className="research-epoch-heading">
-            <strong title={`Typical epochs: one near the 80th percentile of the target stage, one near the median of the stage furthest the other way.`}>Example epochs: {shownExamples.map(({ example }) => example.stage).join(" vs ")}</strong>
+            <strong>Example epochs: {shownExamples.map(({ example }) => example.stage).join(" vs ")}</strong>
           </div>
+          <p className="research-plot-caption">Selected epochs illustrate the expected contrast; markers on the distributions above show where their measurements fall.</p>
           {shownExamples.map(({ kind, example }) => (
             <div className="research-epoch-example" key={kind}>
               <div className="research-epoch-example-label">
@@ -1004,8 +1013,7 @@ function WindowModelFigure() {
           ))}
         </div>
         <div className="research-window-rows">
-          <span><strong>{tracks} one-second tracks</strong><small>Central EEG band shares and power, frontal delta, occipital alpha, slow and fast EOG, chin EMG; 1-s values averaged to 6 s</small></span>
-          <span><strong>{features} six-second features</strong><small>1/f slope, band power, frontal slow waves, occipital alpha, eye movement, chin tone</small></span>
+          <span><strong>{tracks + features} physiological measurements</strong><small>EEG spectrum, spindles, frontal slow waves, occipital alpha, eye activity and chin tone; supplied every six seconds</small></span>
         </div>
         <div className="research-introduction-flow research-window-flow">
           <span><b>{(tracks + features) * 25} inputs</b><small>{tracks + features} signals × 25 steps</small></span>
@@ -1076,17 +1084,22 @@ function CompactStudyProtocol() {
         <div className="research-ablation-row research-data-row" role="row">
           <span role="cell"><strong>UCDDB</strong><small className="research-row-note">St Vincent&rsquo;s University Hospital, Dublin <Citation number={3} /></small></span>
           <span role="cell">25 nights<small className="research-row-note">suspected sleep apnea; older R&amp;K scoring</small></span>
-          <span role="cell"><b>External test.</b> Applied without retraining, on a different amplifier and montage <Exp ids={[27]} />. Also where the first features were built <Exp range={[1, 14]} />.</span>
+          <span role="cell"><b>Early development.</b> Used to build the initial features and staging models <Exp range={[1, 14]} />.</span>
         </div>
         <div className="research-ablation-row research-data-row is-adopted" role="row">
-          <span role="cell"><strong>CinC 2018, development</strong><small className="research-row-note">Massachusetts General Hospital, Boston <Citation number={24} /></small></span>
+          <span role="cell"><strong>Boston · CinC 2018, development</strong><small className="research-row-note">Massachusetts General Hospital, Boston <Citation number={24} /></small></span>
           <span role="cell">{data.source.subjects} nights<small className="research-row-note">{data.source.epochs.toLocaleString()} epochs</small></span>
-          <span role="cell"><b>Development and cross-validation.</b> Five folds split by patient, the same for every model. Main dataset from <Exp ids={[15]} /> onward, for its calibrated amplitudes, frontal and occipital leads and AASM labels.</span>
+          <span role="cell"><b>Development and cross-validation.</b> Five-fold cross-validation split by patient. <Exp ids={[15]} /></span>
         </div>
         <div className="research-ablation-row research-data-row" role="row">
-          <span role="cell"><strong>CinC 2018, held out</strong><small className="research-row-note">Same hospital, set aside before modelling</small></span>
+          <span role="cell"><strong>Boston · CinC 2018, held out</strong><small className="research-row-note">Same hospital, set aside before modelling</small></span>
           <span role="cell">{data.generalisation?.holdout_subjects || 200} nights<small className="research-row-note">more apnea: 59% moderate or severe</small></span>
-          <span role="cell"><b>Held-out test.</b> Scored by a model retrained on all {data.source.subjects} development patients; each run logged ({data.generalisation?.holdout_looks ?? 0} so far), summary metrics only <Exp ids={[30]} />.</span>
+          <span role="cell"><b>Held-out test.</b> Model C fitted on all {data.source.subjects} development patients; {data.generalisation?.holdout_looks ?? 0} evaluation looks. <Exp ids={[30]} /></span>
+        </div>
+        <div className="research-ablation-row research-data-row" role="row">
+          <span role="cell"><strong>Coimbra · ISRUC-Sleep</strong><small className="research-row-note">Coimbra, Portugal; subgroup I; two scorers per night</small></span>
+          <span role="cell">{isrucStatus.final_complete ? isrucStatus.evaluated : 100} nights</span>
+          <span role="cell"><b>External evaluation.</b> One recorded evaluation look; predictions compared with both scorers.</span>
         </div>
       </div>
       <p className="research-dataset-line"><span>Stage distribution in the development set:</span></p>
@@ -1100,7 +1113,7 @@ function CompactStudyProtocol() {
           {data.diagnostics.per_stage.map((stage) => <span key={stage.stage}><i style={{ background: stageColors[stage.stage] }} />{stage.stage} <strong>{formatPercent(stage.support / total)}</strong></span>)}
         </div>
       </div>
-      <p className="research-protocol-source">The development set includes adults aged 18–87 (median 53; 185 men, 135 women), selected to cover the range of apnea severity: 115 with AHI below 5, 69 mild, 96 moderate and 40 severe. CinC recordings were scored by one technologist per night using AASM rules. In UCDDB, R&amp;K stages 3 and 4 were merged into N3.</p>
+      <p className="research-protocol-source">The development set includes adults aged 18–87 (median 53; 185 men, 135 women), selected to cover the range of apnea severity: 115 with AHI below 5, 69 mild, 96 moderate and 40 severe.</p>
     </div>
   );
 }
@@ -1149,11 +1162,7 @@ function ModelExplorer() {
   );
 }
 
-// AASM inter-scorer reliability program: agreement with the majority score, by majority stage (Rosenberg & Van Hout 2013).
-const scorerAgreement: Record<string, number> = { Wake: 0.841, N1: 0.63, N2: 0.852, N3: 0.674, REM: 0.905 };
-
 function ConfusionExplorer() {
-  const diagnosticsModel = data.models.find((model) => model.id === data.headline.diagnostics_model_id);
   return (
     <div className="research-confusion-wrap">
       <div className="research-confusion research-confusion-static">
@@ -1161,11 +1170,16 @@ function ConfusionExplorer() {
         <div className="research-confusion-head">
           <span />
           {data.source.stages.map((stage) => <span key={stage}>{stage}</span>)}
-          <span>Precision</span><span>Recall</span><span>F1</span><span>Scorers</span>
+          <span title="Of predictions assigned to this stage, the proportion that is correct">Precision</span><span title="Of expert-labelled epochs in this stage, the proportion found by the model">Sensitivity</span><span title="Harmonic mean of precision and sensitivity for this stage">F1</span><span title="Proportion of all other stages correctly excluded">Specificity</span>
         </div>
         {data.diagnostics.confusion_normalized.map((values, rowIndex) => {
           const stage = data.source.stages[rowIndex];
           const metric = data.diagnostics.per_stage[rowIndex];
+          const counts = data.diagnostics.confusion_counts;
+          const total = counts.flat().reduce((sum, value) => sum + value, 0);
+          const positives = counts[rowIndex].reduce((sum, value) => sum + value, 0);
+          const falsePositives = counts.reduce((sum, row, index) => sum + (index === rowIndex ? 0 : row[rowIndex]), 0);
+          const specificity = 1 - falsePositives / Math.max(total - positives, 1);
           return (
             <div className="research-confusion-row" key={stage}>
               <strong style={{ color: stageColors[stage] }}>{stage}</strong>
@@ -1178,15 +1192,15 @@ function ConfusionExplorer() {
                   {formatPercent(value)}
                 </span>
               ))}
-              <em>{formatMetric(metric.precision)}</em>
-              <em>{formatMetric(metric.recall)}</em>
+              <em>{formatPercent(metric.precision)}</em>
+              <em>{formatPercent(metric.recall)}</em>
               <em className="is-f1">{formatMetric(metric.f1)}</em>
-              <em className="is-scorer">{formatPercent(scorerAgreement[stage])}</em>
+              <em>{formatPercent(specificity)}</em>
             </div>
           );
         })}
       </div>
-      <p className="research-confusion-caption">Rows: expert stage (each row sums to 100%). Columns: predicted stage. &ldquo;Scorers&rdquo;: inter-scorer agreement for that stage. <Citation number={29} /></p>
+      <p className="research-confusion-caption">Rows: expert stage; columns: predicted stage. Each row sums to 100%. Stage metrics pool all cross-validation predictions; headline scores average the five folds.</p>
     </div>
   );
 }
@@ -1206,58 +1220,126 @@ const signalInfo: Record<string, { name: string; family: string }> = Object.from
   featureFamilies.flatMap((family) => family.features.map((feature) => [feature.id.split(".").pop() as string, { name: feature.name, family: family.id }]))
 );
 
+function PhysiologyFindings() {
+  return <div className="research-feature-tab">
+    <ModelEvidence part="signals" />
+  </div>;
+}
+
+function PerformanceSummary() {
+  const model = data.models.find((item) => item.id === data.headline.diagnostics_model_id) as ModelResult;
+  const items = [
+    { value: formatMetric(model.metrics.macro_f1), label: "Macro-F1", note: "Equal weight to each stage; balances precision and sensitivity." },
+    { value: `${(model.metrics.accuracy * 100).toFixed(1)}%`, label: "Accuracy", note: "Share of all epochs scored correctly; common stages count more." },
+    { value: `${(model.metrics.balanced_accuracy * 100).toFixed(1)}%`, label: "Balanced accuracy", note: "Average sensitivity across the five stages." },
+    { value: model.metrics.cohen_kappa.toFixed(2), label: "Cohen’s κ", note: "Agreement beyond that expected from the stage frequencies." }
+  ];
+  return <div className="research-glance-stats research-performance-metrics">{items.map((item) => <div key={item.label}><strong>{item.value}</strong><span><b>{item.label}</b><br />{item.note}</span></div>)}</div>;
+}
+
+function IsrucResults() {
+  if (!isrucStatus.final_complete) return null;
+  const results = isrucStatus.results as Array<{ evaluation: string; macro_f1: number; accuracy: number; kappa: number; n_subjects: number }>;
+  const rows = [
+    { id: "transfer_cinc_to_isruc_scorer1", label: "Model vs scorer 1" },
+    { id: "transfer_cinc_to_isruc_scorer2", label: "Model vs scorer 2" },
+    { id: "isruc_scorer1_vs_scorer2", label: "Scorer 1 vs scorer 2" },
+    { id: "transfer_on_epochs_where_scorers_agree", label: "Model on scorer-agreement epochs" }
+  ].flatMap((item) => {
+    const result = results.find((row) => row.evaluation === item.id);
+    return result ? [{ ...result, label: item.label }] : [];
+  });
+  if (rows.length !== 4) return null;
+  const columns = { gridTemplateColumns: "minmax(200px, 2fr) repeat(4, minmax(72px, 1fr))" };
+  return <div className="research-ablations">
+    <div className="research-evidence-head">
+      <h3>Coimbra</h3>
+      <p>The adopted 20-signal model trained on Boston recordings, applied to {isrucStatus.evaluated} Coimbra nights. Night 8 lacked frontal EEG and was excluded.</p>
+    </div>
+    <div className="research-ablation-table" role="table" aria-label="Coimbra external evaluation">
+      <div className="research-ablation-row is-head" role="row" style={columns}>
+        {["Comparison", "Nights", "Macro-F1", "Accuracy", "κ"].map((label) => <span role="columnheader" key={label}>{label}</span>)}
+      </div>
+      {rows.map((row) => <div className="research-ablation-row" role="row" style={columns} key={row.evaluation}>
+        <span role="cell">{row.label}</span>
+        <span role="cell" className="num">{row.n_subjects}</span>
+        <span role="cell" className="num">{formatMetric(row.macro_f1)}</span>
+        <span role="cell" className="num">{(100 * row.accuracy).toFixed(1)}%</span>
+        <span role="cell" className="num">{row.kappa.toFixed(2)}</span>
+      </div>)}
+    </div>
+    <p className="research-ablation-note">Comparisons involving scorer 2 use epochs scored by both scorers. The agreement-only analysis excludes disputed epochs and describes an easier subset, rather than overall performance.</p>
+  </div>;
+}
+
 function ModelEvidence({ part }: { part: "signals" | "time" }) {
-  const families = data.feature_importance;
-  const max = Math.max(...families.map((item) => item.importance), 0.001);
-  const total = families.reduce((sum, item) => sum + Math.max(item.importance, 0), 0);
-  const trackShare = data.signal_importance.filter((item) => item.kind === "track").reduce((sum, item) => sum + Math.max(item.importance, 0), 0) / total;
+  const measurements = [...data.signal_importance].sort((a, b) => b.importance - a.importance);
+  const remainingGroups = [
+    { label: "Other EEG measurements", families: ["spectrum", "topography", "spindles"], color: "#78d8ff" },
+    { label: "Other eye measurements", families: ["eye-movement"], color: "#ef8ab5" },
+    { label: "Other chin measurements", families: ["muscle-tone"], color: "#b49cf0" }
+  ].map((group) => {
+    const items = measurements.slice(8).filter((item) => group.families.includes(item.family_id));
+    return { ...group, count: items.length, importance: items.reduce((sum, item) => sum + item.importance, 0) };
+  }).filter((group) => group.count > 0);
+  const max = Math.max(...measurements.slice(0, 8).map((item) => item.importance), ...remainingGroups.map((group) => group.importance), .001);
+  const measurementColor = (family: string) => family === "eye-movement" ? "#ef8ab5" : family === "muscle-tone" ? "#b49cf0" : "#78d8ff";
   const positive = (value: number) => Math.max(value, 0);
   const fine = data.time_importance.fine;
   const coarse = data.time_importance.epoch;
-  const fineMax = Math.max(...fine.map((item) => item.importance), 0.001);
-  const coarseMax = Math.max(...coarse.map((item) => item.importance), 0.001);
+  const timeMax = Math.ceil(Math.max(...fine.map((item) => item.importance), ...coarse.map((item) => item.importance), .001) * 100) / 100;
   const peak = fine.filter((item) => item.offset_sec >= 0 && item.offset_sec < 30).reduce((a, b) => (b.importance > a.importance ? b : a));
   const coarseAt = (offset: number) => coarse.find((item) => item.offset_sec === offset)?.importance ?? 0;
   const coarseRatio = coarseAt(-30) / Math.max(coarseAt(30), 0.0005);
   return (
     <div className="research-evidence">
-      <p className="research-evidence-lede">
-        {part === "signals"
-          ? <>Drop in macro-F1 when all signals in a family are shuffled across held-out epochs ({data.importance_folds} folds). The one-second signals account for {formatPercent(trackShare)} of the total. Correlated signals share credit, so a short bar can mean that another signal carries the same information. Some features that do not separate their intended stage on their own (marked in <SecRef to="features" />) still contribute in combination: the eye-channel signals also carry frontal slow waves, yet shuffling them costs REM the most of any stage.</>
-          : <>The same test, shuffling one time step of the 150-second window at a time. <Exp ids={[21]} /></>}
-      </p>
+      {part === "time" ? <p className="research-evidence-lede">For the timing analysis, measurements are swapped only at the indicated position in the window. The upper plot tests a six-second step; the lower plot tests a whole epoch because those measurements repeat across its five steps. <Exp ids={[21]} /></p> : null}
       <div className="research-evidence-grid is-single">
-        {part === "signals" ? <div className="research-importance-bars research-family-bars">
-          {families.map((family) => {
-            const members = data.signal_importance.filter((item) => item.family_id === family.family_id);
-            const top = members[0];
-            const stage = Object.entries(family.stage_drops).sort((a, b) => b[1] - a[1])[0][0];
-            return (
-              <div key={family.family_id}>
-                <span>{family.group}<small>top signal: {top?.label.replace(" (1 s)", "")} · largest effect on {stage}</small></span>
-                <i><b style={{ width: `${(Math.max(family.importance, 0) / max) * 100}%`, background: familyColors[family.family_id] }} /></i>
-                <strong>{formatMetric(family.importance)}</strong>
-              </div>
-            );
-          })}
+        {part === "signals" ? <div>
+          <p className="research-signal-key"><span><i style={{ background: "#78d8ff" }} /> EEG</span><span><i style={{ background: "#ef8ab5" }} /> Eye activity</span><span><i style={{ background: "#b49cf0" }} /> Chin tone</span><span>Drop in macro-F1 · mean of {data.importance_folds} test folds</span></p>
+          <div className="research-importance-bars research-individual-bars is-compact">
+            {measurements.slice(0, 8).map((item) => {
+              const label = item.id === "track.o_rel_alpha" ? "Occipital alpha · 2-s spectrum" : item.id === "topography_features.occipital_rel_alpha" ? "Occipital alpha · 30-s spectrum" : item.label.replace(" (1 s)", "");
+              return <div key={item.id}>
+                <span>{label}</span>
+                <i><b style={{ width: `${Math.max(item.importance, 0) / max * 100}%`, background: measurementColor(item.family_id) }} /></i>
+                <strong>{formatMetric(item.importance)}</strong>
+              </div>;
+            })}
+          </div>
+          <div className="research-importance-bars research-individual-bars is-compact research-other-sums">
+            {remainingGroups.map((group) => <div key={group.label}>
+              <span>{group.label}<small className="research-row-note">{group.count} measurements · summed</small></span>
+              <i><b style={{ width: `${Math.max(group.importance, 0) / max * 100}%`, background: group.color }} /></i>
+              <strong>{formatMetric(group.importance)}</strong>
+            </div>)}
+          </div>
+          <p className="research-other-sum-note">“Other” bars sum the remaining individual importance scores; they do not measure the effect of shuffling those measurements together.</p>
         </div> : null}
         {part === "time" ? <div className="research-context-plot" role="img" aria-label="Importance of each 6-second step and each epoch across the 150-second window">
           <div className="research-context-epochs" aria-hidden="true">
             {[-2, -1, 0, 1, 2].map((epoch) => <span key={epoch} className={epoch === 0 ? "is-scored" : undefined}>{epoch === 0 ? "scored" : `${epoch > 0 ? "+" : "−"}${Math.abs(epoch)}`}</span>)}
           </div>
-          <div className="research-context-row-label">1-s tracks and 6-s features, per 6-s step</div>
+          <div className="research-context-row-label">Measurements that change within an epoch · swap one six-second step</div>
+          <div className="research-context-y-title">Drop in macro-F1 · mean of {data.time_importance.folds} test folds · shared vertical scale</div>
+          <div className="research-context-scaled-row">
+          <div className="research-context-y-ticks"><span>{formatMetric(timeMax)}</span><span>{formatMetric(timeMax / 2)}</span><span>0</span></div>
           <div className="research-context-bars">
             {fine.map((item) => (
               <i key={item.offset_sec} className={item.offset_sec >= 0 && item.offset_sec < 30 ? "is-scored" : undefined}
-                style={{ height: `${(positive(item.importance) / fineMax) * 100}%` }} title={`${item.offset_sec} s: ${formatMetric(item.importance)}`} />
+                style={{ height: `${(positive(item.importance) / timeMax) * 100}%` }} title={`${item.offset_sec} s: ${formatMetric(item.importance)}`} />
             ))}
           </div>
-          <div className="research-context-row-label">Epoch-level features (one value per epoch), per epoch</div>
+          </div>
+          <div className="research-context-row-label">Measurements calculated once per 30-second epoch · swap all five repeated six-second values together</div>
+          <div className="research-context-scaled-row">
+          <div className="research-context-y-ticks"><span>{formatMetric(timeMax)}</span><span>{formatMetric(timeMax / 2)}</span><span>0</span></div>
           <div className="research-context-bars is-epochs">
             {coarse.map((item) => (
               <i key={item.offset_sec} className={item.offset_sec === 0 ? "is-scored" : undefined}
-                style={{ height: `${(positive(item.importance) / coarseMax) * 100}%` }} title={`${item.offset_sec} s: ${formatMetric(item.importance)}`} />
+                style={{ height: `${(positive(item.importance) / timeMax) * 100}%` }} title={`${item.offset_sec} s: ${formatMetric(item.importance)}`} />
             ))}
+          </div>
           </div>
           <div className="research-context-axis" aria-hidden="true">
             {[-60, -30, 0, 30, 60, 90].map((tick) => <span key={tick} style={{ left: `${((tick + 60) / 150) * 100}%` }}>{tick} s</span>)}
@@ -1275,25 +1357,18 @@ function Generalisation() {
   const adopted = data.models.find((model) => model.id === "adopted") as ModelResult;
   const g = data.generalisation;
   if (!g) return null;
-  const inLab = g.transfer.find((row) => row.evaluation === "in_lab_cinc_cv");
-  const transfer = g.transfer.find((row) => row.evaluation === "transfer_cinc_to_ucddb");
   const held = g.holdout.find((row) => row.config === "g20");
   const heldRef = g.holdout.find((row) => row.config === "epoch19");
   const epochRef = data.models.find((model) => model.id === "epoch") as ModelResult;
-  if (!inLab || !transfer) return null;
   const rows = [
-    { label: `Cross-validation, ${data.source.subjects} CinC patients`, note: "final model, each patient tested once", row: { macro_f1: adopted.metrics.macro_f1, kappa: adopted.metrics.cohen_kappa, stage_f1: adopted.stage_f1 } },
-    ...(held ? [{ label: `Held-out test, ${g.holdout_subjects} CinC patients`, note: `not used in development; scored ${g.holdout_looks === 1 ? "once" : `${g.holdout_looks} times`}, summary metrics only`, row: { ...held, stage_f1: undefined as Record<string, number> | undefined } }] : []),
-    { label: "Shared signals only, CinC cross-validation", note: "final model without frontal, occipital or chin-EMG signals, to match UCDDB", row: inLab },
-    { label: "Same model, Dublin lab (UCDDB, 25 patients)", note: "trained on CinC only; different lab, montage, sample rates and R&K scoring", row: transfer }
+    { label: `Cross-validation, ${data.source.subjects} Boston patients`, note: "final model, each patient tested once", row: { macro_f1: adopted.metrics.macro_f1, kappa: adopted.metrics.cohen_kappa, stage_f1: adopted.stage_f1 } },
+    ...(held ? [{ label: `Held-out test, ${g.holdout_subjects} Boston patients`, note: `${g.holdout_looks} evaluation looks`, row: { ...held, stage_f1: undefined as Record<string, number> | undefined } }] : []),
+    ...(isrucStatus.final_complete ? isrucStatus.results.filter((row) => ["transfer_cinc_to_isruc_scorer1", "transfer_cinc_to_isruc_scorer2"].includes(row.evaluation)).map((row) => ({ label: `Coimbra, ${row.n_subjects} nights · scorer ${row.evaluation.endsWith("scorer1") ? "1" : "2"}`, note: "Model C · all 20 inputs", row })) : []),
   ];
   return (
     <div className="research-ablations">
       <div className="research-evidence-head">
         <h3>Per-stage scores for each test</h3>
-        <p>
-          Trained on Boston recordings only and applied to the Dublin recordings without retraining, a version limited to signals recorded in both labs scores {formatMetric(transfer.macro_f1)} (κ {transfer.kappa.toFixed(2)}). That is {formatMetric(inLab.macro_f1 - transfer.macro_f1)} below its cross-validated score on CinC, and higher than our best model trained on UCDDB itself (0.744, <Exp ids={[14]} />). An earlier epoch-level version lost about 0.07 between these labs; scaling each signal within each night is the likely reason for the improvement.
-        </p>
       </div>
       <div className="research-ablation-table" role="table" aria-label="Held-out and cross-lab results">
         <div className="research-ablation-row is-head" role="row">
@@ -1306,11 +1381,10 @@ function Generalisation() {
             <span role="cell" className="num">{formatMetric(row.macro_f1)}</span>
             <span role="cell" className="num">{row.kappa.toFixed(2)}</span>
             <span role="cell" />
-            {data.source.stages.map((stage) => <span role="cell" className="num" key={stage}>{row.stage_f1 ? row.stage_f1[stage].toFixed(2) : "—"}</span>)}
+            {data.source.stages.map((stage) => <span role="cell" className="num" key={stage}>{row.stage_f1 ? (row.stage_f1 as Record<string, number>)[stage].toFixed(2) : "—"}</span>)}
           </div>
         ))}
       </div>
-      {held ? <p className="research-ablation-note">The held-out patients are scored by a model retrained on all {data.source.subjects} development patients. To keep this test independent, only summary metrics are reported (no per-stage or per-patient results), every scoring run is logged ({g.holdout_dates.join(", ")}), and several models scored together count as one run. All other analyses on this page use the cross-validation models.</p> : null}
     </div>
   );
 }
@@ -1338,7 +1412,7 @@ function ModelPath() {
   const held = data.generalisation?.holdout.find((row) => row.config === "nocardio27" && row.look === 1);
   const prune = data.reduction?.find((row) => row.config === "prune6");
   const steps = [
-    { name: "B · Context", signals: 33, f1: byId("window-all")?.metrics.macro_f1, note: "Features and one-second signals in context, heart and breathing included." },
+    { name: "B · Context", signals: 33, f1: byId("window-all")?.metrics.macro_f1, note: "33 measurements in context, heart and breathing included." },
     { name: "Features in context", signals: 19, f1: byId("window-features")?.metrics.macro_f1, note: "The 19 features alone in context: most of the gain over A is context itself." },
     { name: "27 signals", signals: 27, f1: byId("window")?.metrics.macro_f1, note: `Heart and breathing removed (+0.002 with them).${held ? ` Scored at held-out look 1: ${formatMetric(held.macro_f1)}.` : ""}` },
     { name: "21 signals", signals: 21, f1: prune?.macro_f1, note: "The six least-used inputs removed, no loss." },
@@ -1470,7 +1544,7 @@ function BlackBoxAgreement() {
   return (
     <div className="research-agreement">
       <p className="research-evidence-lede">
-        If the named signals missed stage information, a network that learns its own features (D) should rely on different body systems. C&rsquo;s reliance is measured by shuffling inputs. D mixes its inputs after the first layer, so its reliance is estimated from gradients instead. <Exp ids={[20]} />
+        An exploratory comparison asks which body systems each model uses. C is measured by shuffling inputs; D is estimated from gradients. The models use different inputs and windows, and these attribution methods are not directly equivalent. Agreement is descriptive support, not validation of the features or their physiological interpretation. <Exp ids={[20]} />
       </p>
       <div className="research-agreement-table is-paired" style={{ gridTemplateColumns: `minmax(0, 1.5fr) repeat(${stages.length}, minmax(0, 1fr))` }}>
         <span className="research-agreement-key">% share · <b>C</b> / D</span>
@@ -1520,10 +1594,10 @@ function publishedModels(): PublishedModel[] {
       name: "C · 20 signals (this page)", kind: "Gradient-boosted trees", ours: true,
       macroF1: adopted.metrics.macro_f1, stageF1: stage(adopted), kappa: adopted.metrics.cohen_kappa, accuracy: adopted.metrics.accuracy,
       size: `${size.trees} trees, ${size.splits.toLocaleString()} splits on ${size.inputs_used} of ${size.inputs} named inputs`,
-      learned: size.nodes, learnedShort: size.nodes.toLocaleString(), trainShort: `${size.train_subjects} per fold`, testShort: `5-fold CV, ${data.source.subjects} CinC`,
+      learned: size.nodes, learnedShort: size.nodes.toLocaleString(), trainShort: `${size.train_subjects} per fold`, testShort: `5-fold CV, ${data.source.subjects} Boston`,
       training: `${size.train_subjects} subjects per fold; ${Math.round(size.fit_seconds / 60)} min on a laptop CPU`,
-      inputs: "8 one-second tracks + 12 features (EEG, eyes, chin), 150 s",
-      evaluation: `5-fold CV, ${data.source.subjects} CinC 2018 records`
+      inputs: "20 EEG, eye and chin measurements, every 6 s over 150 s",
+      evaluation: `5-fold CV, ${data.source.subjects} Boston records`
     },
     {
       name: "D · Attention CNN (this page)", kind: "Convolutional network", ours: true,
@@ -1533,22 +1607,22 @@ function publishedModels(): PublishedModel[] {
     },
     {
       name: "U-Sleep", kind: "Fully convolutional U-Net", macroF1: 0.79, stageF1: [0.84, 0.6, 0.84, 0.81, 0.87],
-      size: "≈3.1 million weights", learned: 3.1e6, learnedShort: "≈3.1 M", trainShort: "≈15,600 people pooled from 13 datasets", testShort: "100 other CinC", training: "≈15,600 participants from 13 datasets",
-      inputs: "Raw EEG + EOG at 128 Hz", evaluation: "100 held-out CinC 2018 records", cite: 26
+      size: "≈3.1 million weights", learned: 3.1e6, learnedShort: "≈3.1 M", trainShort: "≈15,600 people pooled from 13 datasets", testShort: "100 other Boston", training: "≈15,600 participants from 13 datasets",
+      inputs: "Raw EEG + EOG at 128 Hz", evaluation: "100 held-out Boston records", cite: 26
     },
     {
-      name: "U-Time", kind: "Fully convolutional U-Net", macroF1: 0.77, size: "≈1.1 million weights", learned: 1.1e6, learnedShort: "≈1.1 M", trainShort: "CinC only (one model per dataset, 7 in the paper)", testShort: "Other CinC",
-      training: "Trained per dataset", inputs: "Raw EEG", evaluation: "CinC 2018, more records than U-Sleep's test set", cite: 27
+      name: "U-Time", kind: "Fully convolutional U-Net", macroF1: 0.77, size: "≈1.1 million weights", learned: 1.1e6, learnedShort: "≈1.1 M", trainShort: "Boston only (one model per dataset, 7 in the paper)", testShort: "Other Boston",
+      training: "Trained per dataset", inputs: "Raw EEG", evaluation: "Boston, more records than U-Sleep's test set", cite: 27
+    },
+    {
+      name: "SLEEPNET", kind: "Recurrent network", kappa: 0.795, accuracy: 0.858, size: "Deep RNN (not reported)", learnedShort: "Not reported", trainShort: "≈10,000 MGH", testShort: "1,000 MGH",
+      training: "≈10,000 MGH patients", inputs: "EEG", evaluation: "1,000 MGH recordings", cite: 28
     },
     {
       name: "Human scorers (AASM program)", kind: "Reference", accuracy: 0.826,
       stageF1: undefined, size: "Agreement with the majority of more than 2,500 scorers", learnedShort: "—", trainShort: "2,500+ scorers", testShort: "1,800 epochs",
       training: "Most with 3 or more years of experience", inputs: "Full PSG, visual scoring",
       evaluation: "1,800 epochs from 9 records", cite: 29
-    },
-    {
-      name: "SLEEPNET", kind: "Recurrent network", kappa: 0.795, accuracy: 0.858, size: "Deep RNN (not reported)", learnedShort: "Not reported", trainShort: "≈10,000 MGH", testShort: "1,000 MGH",
-      training: "≈10,000 MGH patients", inputs: "EEG", evaluation: "1,000 MGH recordings", cite: 28
     }
   ];
 }
@@ -1586,7 +1660,7 @@ function TradeoffChart({ models, sweep: showSweep = false }: { models: Published
           <text key={power} className="tick" x={x(10 ** power)} y="222" textAnchor="middle">{["", "10", "100", "1k", "10k", "100k", "1M", "10M"][power]}</text>
         ))}
         <text className="axis" x="310" y="238" textAnchor="middle">learned values (log scale)</text>
-        <text className="axis" x="14" y="110" textAnchor="middle" transform="rotate(-90 14 110)">macro-F1, CinC 2018</text>
+        <text className="axis" x="14" y="110" textAnchor="middle" transform="rotate(-90 14 110)">macro-F1, Boston</text>
         {sweep.length ? <path className="sweep" d={path} /> : null}
         {sweep.filter((row) => sweepLabels[row.learner]).map((row) => (
           <g key={row.learner} className="is-sweep">
@@ -1665,7 +1739,7 @@ function SubjectVariability() {
     <div className="research-subjects">
       <div>
         <h3>Performance varies across subjects</h3>
-        <p>Macro-F1 for each held-out subject, from the {data.models.find((model) => model.id === data.headline.diagnostics_model_id)?.name ?? "full window"} model.</p>
+        <p>Each bar is one Boston development patient scored in their test fold, ordered from lowest to highest macro-F1.</p>
       </div>
       <div className="research-subject-plot">
         <div className="research-subject-axis" aria-hidden="true">
@@ -1718,17 +1792,17 @@ const historyPhases: Array<{ phase: string; dataset: string; steps: HistoryStep[
   },
   {
     phase: "A better dataset",
-    dataset: "CinC 2018 · 120 → 320 patients",
+    dataset: "Boston · 120 → 320 patients",
     steps: [
-      { n: 15, date: "Oct 17", question: "Move to CinC 2018?", finding: "0.749 on 120 records; calibrated µV, frontal and occipital leads, AASM labels. Trained on UCDDB, tested on CinC: 0.679.", decision: "Switch to CinC 2018.", score: 0.749 },
+      { n: 15, date: "Oct 17", question: "Move to Boston?", finding: "0.749 on 120 records; calibrated µV, frontal and occipital leads, AASM labels. Trained on UCDDB, tested on Boston: 0.679.", decision: "Switch to Boston.", score: 0.749 },
       { n: 16, date: "Oct 17", question: "Better model or more data?", finding: "Learning curve still rising; tuning gave nothing.", decision: "Download to 320 patients." },
       { n: 17, date: "Oct 17", question: "Can we cut features?", finding: "33 → 16 features at no loss with a decoder; new event features +0.006.", decision: "A feature must add ≥ 0.01 or replace two." },
-      { n: 18, date: "Oct 17", question: "Why do CinC patients fail?", finding: "Dead leads, ECG artefact in the EEG, stages with few epochs.", decision: "Report stage counts with per-patient scores." }
+      { n: 18, date: "Oct 17", question: "Why do Boston patients fail?", finding: "Dead leads, ECG artefact in the EEG, stages with few epochs.", decision: "Report stage counts with per-patient scores." }
     ]
   },
   {
     phase: "Context, then simplify",
-    dataset: "CinC 2018 · 320 patients",
+    dataset: "Boston · 320 patients",
     steps: [
       { n: 19, date: "Oct 18", question: "Does real context beat smoothing?", finding: "1-s tracks and 6-s features over 150 s: 0.779 with a decoder vs 0.751.", decision: "Adopt the window model; retire smoothers and networks.", score: 0.779 },
       { n: 20, date: "Oct 18", question: "What does a network on the same signals do?", finding: "Attention CNN 0.769; relies on the same physiology.", decision: "Keep as the black-box comparison." },
@@ -1738,7 +1812,6 @@ const historyPhases: Array<{ phase: string; dataset: string; steps: HistoryStep[
       { n: 24, date: "Oct 21", question: "Do heart and breathing earn their place?", finding: "Removing them costs 0.002; alone (6 signals) they reach 0.44–0.49.", decision: "Kept for now; their stand-alone value is the no-EEG case." },
       { n: 25, date: "Oct 21", question: "How simple can the learner be?", finding: "Boosted single splits (an additive model) 0.751 with a tenth of the values; one readable depth-4 tree 0.596.", decision: "Keep default boosting; show the sweep and the readable tree." },
       { n: 26, date: "Oct 21", question: "Can heart and breathing alone do better?", finding: "All 12 heart and breathing signals over 10.5 min: 0.533, four-class κ 0.46 (published heart-rate models 0.61–0.68 with whole-night networks).", decision: "Longer context helps; the rest needs whole-night models and more data." },
-      { n: 27, date: "Oct 21", question: "Does it work in another lab?", finding: "Trained on Boston, tested on Dublin without retraining: 0.750 vs 0.767 at home (the final model's signals both labs record); better than any model trained on Dublin itself (0.744).", decision: "Per-night scaling makes the signals portable." },
       { n: 28, date: "Oct 21", question: "Keep heart and breathing in the final model?", finding: "They add 0.002 with EEG, eyes and chin present.", decision: "Drop them: 27 signals, 0.775.", score: 0.775 },
       { n: 29, date: "Oct 21", question: "Do a cleaner lead or dropping bad segments help?", finding: "No: 0.7756 vs 0.7755; excluding 1.6–3.3% of epochs leaves the score unchanged.", decision: "Keep all epochs; the model already copes." },
       { n: 30, date: "Oct 21", question: "Final test on 200 held-out patients (look #1)", finding: "0.730 for the adopted model; every model drops by about the same amount on this harder, apnea-heavy group. One record that had failed to build was repaired and the same batch rerun (moved < 0.001).", decision: "Reported as is; no choice made from it.", score: 0.730, holdout: true },
@@ -1747,7 +1820,7 @@ const historyPhases: Array<{ phase: string; dataset: string; steps: HistoryStep[
   },
   {
     phase: "Interpretability audit",
-    dataset: "CinC 2018 · 320 patients",
+    dataset: "Boston · 320 patients",
     steps: [
       { n: 32, date: "Oct 22", question: "Do the features behave as designed?", finding: "Each feature checked against its intended stage: N3 and wake features hold; the spindle-band share does not separate N2 (d 0.02); the single EOG channel also carries frontal slow waves.", decision: "Keep the published designs; show observed behaviour beside each (2.2)." },
       { n: 33, date: "Oct 22", question: "Can the model lose inputs without losing accuracy?", finding: "Removing the six least-used inputs: 0.7754 vs 0.7755 with 21 signals. Spindle measures added nothing (+0.0006 at best).", decision: "Keep the 21-signal set; look for more direct markers.", score: 0.775 },
@@ -1772,10 +1845,10 @@ const historyWhere: Record<number, string> = {
 };
 
 const sectionNames: Record<string, string> = {
-  staging: "1.1 Sleep staging", stages: "1.2 The physiology of each stage", night: "S3 How a night is organised", "supp-models": "S2 How the adopted model was reached",
+  staging: "1.1 Sleep staging", stages: "1.2 The physiology of each stage", night: "S3 Sleep structure", "supp-models": "S2 Model development",
   data: "2.1 Data and testing", features: "2.2 Features", model: "2.3 Model", testing: "2.1 Data and testing",
-  evidence: "3.1 Features", performance: "3.2 Model", robustness: "3.3 Testing",
-  "history-details": "S1 How the work was run", "supp-simplify": "S5 Simpler models"
+  evidence: "3.2 Features", performance: "3.1 Model", robustness: "3.3 Testing",
+  "history-details": "S5 Experiment history", "supp-simplify": "S2 Simpler models"
 };
 
 // A link to another section, written as "§2.4 Testing" so it reads as a place on the page.
@@ -1800,8 +1873,8 @@ function ExpRefs({ ids }: { ids: number[] }) {
 // Dot colour = what the score was measured on.
 const scoreKinds = {
   ucddb: { label: "UCDDB cross-validation (25 patients)", color: "#91a9ce" },
-  cinc: { label: "CinC 2018 cross-validation", color: "#78d8ff" },
-  holdout: { label: "Held-out CinC patients (scored once)", color: "#f0b36d" }
+  cinc: { label: "Boston cross-validation", color: "#78d8ff" },
+  holdout: { label: "Held-out Boston patients (two evaluation looks)", color: "#f0b36d" }
 };
 const scoreKind = (step: HistoryStep) => (step.holdout ? "holdout" : step.n <= 14 ? "ucddb" : "cinc");
 
@@ -1867,59 +1940,26 @@ function ExperimentHistory() {
 }
 
 function DiscussionExplorer() {
-  const byId = (id: string) => data.models.find((model) => model.id === id) as ModelResult;
-  const f1 = (id: string) => byId(id).metrics.macro_f1;
-  const n1 = data.diagnostics.per_stage.find((row) => row.stage === "N1");
-  const n3 = data.diagnostics.per_stage.find((row) => row.stage === "N3");
-  const g = data.generalisation;
-  const held = g?.holdout.find((row) => row.config === "g20");
-  const transfer = g?.transfer.find((row) => row.evaluation === "transfer_cinc_to_ucddb");
-  const threads: Array<{ objective: 1 | 2 | 3; title: string; body: React.ReactNode }> = [
-    {
-      objective: 1,
-      title: "Named physiological signals carry most of the information",
-      body: <>The model relies on the same features the scoring rules use: the EEG spectrum for sleep depth, eye movements and chin tone for REM, and frontal slow waves for N3. Its errors concentrate where the physiology is ambiguous. N1 recall is {formatPercent(n1?.recall ?? 0)}, close to inter-scorer agreement for N1 (63%), because N1 is a transitional stage with no defining waveform. Where a rule is quantitative, direct measurement does well: N3 recall is {formatPercent(n3?.recall ?? 0)}, against 67% agreement between scorers, because the N3 rule is a 75 µV amplitude threshold that the frontal feature measures directly (class weighting raises recall here at some cost in precision). Because each input has documented failure modes, such as mains noise on the chin lead or smaller slow waves in older patients, a misclassified night can be explained to a clinician or reviewer in those terms. <Citation number={29} /> <Citation number={1} /></>
-    },
-    {
-      objective: 2,
-      title: "Most of the gain came from context",
-      body: <>Adding 2.5 minutes of context raised macro-F1 from {formatMetric(f1("epoch"))} to {formatMetric(f1("window-all"))}. Simplifying from there cost little: dropping heart and breathing and the least-used inputs, and adding a spindle marker, gave {formatMetric(f1("adopted"))} with 20 signals instead of 33, and a neural network on the one-second signals scored slightly lower ({formatMetric(f1("cnn"))}). The best published network scores about 0.02 higher with about 100 times the parameters. <Citation number={26} /></>
-    },
-    {
-      objective: 3,
-      title: "The result holds outside the development data, with known limits",
-      body: <>{held ? <>On a held-out group scored once, the model reaches {formatMetric(held.macro_f1)}; a simple reference model drops by a similar amount, which points to a harder group of patients. </> : null}{transfer ? <>At a second hospital, without retraining, it reaches {formatMetric(transfer.macro_f1)}. </> : null}The labels also limit what can be measured. Each night was scored by one technologist, and the AASM rules tell scorers to keep scoring N2 or REM until something in the recording changes, so a label partly depends on the epochs before it. The model&rsquo;s reliance on the previous epoch may partly copy that rule rather than reflect the brain&rsquo;s state. <Citation number={5} /></>
-    }
-  ];
-  return (
-    <div className="research-findings">
-      {threads.map((thread) => (
-        <details key={thread.title} className="research-finding" open>
-          <summary><h3>{thread.title}</h3><Objective n={thread.objective} /></summary>
-          <p>{thread.body}</p>
-        </details>
-      ))}
-      <details className="research-finding">
-        <summary><h3>Limitations and next steps</h3></summary>
-        <h5>Limitations</h5>
-        <ul className="research-limits">
-          <li>Development data from one hospital.</li>
-          <li>A small external test set, which also informed the early feature design, so it is not fully independent.</li>
-          <li>One scorer per night.</li>
-          <li>A single EOG channel, which also picks up frontal slow waves, so the AASM definition of rapid eye movements cannot be computed.</li>
-          <li>Several features computed as published did not separate their intended stage on their own (marked in 2.2). The spindle-band share is diluted by alpha and beta in wake and light sleep and by delta in N3, so it does not single out N2; the model separates N2 from lighter stages by the 1/f slope and offset (d = 1.0–2.6) and from N3 by the absence of frontal slow waves.</li>
-        </ul>
-        <h5>Next steps</h5>
-        <ul className="research-limits">
-          <li>A larger external dataset with AASM scoring.</li>
-          <li>Direct markers for N2&rsquo;s defining events (detected spindles and K-complexes rather than band power), so N2 calls can be explained by them.</li>
-          <li>Separating eye movements from frontal EEG, ideally with a second EOG channel.</li>
-          <li>A heart-and-breathing model for recordings without EEG.</li>
-          <li>Per-patient calibration of stage boundaries without labels.</li>
-        </ul>
-      </details>
-    </div>
-  );
+  return <div className="research-conclusion">
+    <p className="research-takeaway">Physiological measurements combined with temporal context provide a credible offline staging baseline: a default tree ensemble retains useful performance when transferred to a second hospital. Its physiological assumptions can be checked against the recorded waveforms.</p>
+    <ul className="research-conclusion-objectives">
+      <li><Objective n={1} /> The reliance on EEG background activity is consistent with research linking spectral slope to arousal. My slope calculation differs from the published implementation, so this is converging evidence rather than a replication. The weak N2 separation of broad spindle-band power supports measuring defining events directly instead of assuming a physiological name guarantees specificity. <Citation number={17} /> <Citation number={1} /></li>
+      <li><Objective n={2} /> In these experiments, temporal context contributed more than changing to the tested neural-network architecture. A compact set of explicit measurements can therefore be a competitive design choice. Published systems such as U-Sleep still provide a stronger benchmark for broad validation; different test cohorts prevent claiming equivalent performance. <Citation number={26} /></li>
+      <li><Objective n={3} /> Coimbra supports portability of the full input set, while the difficult held-out Boston nights show that transfer of an average score is not enough. The different scores against Coimbra’s two scorers also fit established evidence that the reference labels themselves vary. This strengthens the case for patient-level evaluation and multiple scorers, without attributing every model error to ambiguous labels. <Citation number={5} /></li>
+    </ul>
+    <h4>Limitations</h4>
+    <ul className="research-limits">
+      <li><b>Uneven reliability.</b> N1 and some individual nights remain difficult, even when the overall score is useful.</li>
+      <li><b>Partial interpretability.</b> Named measurements show what the model uses, but proxies, mixed EOG/EEG activity and an ensemble of trees limit explanations of individual decisions.</li>
+      <li><b>Limited validation scope.</b> One external dataset supports transfer, not broad clinical reliability. Future epochs and whole-night scaling also limit the current method to offline scoring.</li>
+    </ul>
+    <h4>Next steps</h4>
+    <ul className="research-limits">
+      <li><b>Test the 8-leaf ensemble on final Model C.</b> Check whether the earlier performance–complexity trade-off holds with the final 20 inputs, especially for N1 and difficult patients.</li>
+      <li><b>Validate the physiological explanations.</b> Review difficult nights with a scorer and test whether event detectors and individual explanations agree with the waveforms.</li>
+      <li><b>Confirm broader reliability.</b> Test the fixed model in further patient groups and recording systems, with attention to per-patient performance.</li>
+    </ul>
+  </div>;
 }
 
 const references = [
@@ -1949,7 +1989,7 @@ const references = [
   },
   {
     number: 5,
-    citation: "Younes M, Kuna ST, Pack AI, Walsh JK, Kushida CA, Staley B, Pien GW. Staging Sleep in Polysomnograms: Analysis of Inter-Scorer Variability. Journal of Clinical Sleep Medicine. 2016;12:885–894.",
+    citation: "Younes M, Raneri J, Hanly P. Staging Sleep in Polysomnograms: Analysis of Inter-Scorer Variability. Journal of Clinical Sleep Medicine. 2016;12:885–894.",
     href: "https://pubmed.ncbi.nlm.nih.gov/27070243/",
     note: "Primary analysis showing that much scoring disagreement comes from genuinely equivocal epochs, especially adjacent-stage boundaries."
   },
@@ -2117,6 +2157,22 @@ t["o_rel_alpha"] = band_power(O, 8, 12) / (band_power(O, 0.5, 30) + EPS)
 t["eog_low"] = np.log10(band_power(P["E1-M2"], 0.5, 2) + EPS)
 t["eog_high"] = np.log10(band_power(P["E1-M2"], 2, 8) + EPS)
 t["emg_log_rms"] = 0.5 * np.log10(band_power(P["Chin1-Chin2"], 10, 80) + EPS)`
+  },
+  {
+    id: "spindle-bursts",
+    label: "P2",
+    title: "Spindle-burst count",
+    summary: "Seconds per epoch above a robust spindle-ratio threshold",
+    source: "src/physionet_sleep/analysis/epoch_windows.py · spindle_burst_counts",
+    note: "Computed from central EEG band shares before model scaling; the threshold is the night's median plus two robust standard deviations.",
+    code: `ratio = sigma / (alpha + beta + 1e-6)
+median = np.nanmedian(ratio)
+threshold = median + 2 * 1.4826 * np.nanmedian(np.abs(ratio - median))
+burst = (ratio > threshold).astype(np.float32)
+# Pad the final incomplete epoch with zeros, then count seconds per epoch.
+n_epochs = (len(burst) + 29) // 30
+padded_burst = np.pad(burst, (0, n_epochs * 30 - len(burst)))
+counts = padded_burst.reshape(n_epochs, 30).sum(axis=1)`
   },
   {
     id: "eye-movement",
@@ -2287,7 +2343,7 @@ function ReferencesSection() {
         ))}
       </ol>
       <footer className="research-footer">
-        <span>CinC 2018 sleep-staging experiments</span>
+        <span>Boston sleep-staging experiments</span>
         <a href="#top">Back to top ↑</a>
       </footer>
     </section>
@@ -2342,7 +2398,7 @@ function useOpenOnHash() {
         if (node instanceof HTMLDetailsElement) node.open = true;
         node = node.parentElement;
       }
-      target?.scrollIntoView({ block: "start" });
+      target?.scrollIntoView({ block: "start", behavior: "instant" });
     };
     open();
     window.addEventListener("hashchange", open);
@@ -2352,9 +2408,9 @@ function useOpenOnHash() {
 
 // ---------------------------------------------------------------- objectives that thread the page
 const objectives = [
-  { n: 1, short: "Interpretable inputs", line: "Use only measurements with a known link to the scoring rules or to published sleep physiology." },
+  { n: 1, short: "Physiological interpretation", line: "Connect each measurement to sleep physiology, check its observed behaviour, and distinguish plausible cues from what the model actually uses." },
   { n: 2, short: "A simple model", line: "Use decision trees with default settings, and keep an addition only if it clearly improves accuracy." },
-  { n: 3, short: "Independent testing", line: "Test on patients not used for training, on a held-out group scored once, and on recordings from a second hospital." }
+  { n: 3, short: "Independent validation", line: "Separate training patients from test patients, report held-out scoring history, and examine transfer to other hospitals." }
 ];
 
 function Objective({ n }: { n: 1 | 2 | 3 }) {
@@ -2374,35 +2430,32 @@ function SubHeading({ number, title, objective, refs }: { number: string; title:
 
 // ---------------------------------------------------------------- 2.3 model
 function ModelSection() {
-  const tracks = data.source.tracks;
-  const features = data.source.features;
   const size = data.model_size;
-  const cnn = data.models.find((model) => model.id === "cnn");
-  const adopted = data.models.find((model) => model.id === "adopted");
-  const learner = (id: string) => data.complexity.find((row) => row.learner === id);
-  const stumps = learner("hgb_l2_i200");
-  const oneTree = learner("tree_d8");
+  const models = [
+    { name: "A · Single epoch", inputs: "19 epoch-averaged features", window: "30 s", purpose: "Baseline without neighbouring epochs", refs: [16, 17] },
+    { name: "B · Context", inputs: "33 measurements every 6 s; heart and breathing included", window: "150 s", purpose: "Test the gain from temporal context", refs: [19] },
+    { name: "C · Adopted", inputs: "20 EEG, eye and chin measurements every 6 s; spindle-burst marker added", window: "150 s", purpose: "Retain performance with fewer, physiologically motivated inputs", refs: [28, 33, 36] },
+    { name: "D · Attention CNN", inputs: "B’s 14 one-second signals, including heart and breathing", window: "90 s", purpose: "Compare learned signal combinations with the tree models", refs: [20] }
+  ];
   return (
     <div className="research-model-section">
-      <p className="research-takeaway">The model is an ensemble of decision trees. Like the AASM rules, each tree reaches a decision by applying thresholds to named signals and combining them. It uses {tracks + features} signals from the scored epoch and the two epochs on either side.</p>
+      <p className="research-takeaway">Sleep-stage cues become easier to interpret when their surrounding pattern is visible. Model C combines measurements from the scored epoch and its neighbours using decision trees: thresholds on named signals that can capture both brief events and the continuity of sleep.</p>
       <WindowModelFigure />
+      <p>Measurements are scaled within each night, and class-balanced training gives rare stages more weight. The use of future epochs and whole-night scaling makes this an offline model.</p>
       <div className="research-models-compared">
-        <h5>Models compared on this page</h5>
-        <p>A to C trace the path from a single epoch to the adopted model; D is a neural-network comparison. All use the same test folds.</p>
-        <ol>
-          <li><b>A · Single epoch.</b> 19 features, each averaged over the scored epoch alone. <Exp ids={[16, 17]} /></li>
-          <li><b>B · Context.</b> The same 19 features every 6 seconds plus 14 signals computed every second, over the scored epoch and two epochs on either side (150 s): 33 signals, heart and breathing included. <Exp ids={[19]} /></li>
-          <li><b>C · 20 signals (adopted).</b> B without heart and breathing and without the inputs that contributed least, with a validated spindle-burst marker added: 12 epoch features and 8 one-second signals from the EEG, EOG and chin EMG. The intermediate steps are in <SecRef to="supp-models" />. All results use C unless stated otherwise. <Exp ids={[28, 33, 36]} /></li>
-          <li><b>D · Attention CNN.</b> A small convolutional network trained on B&rsquo;s 14 one-second signals, including heart and breathing, over 90 seconds, with an attention layer that weights each second. It tests whether a model that learns its own features finds information the named signals miss. <Exp ids={[20]} /></li>
-        </ol>
+        <h5>Models compared</h5>
+        <div className="research-model-table-wrap">
+          <table className="research-model-table">
+            <thead><tr><th scope="col">Model</th><th scope="col">Inputs</th><th scope="col">Window</th><th scope="col">Question</th></tr></thead>
+            <tbody>{models.map((model) => <tr key={model.name} className={model.name === "C · Adopted" ? "is-adopted" : undefined}>
+              <th scope="row">{model.name}</th><td>{model.inputs}</td><td>{model.window}</td><td>{model.purpose} <Exp ids={model.refs} /></td>
+            </tr>)}</tbody>
+          </table>
+        </div>
       </div>
-      <Tabs label="About the model" tabs={[
-        { id: "sees", title: "What it sees", content: <div className="research-feature-tab"><p>The input covers the scored epoch and two epochs on either side in 6-second steps: {tracks + features} signals × 25 steps = {(tracks + features) * 25} values. Each value is one signal at a known time, for example &ldquo;spindle-band share 12 s before the epoch&rdquo;. Every signal is scaled within each night, which removes differences in amplifier gain and electrode contact between patients. Stages persist across epochs and follow a fixed order (<SecRef to="night" />), so neighbouring epochs carry information about the scored one; scorers use them too. This context is the only addition to the features.</p></div> },
-        { id: "trees", title: "Why decision trees", content: <div className="research-feature-tab">
-          <p>The AASM rules are written as thresholds and combinations of them. N3 requires slow waves of at least 75 µV in at least 20% of the epoch; REM combines low-voltage EEG, low chin tone and rapid eye movements. A decision tree is built from the same kind of questions (&ldquo;is the frontal slow-wave fraction above x?&rdquo;), so it can represent these rules directly. Trees also need no common scale across units, handle missing values without imputation, and are unchanged by rescaling a signal. A linear model scored far lower on the first dataset (0.46 vs 0.68), and a neural network on the same signals did not score higher ({cnn ? formatMetric(cnn.metrics.macro_f1) : "—"} vs {adopted ? formatMetric(adopted.metrics.macro_f1) : "—"}).</p>
-          <p>The model uses histogram gradient boosting with {size.trees} trees of up to 31 leaves and the library&rsquo;s default settings; tuning gave no measurable gain and risks fitting the test folds. Classes are weighted so N1 counts as much as N2. Each split is a threshold on one signal at one time, so the contribution of each signal can be measured (<SecRef to="evidence" />), and the model can be reduced to a single readable tree at some cost (<SecRef to="supp-simplify" />).</p>
-        </div> }
-      ]} />
+      <Evidence summary="Implementation details and model reduction">
+        <p>The adopted learner uses histogram gradient boosting with {size.trees} trees of up to 31 leaves. Tuning did not provide a measurable gain. Trees handle missing values without imputation and do not require inputs to share units. Input reduction and feature substitutions are documented in <SecRef to="supp-models" />; the performance cost of simplifying the ensemble to smaller trees or a single readable tree is shown in <SecRef to="supp-simplify" />.</p>
+      </Evidence>
     </div>
   );
 }
@@ -2411,35 +2464,79 @@ function ModelSection() {
 function TestingProtocol() {
   return (
     <div className="research-model-section">
-      <p className="research-takeaway" id="testing">Every score comes from patients the model was not trained on, in three tests of increasing difficulty: cross-validation, a held-out set scored once, and a second hospital without retraining.</p>
+      <p className="research-takeaway" id="testing">The data serve three roles: early feature development in Dublin, model development and held-out testing in Boston, and external testing in Coimbra. Splitting by patient tests whether the model works on another person; Coimbra tests whether that performance carries to another hospital.</p>
     </div>
   );
 }
 
 // ---------------------------------------------------------------- 3.3 robustness, compact
+function ExternalTestingDetails() {
+  const heldRef = data.generalisation?.holdout.find((row) => row.config === "epoch19");
+  const epochRef = data.models.find((row) => row.id === "epoch") as ModelResult;
+  return <>
+    <p>The held-out Boston cohort contains more sleep apnea. The reference model also falls from {formatMetric(epochRef.metrics.macro_f1)} to {heldRef ? formatMetric(heldRef.macro_f1) : "—"}; this is consistent with a patient-mix effect but does not exclude overfitting.</p>
+    <Generalisation />
+    <IsrucResults />
+  </>;
+}
+
 function RobustnessSummary() {
   const adopted = data.models.find((model) => model.id === "adopted") as ModelResult;
   const g = data.generalisation;
-  const transfer = g?.transfer.find((row) => row.evaluation === "transfer_cinc_to_ucddb");
   const held = g?.holdout.find((row) => row.config === "g20");
   const heldRef = g?.holdout.find((row) => row.config === "epoch19");
   const epochRef = data.models.find((model) => model.id === "epoch") as ModelResult;
-  const tiles = [
-    { value: formatMetric(adopted.metrics.macro_f1), title: "Cross-validation", line: `${data.source.subjects} patients, each tested once` },
-    { value: held ? formatMetric(held.macro_f1) : "—", title: "Held-out test", line: held ? `${g.holdout_subjects} patients, scored once` : "pending" },
-    { value: transfer ? formatMetric(transfer.macro_f1) : "—", title: "External test", line: "Dublin, no retraining" }
+  const coimbra = isrucStatus.final_complete ? (isrucStatus.results as Array<{ evaluation: string; macro_f1: number }>).find((row) => row.evaluation === "transfer_cinc_to_isruc_scorer1") : undefined;
+  const coimbraPatients = (isrucStatus as unknown as { subject_macro_f1_scorer1?: number[] }).subject_macro_f1_scorer1 ?? [];
+  const spread = (values: number[]) => {
+    if (!values.length) return undefined;
+    const sorted = [...values].sort((a, b) => a - b);
+    const quantile = (p: number) => {
+      const index = (sorted.length - 1) * p;
+      const low = Math.floor(index);
+      return sorted[low] + (sorted[Math.ceil(index)] - sorted[low]) * (index - low);
+    };
+    return { min: sorted[0], q1: quantile(.25), median: quantile(.5), q3: quantile(.75), max: sorted[sorted.length - 1] };
+  };
+  const groups = [
+    { title: "Model C · all 20 inputs", color: "#78d8ff", rows: [
+      { label: "Boston · cross-validation", note: `${data.source.subjects} patients`, value: adopted.metrics.macro_f1, spread: spread(data.diagnostics.subject_metrics.map((row) => row.macro_f1)) },
+      { label: "Boston · held-out test", note: `${g?.holdout_subjects ?? 200} patients · ${g?.holdout_looks ?? 2} evaluation looks`, value: held?.macro_f1, spread: holdoutDistribution.verified ? spread(holdoutDistribution.subject_macro_f1) : undefined },
+      { label: "Coimbra · external test", note: `${isrucStatus.final_complete ? isrucStatus.evaluated : 100} patients · 1 recorded evaluation look`, value: coimbra?.macro_f1, spread: spread(coimbraPatients) }
+    ] },
+
   ];
+  const ticks = [0, 0.2, 0.4, 0.6, 0.8, 1];
+  const position = (value: number) => `${value * 100}%`;
   return (
     <div className="research-robustness">
-      <div className="research-glance-stats research-robustness-tiles">
-        {tiles.map((tile) => <div key={tile.title}><strong>{tile.value}</strong><span><b>{tile.title}</b><br />{tile.line}</span></div>)}
+      <div className="research-transfer-chart" aria-label="Macro-F1 across patient cohorts, grouped by model inputs">
+        <div className="research-model-compare-axis" aria-hidden="true"><span>Macro-F1</span><div>{ticks.map((tick) => <small key={tick} style={{ left: position(tick) }}>{tick.toFixed(2)}</small>)}</div><span /></div>
+        {groups.map((group) => <div className="research-transfer-group" key={group.title}>
+          <h4 style={{ color: group.color }}>{group.title}</h4>
+          {group.rows.map((row) => <div className="research-model-compare-row" key={row.label}>
+            <strong>{row.label}<small className="research-row-note">{row.note}</small></strong>
+            <div className="research-model-compare-track" role="img" aria-label={`${row.label}: ${row.value === undefined ? "result not available" : formatMetric(row.value)} macro-F1`}>
+              {ticks.map((tick) => <i key={tick} className="grid" style={{ left: position(tick) }} />)}
+              {row.spread ? <>
+                <i className="transfer-whisker" style={{ left: position(row.spread.min), width: position(row.spread.max - row.spread.min), background: group.color }} />
+                {[row.spread.min, row.spread.max].map((value, index) => <i key={index} className="transfer-cap" style={{ left: position(value), background: group.color }} />)}
+                <i className="transfer-box" style={{ left: position(row.spread.q1), width: position(row.spread.q3 - row.spread.q1), borderColor: group.color }} />
+                <i className="transfer-median" style={{ left: position(row.spread.median), background: group.color }} />
+              </> : null}
+              {row.value !== undefined ? <i className="research-transfer-dot" style={{ left: position(row.value), background: group.color }} /> : null}
+            </div>
+            <span>{row.value === undefined ? "—" : formatMetric(row.value)}{row.spread ? <small className="research-row-note">{row.spread.min.toFixed(2)}–{row.spread.max.toFixed(2)}</small> : null}</span>
+          </div>)}
+        </div>)}
+
+        <p className="research-chart-key research-transfer-key">
+          <span><u className="legend-score" /> headline macro-F1</span>
+          <span><u className="legend-box" /> middle 50% of patients</span>
+          <span><u className="legend-median" /> patient median</span>
+          <span><u className="legend-whisker" /> patient min–max</span>
+        </p>
       </div>
-      <p className="research-protocol-source">
-        The held-out group is harder because most recordings without sleep apnea had already been used for development. The single-epoch reference model drops by a similar amount ({heldRef ? formatMetric(heldRef.macro_f1) : "—"} vs {formatMetric(epochRef.metrics.macro_f1)}), so the gap most likely reflects the patients rather than overfitting. An earlier look scored the intermediate 27-signal model at 0.730 (<SecRef to="supp-models" />). The second-hospital test uses only signals recorded in both labs, and the model scores higher than our best model trained on that hospital&rsquo;s own data (0.744).
-      </p>
-      <Evidence summary="Details: per-stage scores for each test">
-        <Generalisation />
-      </Evidence>
     </div>
   );
 }
@@ -2447,13 +2544,9 @@ function RobustnessSummary() {
 // ---------------------------------------------------------------- comparison, compact
 function ComparisonCompact() {
   const models = publishedModels();
-  const ours = models[0];
-  const cnn = models[1];
-  const usleep = models.find((model) => model.name === "U-Sleep") as PublishedModel;
   const fold = (value?: number) => (value === undefined ? "—" : formatMetric(value));
   return (
     <div className="research-comparison">
-      <p className="research-takeaway">The best published network on this dataset scores about {fold((usleep.macroF1 ?? 0) - (ours.macroF1 ?? 0))} higher in macro-F1, with roughly 100 times more parameters and 50 times more training patients.</p>
       <div className="research-ablation-table" role="table" aria-label="Comparison with published models">
         <div className="research-ablation-row research-compare-row is-head" role="row">
           <span role="columnheader">Model</span><span role="columnheader">Macro-F1</span><span role="columnheader">κ / acc.</span><span role="columnheader">Learned values</span><span role="columnheader">Training patients</span><span role="columnheader">Tested on</span>
@@ -2469,17 +2562,26 @@ function ComparisonCompact() {
           </div>
         ))}
       </div>
-      <TradeoffChart models={models} />
-      <p className="research-protocol-source">
-        Parameter count is not the whole difference: D has fewer weights ({cnn.learned?.toLocaleString()}) than C has learned values ({ours.learned?.toLocaleString()}). The difference is in what the parameters represent. Each tree split is a threshold on one named signal at one time, whereas a network combines all signals through learned filters. The comparison is approximate, because the published networks were tested on other records, and inter-scorer agreement comes from a small expert sample. C&rsquo;s lower accuracy is partly a result of class weighting, which improves N1 at some cost to the common stages.
-      </p>
+      <p className="research-protocol-source">Published models used different test patients; these are reference results, not head-to-head comparisons. Human scorer agreement is also from a separate sample.</p>
     </div>
   );
 }
 
+function PublishedModelSize() {
+  const models = publishedModels();
+  const ours = models[0];
+  const cnn = models[1];
+  return <div className="research-comparison">
+      <TradeoffChart models={models} />
+      <p className="research-protocol-source">
+        Parameter count is not the whole difference: D has fewer weights ({cnn.learned?.toLocaleString()}) than C has learned values ({ours.learned?.toLocaleString()}). The difference is in what the parameters represent. Each tree split is a threshold on one named signal at one time, whereas a network combines all signals through learned filters. The comparison is approximate, because the published networks were tested on other records, and inter-scorer agreement comes from a small expert sample. C&rsquo;s lower accuracy is partly a result of class weighting, which improves N1 at some cost to the common stages.
+      </p>
+  </div>;
+}
+
 function StudySummary() {
   const adopted = data.models.find((model) => model.id === "adopted") as ModelResult;
-  const transfer = data.generalisation?.transfer.find((row) => row.evaluation === "transfer_cinc_to_ucddb");
+  const coimbraResult = isrucStatus.results.find((row) => row.evaluation === "transfer_cinc_to_isruc_scorer1");
   const pct = (value: number) => `${Math.round(value * 100)}%`;
   const n1 = data.diagnostics.per_stage.find((row) => row.stage === "N1");
   const n3 = data.diagnostics.per_stage.find((row) => row.stage === "N3");
@@ -2491,10 +2593,10 @@ function StudySummary() {
       <SectionHeading title="Abstract" />
       <div className="research-summary-copy research-abstract">
         <p>
-          <b>Background.</b> Sleep staging from polysomnography underlies most sleep diagnoses, but manual scoring is slow, and expert scorers agree on only 83% of epochs (63% for N1). Deep networks now match human scorers, but explaining their decisions is not part of their design, and post-hoc explanations are approximate.
+          <b>Background.</b> Sleep staging from polysomnography underlies most sleep diagnoses, but manual scoring is slow, and expert scorers agree on only 83% of epochs (63% for N1). Deep networks report strong staging performance; understanding which physiological information drives a decision remains a separate challenge.
         </p>
         <p>
-          <b>Objective.</b> To show that a staging model can meet three aims and still perform comparably to deep networks:
+          <b>Objective.</b> To test three aims: connect inputs to physiology, keep the model simple, and assess performance beyond its training patients:
         </p>
         <div className="research-objectives">
           <ol>
@@ -2502,13 +2604,13 @@ function StudySummary() {
           </ol>
         </div>
         <p>
-          <b>Methods.</b> {data.source.subjects} overnight recordings from the CinC 2018 dataset. {data.source.tracks + data.source.features} signals from the EEG, EOG and chin EMG, computed every second or every 6 seconds, over the scored epoch and two epochs on either side. Gradient-boosted decision trees with default settings. Testing: five-fold cross-validation split by patient, a held-out set of {data.generalisation?.holdout_subjects || 200} recordings scored once, and 25 recordings from a second hospital.
+          <b>Methods.</b> {data.source.subjects} overnight recordings from the Boston dataset. {data.source.tracks + data.source.features} measurements from the EEG, EOG and chin EMG, supplied every six seconds, over the scored epoch and two epochs on either side. Gradient-boosted decision trees with default settings. Testing: five-fold cross-validation split by patient, a held-out set of {data.generalisation?.holdout_subjects || 200} Boston recordings with two recorded evaluation looks, and external evaluation on {isrucStatus.final_complete ? isrucStatus.evaluated : 100} Coimbra recordings.
         </p>
         <p>
-          <b>Results.</b> Macro-F1 {formatMetric(adopted.metrics.macro_f1)} (κ {adopted.metrics.cohen_kappa.toFixed(2)}) in cross-validation, with N1 recall {pct(n1?.recall ?? 0)} and N3 recall {pct(n3?.recall ?? 0)}. Context accounted for most of the gain ({formatMetric(epoch.metrics.macro_f1)} → {formatMetric(features.metrics.macro_f1)}).{held ? <> Held-out set: {formatMetric(held.macro_f1)}.</> : null}{transfer ? <> Second hospital, without retraining: {formatMetric(transfer.macro_f1)}.</> : null} The best published network scores 0.79 on a different CinC test set, with about 100 times more parameters. <Citation number={26} />
+          <b>Results.</b> Macro-F1 {formatMetric(adopted.metrics.macro_f1)} (κ {adopted.metrics.cohen_kappa.toFixed(2)}) in cross-validation, with N1 recall {pct(n1?.recall ?? 0)} and N3 recall {pct(n3?.recall ?? 0)}. Context accounted for most of the gain ({formatMetric(epoch.metrics.macro_f1)} → {formatMetric(features.metrics.macro_f1)}).{held ? <> Held-out set: {formatMetric(held.macro_f1)}.</> : null} {isrucStatus.final_complete && coimbraResult ? <>Coimbra ({coimbraResult.n_subjects} nights, scorer 1): {formatMetric(coimbraResult.macro_f1)}.</> : null} The best published network scores 0.79 on a different Boston test set, with about 100 times more parameters. <Citation number={26} />
         </p>
         <p>
-          <b>Conclusion.</b> A model that meets all three aims performs comparably to large neural networks, within about 0.02 macro-F1. Because every input is a named signal with known failure modes, its errors can be traced to specific physiology or recording problems and explained to a clinician or reviewer.
+          <b>Conclusion.</b> Named physiological measurements support useful staging performance with inspectable inputs. The strongest result is the gain from context; the main limitations are N1, variability between patients, and incomplete independence of external testing. Physiological interpretation guides error investigation, but individual explanations still need verification.
         </p>
       </div>
     </section>
@@ -2551,6 +2653,19 @@ export function StagingResearchDashboard() {
         </div>
         <div className="research-method-block" id="features">
           <SubHeading number="2.2" title="Features: each stage's physiology, measured" objective={1} />
+          <p className="research-takeaway">Each feature translates a physiological staging cue into a measurement, then checks whether it varies across stages as expected. The final model retains {data.source.tracks + data.source.features} EEG, eye and chin measurements every six seconds; heart and breathing candidates are also shown. A plausible physiological rationale is the starting point, not evidence that a feature works.</p>
+          <div className="research-signal-key research-feature-sensors" aria-label="Measurement colors, matching the physiology table">
+            {[
+              { name: "Brain", label: "EEG" }, { name: "Eyes", label: "EOG" },
+              { name: "Chin muscle", label: "EMG" }, { name: "Heart", label: "ECG" },
+              { name: "Breathing", label: "Respiratory effort" }
+            ].map((sensor) => <span key={sensor.name}><i style={{ background: sensorColors[sensor.name] }} />{sensor.label}</span>)}
+          </div>
+          <div className="research-feature-legend" aria-label="Feature origins">
+            <span><em className="research-basis-tag is-aasm">AASM rule</em> measures a waveform, rhythm or muscle-tone cue used in manual staging</span>
+            <span><em className="research-basis-tag is-published">Published method</em> follows a published calculation and its standard parameters</span>
+            <span><em className="research-basis-tag is-adapted">Adapted</em> uses published physiology with my choices of detector, frequency band or time window</span>
+          </div>
           <PhysiologyExplorer />
         </div>
         <div className="research-method-block" id="model">
@@ -2561,63 +2676,59 @@ export function StagingResearchDashboard() {
 
       <section className="research-section" id="results">
         <SectionHeading title="3 Results" />
-        <div className="research-results-block research-block" id="evidence">
-          <SubHeading number="3.1" title="Features: what the adopted model relies on" objective={1} />
-          <p className="research-takeaway">Model C relies mainly on the EEG spectrum, then on eye movements, with chin tone contributing to REM. Most of this information comes from the scored epoch and the minute before it. A neural network trained on the same recordings relies on the same body systems.</p>
-          <Tabs label="What the model relies on" tabs={[
-            { id: "signals", title: "Which signals", content: <ModelEvidence part="signals" /> },
-            { id: "time", title: "When in the window", content: <ModelEvidence part="time" /> },
-            { id: "blackbox", title: "Checked against a black box", content: <BlackBoxAgreement /> }
+        <div className="research-results-block research-block" id="performance">
+          <SubHeading number="3.1" title="Model: how well it scores" objective={2} />
+          <p className="research-takeaway">Context provides the largest improvement, and reducing the inputs to Model C preserves most of that gain: {formatMetric(adopted.metrics.macro_f1)} macro-F1 in patient-separated cross-validation. N1 remains the main weakness, with {formatPercent(n1?.recall ?? 0)} sensitivity. The comparisons below show the gain, the remaining stage errors, and where published models stand.</p>
+          <PerformanceSummary />
+          <Tabs label="Performance views" tabs={[
+            { id: "ladder", title: "Model comparisons", content: <ModelExplorer /> },
+            { id: "errors", title: "Stage errors and metrics", content: <ConfusionExplorer /> },
+            { id: "published", title: "Published models", content: <div id="comparison"><ComparisonCompact /></div> }
           ]} />
         </div>
-        <div className="research-results-block research-block" id="performance">
-          <SubHeading number="3.2" title="Model: how well it scores" objective={2} />
-          <p className="research-takeaway">Model C reaches {formatMetric(adopted.metrics.macro_f1)} macro-F1 (κ {adopted.metrics.cohen_kappa.toFixed(2)}) on patients not used for training, and most of the gain over A comes from context (A → B). Recall for N1 is {formatPercent(n1?.recall ?? 0)}, close to inter-scorer agreement for N1 (63%). Individual patients range from {formatMetric(Math.min(...subjects))} to {formatMetric(Math.max(...subjects))}.</p>
-          <Tabs label="Performance views" tabs={[
-            { id: "ladder", title: "A–E: each step", content: <ModelExplorer /> },
-            { id: "errors", title: "C: errors vs human scorers", content: <ConfusionExplorer /> },
-            { id: "patients", title: "C: per patient", content: <SubjectVariability /> }
+        <div className="research-results-block research-block" id="evidence">
+          <SubHeading number="3.2" title="Which sleep physiology does the model capture?" objective={1} />
+          <p className="research-takeaway">These analyses ask which measurements Model C uses and when it needs them. Values are swapped between test examples while the stage labels stay unchanged; the fall in macro-F1 measures reliance. The tabs examine individual measurements and positions within the input window. A small drop means little additional reliance, since other inputs may carry similar information.</p>
+          <Tabs label="What the model relies on" tabs={[
+            { id: "signals", title: "Individual measurements", content: <PhysiologyFindings /> },
+            { id: "time", title: "Why neighbouring epochs matter", content: <ModelEvidence part="time" /> }
           ]} />
         </div>
         <div className="research-results-block research-block" id="robustness">
           <SubHeading number="3.3" title="Testing: does it hold up?" objective={3} />
-          <p className="research-takeaway">Cross-validation can overestimate performance, so the two stricter tests (<SecRef to="testing" />) carry more weight. The score is lower on the held-out group, which has more sleep apnea, and similar at the second hospital.</p>
+          <p className="research-takeaway">Model C scores lower on the held-out Boston patients, while its Coimbra score is closer to Boston cross-validation. The same 20 inputs are used throughout, suggesting useful transfer across these two hospitals alongside substantial variation between patients. Boston’s held-out cohort has two recorded evaluation looks; Coimbra has one recorded evaluation look.</p>
           <RobustnessSummary />
         </div>
       </section>
 
-      <section className="research-section" id="comparison">
-        <SectionHeading title="4 Comparison with published models" />
-        <div className="research-results-block">
-          <ComparisonCompact />
-        </div>
-      </section>
-
       <section className="research-section research-discussion" id="discussion">
-        <SectionHeading title="5 Discussion" />
+        <SectionHeading title="4 Discussion and conclusion" />
         <DiscussionExplorer />
       </section>
 
       <section className="research-section" id="supplementary">
         <SectionHeading title="Supplementary" />
-        <Evidence id="history-details" summary="S1 How the work was run: parallel AI sessions, 37 numbered and dated experiments">
-          <HowItWasRun />
-          <div id="history"><ExperimentHistory /></div>
+        <Evidence id="supp-patients" summary="S1 Patient variation and validation details">
+          <h4>Variation between patients</h4><SubjectVariability />
+          <div id="supp-testing"><h4>Held-out testing and per-stage scores</h4><ExternalTestingDetails /></div>
         </Evidence>
-        <Evidence id="supp-models" summary="S2 How the adopted model was reached: from 33 signals to 20">
-          <ModelPath />
+        <Evidence id="supp-models" summary="S2 Model development, simplification and size">
+          <h4>From 33 inputs to 20</h4><ModelPath />
+          <div id="supp-simplify"><h4>Simpler models</h4><ModelSimplification /></div>
+          <div id="supp-published-size"><h4>Published models and parameter counts</h4><PublishedModelSize /></div>
         </Evidence>
-        <Evidence id="night" summary="S3 How a night is organised: stage transitions and bout lengths">
-          <SleepStructure />
+        <Evidence id="supp-importance" summary="S3 Signal reliance and sleep structure">
+          <h4>Interpreting signal importance</h4>
+          <p>Importance is the fall in macro-F1 after swapping one measurement’s complete input window between test epochs, keeping the stage labels and all other inputs unchanged ({data.importance_folds} folds). The trained model is scored again without being refitted. Drops are not additive; correlated measurements can substitute for one another, so a short bar indicates little additional reliance. EOG also contains frontal EEG, so eye-channel reliance is not specific evidence of eye movements. This measures model dependence, not a proven mechanism or an individual explanation.</p>
+          <div id="night"><h4>Stage transitions and bout lengths</h4><SleepStructure /></div>
+          <div id="supp-network"><h4>Exploratory neural-network attribution</h4><BlackBoxAgreement /></div>
         </Evidence>
-        <Evidence id="supp-cardio" summary="S4 Heart and breathing: what they add with and without the EEG">
+        <Evidence id="supp-cardio" summary="S4 Heart and breathing: alternative sensor models">
           <SignalAblations />
         </Evidence>
-        <Evidence id="supp-simplify" summary="S5 Simpler models: from 500 trees to a single readable tree">
-          <ModelSimplification />
-        </Evidence>
-        <Evidence id="supp-code" summary="S6 Python implementation">
-          <TechnicalAppendix />
+        <Evidence id="history-details" summary="S5 Experiment history and implementation">
+          <HowItWasRun /><div id="history"><ExperimentHistory /></div>
+          <div id="supp-code"><h4>Python implementation</h4><TechnicalAppendix /></div>
         </Evidence>
       </section>
       <ReferencesSection />

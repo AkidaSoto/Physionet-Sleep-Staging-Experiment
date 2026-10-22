@@ -16,7 +16,7 @@ This is the single ISRUC look for the final model: the script refuses to run if 
 or if transfer_isruc/single_look.json already exists, and records the config, signals and time there.
 The 36-night pilot (nocardio27, 2026-10-21) is kept as *_partial36.
 
-Usage: python scripts/run_window_transfer_isruc.py [--skip-cv] [--expect 100]
+Usage: python scripts/run_window_transfer_isruc.py [--skip-cv] [--expect 99]
 """
 from __future__ import annotations
 
@@ -43,6 +43,8 @@ from physionet_sleep.io.isruc import resolve_isruc_record  # noqa: E402
 from physionet_sleep.labels.isruc import read_isruc_hypnogram  # noqa: E402
 
 STAGES = ["Wake", "N1", "N2", "N3", "REM"]
+# ISRUC nights left out before any scoring, with the reason (recorded in single_look.json and summary.csv).
+EXCLUDED = {"8": "night 8 excluded before scoring: no frontal EEG (F3/F4)"}
 OUT = REPO / "artifacts/staging_window_model/transfer_isruc"
 
 
@@ -52,7 +54,7 @@ def isruc_inputs():
     rows, tracks = {}, {}
     for s in spec.built_subjects():
         tp = cache / "tracks1s" / f"{s}.parquet"
-        if not tp.exists():
+        if s in EXCLUDED or not tp.exists():
             continue
         rows[s] = subject_rows6("isruc", s, run.WINDOW_FEATURES, cache / "rows6")
         tracks[s] = pd.read_parquet(tp)
@@ -89,7 +91,7 @@ def confusion(y, p, name: str) -> None:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--skip-cv", action="store_true", help="skip the in-lab CinC cross-validation")
-    ap.add_argument("--expect", type=int, default=100, help="ISRUC nights that must be built")
+    ap.add_argument("--expect", type=int, default=100 - len(EXCLUDED), help="ISRUC nights that must be built and scored")
     args = ap.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
     look = OUT / "single_look.json"
@@ -105,7 +107,8 @@ def main() -> None:
     if len(rows_i) < args.expect:
         raise SystemExit(f"only {len(rows_i)} of {args.expect} ISRUC nights built; not scoring")
     look.write_text(json.dumps({"config": run.ADOPTED, "tracks": tracks_used, "features": features,
-                                "isruc_nights": sorted(rows_i, key=int), "started": time.strftime("%Y-%m-%d %H:%M:%S")}, indent=1))
+                                "isruc_nights": sorted(rows_i, key=int), "n_nights": len(rows_i),
+                                "excluded": EXCLUDED, "started": time.strftime("%Y-%m-%d %H:%M:%S")}, indent=1))
     frame_c = run.epoch_frame(rows_c, run.WINDOW_FEATURES)
     frame_i = run.epoch_frame(rows_i, run.WINDOW_FEATURES)
     dense = {s: run.dense_signals(tracks_c[s], rows_c[s], tracks_used, features) for s in cinc_subjects}
@@ -161,6 +164,7 @@ def main() -> None:
         run.log(json.dumps({k: (round(v, 4) if isinstance(v, float) else v) for k, v in r.items()}))
     for r in results:
         r["config"] = run.ADOPTED
+        r["excluded_isruc_nights"] = " ".join(EXCLUDED)
     pd.DataFrame(results).to_csv(OUT / "summary.csv", index=False)
     confusion(y_i, pred, "transfer_scorer1")
     confusion(y2[both], pred[both], "transfer_scorer2")

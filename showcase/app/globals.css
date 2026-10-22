@@ -7801,7 +7801,7 @@ body:has(.research-page) .site-nav-brand {
 .research-confusion-static .research-confusion-head,
 .research-confusion-static .research-confusion-row {
   display: grid;
-  grid-template-columns: 92px repeat(5, minmax(44px, 1fr)) repeat(4, 62px);
+  grid-template-columns: 72px repeat(5, minmax(40px, 1fr)) repeat(4, 78px);
   gap: 4px;
 }
 
@@ -9375,7 +9375,7 @@ body:has(.research-page) .site-nav-brand {
 }
 
 .research-robustness-tiles {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .research-compare-row {
@@ -9742,3 +9742,79 @@ body:has(.research-page) .site-nav-brand {
 .research-history-marker.is-last small { left: auto; right: 5px; }
 .research-history-marker { top: -40px; }
 .research-history-progress { margin-top: 18px; }
+
+/* Results: concise physiological interpretation and metric definitions. */
+.research-performance-metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 20px 0 26px; }
+.research-performance-metrics > div { align-items: flex-start; flex-direction: column; gap: 8px; }
+@media (max-width: 760px) {
+  .research-performance-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .research-confusion-static { overflow-x: auto; }
+  .research-confusion-static .research-confusion-head,
+  .research-confusion-static .research-confusion-row { min-width: 690px; grid-template-columns: 56px repeat(5, minmax(38px, 1fr)) repeat(4, 78px); }
+}
+.research-feature-legend { display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 12px 0 20px; font-size: .8rem; color: rgba(221,234,247,.72); }
+.research-feature-legend > span { display: inline-flex; align-items: center; gap: 8px; }
+.research-model-table-wrap { overflow-x: auto; }
+.research-model-table { width: 100%; border-collapse: collapse; font-size: .84rem; line-height: 1.55; text-align: left; }
+.research-model-table th, .research-model-table td { padding: 12px 14px; border-bottom: 1px solid rgba(174,201,225,.14); vertical-align: top; }
+.research-model-table thead th { color: rgba(221,234,247,.65); font-weight: 500; }
+.research-model-table tbody th { min-width: 135px; }
+.research-model-table .is-adopted { background: rgba(120,216,255,.06); }
+.research-model-table .is-adopted th { color: #78d8ff; }
+@media (max-width: 700px) { .research-model-table { min-width: 650px; } }
+.research-transfer-chart { margin: 24px 0; }
+.research-transfer-group { margin: 18px 0 24px; }
+.research-transfer-group h4 { font-size: .85rem; font-weight: 600; margin: 0 0 10px; }
+.research-transfer-chart .research-row-note { display: block; font-weight: 400; font-size: .72rem; margin-top: 4px; }
+.research-transfer-chart .research-transfer-dot { width: 10px; height: 10px; border-radius: 50%; top: 50%; transform: translate(-50%, -50%); }
+.research-transfer-chart .research-model-compare-row { min-height: 64px; }
+.research-transfer-chart .transfer-whisker { height: 2px; top: 50%; opacity: .65; }
+.research-transfer-chart .transfer-cap { height: 14px; width: 1px; top: 50%; transform: translateY(-50%); }
+.research-transfer-chart .transfer-box { height: 22px; top: 50%; transform: translateY(-50%); border: 1px solid; background: #102a39; }
+.research-transfer-chart .transfer-median { width: 2px; height: 22px; top: 50%; transform: translate(-50%, -50%); }
+.research-transfer-chart .research-transfer-dot { z-index: 2; border: 1px solid #071521; }
+.research-transfer-key { display: flex; flex-wrap: wrap; gap: 10px 22px; }
+.research-transfer-key > span { display: inline-flex; align-items: center; gap: 8px; }
+.research-transfer-key u { display: inline-block; position: relative; flex: none; text-decoration: none; color: #78d8ff; }
+.research-transfer-key .legend-score { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.research-transfer-key .legend-box { width: 20px; height: 12px; border: 1px solid currentColor; background: #102a39; }
+.research-transfer-key .legend-median { width: 2px; height: 13px; background: currentColor; }
+.research-transfer-key .legend-whisker { width: 24px; height: 2px; background: currentColor; }
+.research-transfer-key .legend-whisker::before,.research-transfer-key .legend-whisker::after { content: ""; position: absolute; top: -4px; height: 10px; width: 1px; background: currentColor; }
+.research-transfer-key .legend-whisker::before { left: 0; }
+.research-transfer-key .legend-whisker::after { right: 0; }
+/* Legend labels must not inherit the generic chart-key line swatches. */
+.research-chart-key.research-transfer-key > span { width: auto; height: auto; background: none; border: 0; flex: 0 0 auto; line-height: 1.4; }
+.research-transfer-key > span > u { margin: 0; vertical-align: middle; }
+.research-conclusion { max-width: 960px; line-height: 1.75; }
+.research-conclusion-objectives { padding-left: 22px; margin: 20px 0; }
+.research-conclusion-objectives li { padding: 0 0 16px 5px; color: rgba(221,234,247,.78); }
+.research-conclusion-objectives strong { color: #e4edf5; }
+.research-conclusion > p { color: rgba(221,234,247,.78); }
+.research-conclusion-objectives .research-objective-chip { display: inline-flex; margin: 0 8px 5px 0; vertical-align: middle; }
+.research-signal-key { display: flex; flex-wrap: wrap; gap: 10px 20px; color: rgba(221,234,247,.65); font-size: .75rem; margin: 0 0 18px; }
+.research-signal-key span { display: inline-flex; align-items: center; gap: 7px; }
+.research-signal-key i { width: 8px; height: 8px; border-radius: 50%; }
+.research-individual-bars { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); grid-template-rows: repeat(10,auto); grid-auto-flow: column; column-gap: 32px; row-gap: 10px; }
+.research-individual-bars > div { grid-template-columns: minmax(140px,1.5fr) minmax(60px,1fr) 44px; gap: 10px; min-height: 30px; }
+@media (max-width: 900px) { .research-individual-bars { grid-template-columns: minmax(0,1fr); grid-template-rows: none; grid-auto-flow: row; } }
+.research-context-scaled-row { display: grid; grid-template-columns: 44px minmax(0,1fr); gap: 8px; }
+.research-context-y-ticks { display: flex; flex-direction: column; justify-content: space-between; font-size: .65rem; color: rgba(221,234,247,.65); text-align: right; }
+.research-context-y-title { margin: 6px 0 12px 52px; font-size: .72rem; color: rgba(221,234,247,.65); }
+.research-context-plot > .research-context-epochs, .research-context-plot > .research-context-axis { margin-left: 52px; }
+.research-individual-bars.is-compact { grid-template-columns: minmax(0,1fr); grid-template-rows: none; grid-auto-flow: row; }
+.research-other-measurements { margin-top: 14px; border-top: 1px solid rgba(174,201,225,.14); }
+.research-other-measurements > summary { cursor: pointer; padding: 12px 0; font-size: .83rem; }
+.research-other-measurements > summary small { margin-left: 14px; color: rgba(221,234,247,.5); font-size: .73rem; }
+.research-other-measurements > .research-importance-bars { margin-bottom: 14px; }
+.research-feature-sensors { margin: 14px 0 8px; }
+.research-feature-picker strong .research-feature-sensor-dot { display: inline-block; width: 7px; height: 7px; margin-right: 8px; border-radius: 50%; vertical-align: middle; flex: none; }
+/* Keep the two feature keys close to the explorer they describe. */
+#features > .research-takeaway { margin-bottom: 14px; }
+#features > .research-feature-sensors { margin: 0 0 10px; padding: 0; }
+#features > .research-feature-legend { margin: 0 0 20px; gap: 8px 20px; line-height: 1.5; }
+#features > .research-physiology-explorer { margin-top: 0; }
+.research-stage-primer .research-sensor-dot { display: inline-block; width: 7px; height: 7px; margin-right: 8px; border-radius: 50%; vertical-align: middle; }
+.research-other-sums { border-top: 1px solid rgba(174,201,225,.14); margin-top: 12px; padding-top: 12px; }
+.research-other-sum-note { margin-top: 14px; font-size: .73rem; color: rgba(221,234,247,.55); line-height: 1.5; }
+.research-plot-caption { margin: 6px 0 12px; color: rgba(221,234,247,.6); font-size: .75rem; line-height: 1.5; }

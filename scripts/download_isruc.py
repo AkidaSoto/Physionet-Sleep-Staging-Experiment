@@ -54,7 +54,10 @@ def copy_from_app(path: Path, size: int, rel: str, app_dir: Path | None) -> bool
         tmp.unlink(missing_ok=True)
         return False
     tmp.replace(path)
-    path.with_name(path.name + ".part").unlink(missing_ok=True)
+    try:
+        path.with_name(path.name + ".part").unlink(missing_ok=True)
+    except PermissionError:  # the downloader still has it open; it deletes it once it sees `path`
+        pass
     return True
 
 
