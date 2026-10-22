@@ -70,8 +70,8 @@ const eegSpectrumFeatures: FeatureSpec[] = [
     name: "1/f slope",
     signal: "EEG",
     summary: "Slope of the 1/f background of the EEG spectrum.",
-    measurement: "Linear fit of log power against log frequency over 2–7 Hz and 14–24 Hz (skipping the alpha and spindle peaks), per 2-second window.",
-    stageUse: "The spectrum steepens as sleep deepens."
+    measurement: "Negative slope of a linear fit of log spectral magnitude against log frequency over 2–7 Hz and 14–24 Hz, per 2-second window. My adaptation uses different bands and spectral magnitude rather than the power spectrum in the cited method.",
+    stageUse: "Background spectral shape is associated with arousal; this measurement is not a direct assay of excitation/inhibition balance."
   },
   {
     id: "spindle_features.aperiodic_intercept",
@@ -83,10 +83,10 @@ const eegSpectrumFeatures: FeatureSpec[] = [
   },
   {
     id: "spindle_features.delta_power",
-    name: "Delta power",
+    name: "Delta magnitude",
     signal: "EEG",
-    summary: "EEG power in 1–4 Hz.",
-    measurement: "Median spectral density across 1–4 Hz in a 2-second window, averaged over C3 and C4.",
+    summary: "EEG spectral magnitude in 1–4 Hz.",
+    measurement: "Median spectral magnitude across 1–4 Hz in a 2-second window, averaged over C3 and C4.",
     stageUse: "Rises with deeper NREM sleep."
   },
   ...["theta", "beta"].map((band) => ({
@@ -157,7 +157,7 @@ const featureFamilies: FeatureFamily[] = [
     signal: "EEG",
     summary: "Frontal slow waves and occipital alpha describe the location and amplitude of EEG staging cues.",
     evidence: "AASM scores N3 from slow waves of at least 75 µV at 0.5–2 Hz on frontal leads, and wake from posterior alpha that attenuates at sleep onset. Calibrated microvolts make the amplitude rule possible.",
-    limitation: "The amplitude rule assumes adult slow-wave amplitudes; slow waves shrink with age, so older patients can reach N3 by expert judgement with fewer waves above 75 µV. Eyes-open wake shows little alpha.",
+    limitation: "Slow-wave amplitude varies with age. This automated coverage measure is inspired by AASM scoring, rather than an exact reproduction of visual scoring. Eyes-open wake shows little alpha.",
     sources: [1],
     features: [
       { id: "topography_features.frontal_slow_wave_fraction", name: "Frontal slow-wave fraction", signal: "EEG", summary: "Share of the epoch covered by 0.5–2 Hz waves of at least 75 µV peak-to-peak on F3/F4.", measurement: "Band-pass 0.5–2 Hz, split into full waves at upward zero crossings, keep waves of 0.5–2 s with peak-to-peak ≥ 75 µV; fraction of the epoch they cover, averaged over F3-M2 and F4-M1.", stageUse: "AASM scores N3 when this reaches 20%." },
@@ -243,7 +243,7 @@ const featureBasis: Record<string, { basis: FeatureBasis; mechanism: string; cit
   "epoch_ratio_features.rel_sigma": { basis: "aasm", mechanism: "Thalamocortical spindles", cite: 1 },
   "epoch_ratio_features.emg_floor_db": { basis: "aasm", mechanism: "Brainstem muscle atonia", cite: 1 },
   "epoch_ratio_features.emg_baseline_floor_db": { basis: "aasm", mechanism: "Brainstem muscle atonia", cite: 1 },
-  "spindle_features.aperiodic_exponent": { basis: "published", mechanism: "Cortical arousal (excitation/inhibition balance)", cite: 17 },
+  "spindle_features.aperiodic_exponent": { basis: "adapted", mechanism: "Background spectral shape and arousal", cite: 17 },
   "spindle_features.aperiodic_intercept": { basis: "published", mechanism: "Cortical arousal (broadband power)", cite: 17 },
   "epoch_ratio_features.rel_alpha": { basis: "published", mechanism: "Posterior alpha rhythm" },
   "epoch_ratio_features.rel_beta": { basis: "published", mechanism: "Cortical arousal" },
@@ -596,9 +596,9 @@ function SleepStudyPrimer() {
     <div className="research-introduction">
       <div className="research-introduction-copy">
         <p>
-          Sleep staging turns an overnight <strong>polysomnogram (PSG)</strong> into a timeline of wake, N1, N2, N3 and REM. That timeline establishes how much a patient slept, how fragmented sleep was, and the sleep state in which respiratory events and arousals occurred. Accurate staging therefore underpins the interpretation of the rest of the study. <Citation number={2} />
+          Sleep staging turns an overnight <strong>polysomnogram (PSG)</strong> into a <strong>timeline of wake, N1, N2, N3 and REM</strong>. That timeline establishes how much a patient slept, how fragmented sleep was, and the sleep state in which respiratory events and arousals occurred. Accurate staging therefore underpins the interpretation of the rest of the study. <Citation number={2} />
         </p>
-        <p>Manual scoring is slow and partly subjective. In the AASM inter-scorer reliability program, experienced scorers agreed with the majority on 83% of epochs, but on only 63% of N1 and 67% of N3 epochs. <Citation number={29} /> Deep networks report strong performance on sleep staging. They learn representations from signals; connecting those representations to physiological events remains a separate task, and saliency maps provide approximate explanations. <Citation number={26} /></p>
+        <p><strong>Manual scoring is slow and partly subjective.</strong> In the AASM inter-scorer reliability program, experienced scorers agreed with the majority on 83% of epochs, but on only 63% of N1 and 67% of N3 epochs. <Citation number={29} /> Deep networks report strong performance on sleep staging. They learn representations from signals; <strong>connecting those representations to physiological events</strong> remains a separate task, and saliency maps provide approximate explanations. <Citation number={26} /></p>
       </div>
 
       <div className="research-introduction-figure" role="img" aria-label="EEG, EOG, and chin EMG are scored in 30-second epochs to produce a whole-night hypnogram">
@@ -637,11 +637,11 @@ const stagePrimerRows: Array<{ system: string; signal: string; scoring: boolean;
     signal: "EOG",
     scoring: true,
     cells: [
-      "Blinks and voluntary rapid movements.",
-      "Slow rolling eye movements.",
+      "Eye blinks and rapid eye movements during wakefulness.",
+      "Slow eye movements (SEMs): smooth, rolling movements at sleep onset.",
       "Usually still.",
       "Still.",
-      "Bursts of rapid eye movements."
+      "Rapid eye movements (REMs): irregular, sharply peaked movements; may be absent during tonic REM sleep."
     ],
     cites: [1, 22]
   },
@@ -650,11 +650,11 @@ const stagePrimerRows: Array<{ system: string; signal: string; scoring: boolean;
     signal: "EMG",
     scoring: true,
     cells: [
-      "Highest tone.",
-      "Tone falls.",
-      "Lower.",
-      "Low.",
-      "Lowest of the night: REM atonia."
+      "Relatively high tonic chin EMG activity.",
+      "Tonic chin EMG activity usually decreases from wakefulness.",
+      "Reduced tonic chin EMG activity.",
+      "Variable tonic chin EMG activity; low tone alone does not define N3.",
+      "Muscle atonia: very low tonic chin EMG activity, with possible brief phasic twitches."
     ],
     cites: [1, 22]
   },
@@ -825,9 +825,9 @@ function FeatureStory({ feature, stageTarget, distribution }: {
 
 // Unit of each feature as it appears in the distribution (values are raw, before per-night scaling).
 const featureUnits: Record<string, string> = {
-  "spindle_features.aperiodic_exponent": "spectral slope (unitless)",
+  "spindle_features.aperiodic_exponent": "negative log-magnitude slope (unitless)",
   "spindle_features.aperiodic_intercept": "log₁₀ power at the 1/f fit",
-  "spindle_features.delta_power": "log₁₀ power, 1–4 Hz",
+  "spindle_features.delta_power": "spectral magnitude, 1–4 Hz",
   "spindle_features.theta_residual_power": "log₁₀ power above the 1/f fit",
   "spindle_features.alpha_residual_power": "log₁₀ power above the 1/f fit",
   "spindle_features.beta_residual_power": "log₁₀ power above the 1/f fit",
@@ -1941,11 +1941,11 @@ function ExperimentHistory() {
 
 function DiscussionExplorer() {
   return <div className="research-conclusion">
-    <p className="research-takeaway">Physiological measurements combined with temporal context provide a credible offline staging baseline: a default tree ensemble retains useful performance when transferred to a second hospital. Its physiological assumptions can be checked against the recorded waveforms.</p>
+    <p className="research-takeaway">Physiological measurements combined with temporal context provide a <strong>credible offline staging baseline</strong>: a default tree ensemble retains useful performance when transferred to a second hospital. Its physiological assumptions can be checked against the recorded waveforms.</p>
     <ul className="research-conclusion-objectives">
-      <li><Objective n={1} /> The reliance on EEG background activity is consistent with research linking spectral slope to arousal. My slope calculation differs from the published implementation, so this is converging evidence rather than a replication. The weak N2 separation of broad spindle-band power supports measuring defining events directly instead of assuming a physiological name guarantees specificity. <Citation number={17} /> <Citation number={1} /></li>
-      <li><Objective n={2} /> In these experiments, temporal context contributed more than changing to the tested neural-network architecture. A compact set of explicit measurements can therefore be a competitive design choice. Published systems such as U-Sleep still provide a stronger benchmark for broad validation; different test cohorts prevent claiming equivalent performance. <Citation number={26} /></li>
-      <li><Objective n={3} /> Coimbra supports portability of the full input set, while the difficult held-out Boston nights show that transfer of an average score is not enough. The different scores against Coimbra’s two scorers also fit established evidence that the reference labels themselves vary. This strengthens the case for patient-level evaluation and multiple scorers, without attributing every model error to ambiguous labels. <Citation number={5} /></li>
+      <li><Objective n={1} /> The <strong>reliance on EEG background activity</strong> is consistent with research linking spectral slope to arousal. My slope calculation differs from the published implementation, so this is converging evidence rather than a replication. The weak N2 separation of broad spindle-band power supports measuring defining events directly instead of assuming a physiological name guarantees specificity. <Citation number={17} /> <Citation number={1} /></li>
+      <li><Objective n={2} /> In these experiments, <strong>temporal context contributed more</strong> than changing to the tested neural-network architecture. A compact set of explicit measurements can therefore be a competitive design choice. Published systems such as U-Sleep still provide a stronger benchmark for broad validation; different test cohorts prevent claiming equivalent performance. <Citation number={26} /></li>
+      <li><Objective n={3} /> Coimbra supports portability of the full input set, while the difficult held-out Boston nights show that transfer of an average score is not enough. The different scores against Coimbra’s two scorers also fit established evidence that the reference labels themselves vary. This strengthens the case for <strong>patient-level evaluation and multiple scorers</strong>, without attributing every model error to ambiguous labels. <Citation number={5} /></li>
     </ul>
     <h4>Limitations</h4>
     <ul className="research-limits">
@@ -1955,7 +1955,7 @@ function DiscussionExplorer() {
     </ul>
     <h4>Next steps</h4>
     <ul className="research-limits">
-      <li><b>Test the 8-leaf ensemble on final Model C.</b> Check whether the earlier performance–complexity trade-off holds with the final 20 inputs, especially for N1 and difficult patients.</li>
+      <li><b>Assess the 8-leaf trade-off.</b> The smaller ensemble already performs close to Model C. Examine N1 and difficult-patient performance before selecting it for independent confirmation.</li>
       <li><b>Validate the physiological explanations.</b> Review difficult nights with a scorer and test whether event detectors and individual explanations agree with the waveforms.</li>
       <li><b>Confirm broader reliability.</b> Test the fixed model in further patient groups and recording systems, with attention to per-patient performance.</li>
     </ul>
@@ -2408,8 +2408,8 @@ function useOpenOnHash() {
 
 // ---------------------------------------------------------------- objectives that thread the page
 const objectives = [
-  { n: 1, short: "Physiological interpretation", line: "Connect each measurement to sleep physiology, check its observed behaviour, and distinguish plausible cues from what the model actually uses." },
-  { n: 2, short: "A simple model", line: "Use decision trees with default settings, and keep an addition only if it clearly improves accuracy." },
+  { n: 1, short: "Interpretability", line: "Connect each measurement to sleep physiology, check its observed behaviour, and distinguish plausible cues from what the model actually uses." },
+  { n: 2, short: "Simplicity", line: "Use decision trees with default settings, and keep an addition only if it clearly improves accuracy." },
   { n: 3, short: "Independent validation", line: "Separate training patients from test patients, report held-out scoring history, and examine transfer to other hospitals." }
 ];
 
@@ -2582,36 +2582,22 @@ function PublishedModelSize() {
 function StudySummary() {
   const adopted = data.models.find((model) => model.id === "adopted") as ModelResult;
   const coimbraResult = isrucStatus.results.find((row) => row.evaluation === "transfer_cinc_to_isruc_scorer1");
-  const pct = (value: number) => `${Math.round(value * 100)}%`;
-  const n1 = data.diagnostics.per_stage.find((row) => row.stage === "N1");
-  const n3 = data.diagnostics.per_stage.find((row) => row.stage === "N3");
-  const epoch = data.models.find((model) => model.id === "epoch") as ModelResult;
-  const features = data.models.find((model) => model.id === "window-features") as ModelResult;
   const held = data.generalisation?.holdout.find((row) => row.config === "g20");
   return (
     <section className="research-section research-summary" id="summary">
       <SectionHeading title="Abstract" />
       <div className="research-summary-copy research-abstract">
         <p>
-          <b>Background.</b> Sleep staging from polysomnography underlies most sleep diagnoses, but manual scoring is slow, and expert scorers agree on only 83% of epochs (63% for N1). Deep networks report strong staging performance; understanding which physiological information drives a decision remains a separate challenge.
+          Sleep staging divides an overnight recording into wakefulness, non-REM and REM sleep based on changes in brain activity, eye movements and muscle tone. It helps clinicians assess sleep architecture and diagnose sleep disorders, but manual scoring is time-consuming and involves judgment. My study tests whether a simple model can use <strong>these physiological cues</strong> to identify sleep stages and reveal which measurements contribute to its predictions. A tree ensemble combines {data.source.tracks + data.source.features} EEG, eye and chin measurements with surrounding temporal context, achieving macro-F1 scores of {formatMetric(adopted.metrics.macro_f1)} in Boston cross-validation{held ? <>, {formatMetric(held.macro_f1)} on held-out Boston patients</> : null}{isrucStatus.final_complete && coimbraResult ? <> and {formatMetric(coimbraResult.macro_f1)} in Coimbra against scorer 1</> : null}. N1 and difficult individual nights remain challenges. Together, these findings show how <strong>physiologically motivated measurements</strong> can support automatic sleep staging while making the model’s reliance on those measurements explicit.
         </p>
         <p>
-          <b>Objective.</b> To test three aims: connect inputs to physiology, keep the model simple, and assess performance beyond its training patients:
+          <b>Objectives.</b>
         </p>
         <div className="research-objectives">
           <ol>
             {objectives.map((item) => <li key={item.n}><Objective n={item.n as 1 | 2 | 3} /><span>{item.line}</span></li>)}
           </ol>
         </div>
-        <p>
-          <b>Methods.</b> {data.source.subjects} overnight recordings from the Boston dataset. {data.source.tracks + data.source.features} measurements from the EEG, EOG and chin EMG, supplied every six seconds, over the scored epoch and two epochs on either side. Gradient-boosted decision trees with default settings. Testing: five-fold cross-validation split by patient, a held-out set of {data.generalisation?.holdout_subjects || 200} Boston recordings with two recorded evaluation looks, and external evaluation on {isrucStatus.final_complete ? isrucStatus.evaluated : 100} Coimbra recordings.
-        </p>
-        <p>
-          <b>Results.</b> Macro-F1 {formatMetric(adopted.metrics.macro_f1)} (κ {adopted.metrics.cohen_kappa.toFixed(2)}) in cross-validation, with N1 recall {pct(n1?.recall ?? 0)} and N3 recall {pct(n3?.recall ?? 0)}. Context accounted for most of the gain ({formatMetric(epoch.metrics.macro_f1)} → {formatMetric(features.metrics.macro_f1)}).{held ? <> Held-out set: {formatMetric(held.macro_f1)}.</> : null} {isrucStatus.final_complete && coimbraResult ? <>Coimbra ({coimbraResult.n_subjects} nights, scorer 1): {formatMetric(coimbraResult.macro_f1)}.</> : null} The best published network scores 0.79 on a different Boston test set, with about 100 times more parameters. <Citation number={26} />
-        </p>
-        <p>
-          <b>Conclusion.</b> Named physiological measurements support useful staging performance with inspectable inputs. The strongest result is the gain from context; the main limitations are N1, variability between patients, and incomplete independence of external testing. Physiological interpretation guides error investigation, but individual explanations still need verification.
-        </p>
       </div>
     </section>
   );
@@ -2687,7 +2673,7 @@ export function StagingResearchDashboard() {
           ]} />
         </div>
         <div className="research-results-block research-block" id="evidence">
-          <SubHeading number="3.2" title="Which sleep physiology does the model capture?" objective={1} />
+          <SubHeading number="3.2" title="Which measurements does the model rely on?" objective={1} />
           <p className="research-takeaway">These analyses ask which measurements Model C uses and when it needs them. Values are swapped between test examples while the stage labels stay unchanged; the fall in macro-F1 measures reliance. The tabs examine individual measurements and positions within the input window. A small drop means little additional reliance, since other inputs may carry similar information.</p>
           <Tabs label="What the model relies on" tabs={[
             { id: "signals", title: "Individual measurements", content: <PhysiologyFindings /> },
