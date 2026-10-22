@@ -63,6 +63,8 @@ Numbers are 5-class macro-F1 averaged over 5 subject-grouped folds (seed 7) unle
 | 36 | 2026-10-22 | Validated swaps (rounds 3–4) | Passed: swapS2 (spindle_bursts for aperiodic_intercept + gamma_residual, −0.0026), swap4_saw (−0.0019), swap4_alpha (−0.0012); failed: swapS1 (by 0.00002), swapS3, combo. Only spindle_bursts is used by the model (3rd-largest N2 importance); sawtooth/alpha rank last | Adopt swapS2 as model C (20 signals, config g20) | `feature_reduction/FINDINGS.md` |
 | 37 | 2026-10-22 | Held-out look #2: model C (g20) | 0.7291, κ 0.653, accuracy 0.738 on the 200 held-out patients (look #1, 27 signals: 0.7296) | Reported as is; no model choice made from it | `holdout/LEDGER.csv` |
 
+| 38 | 2026-10-22 | External evaluation: final Model C in Coimbra | One recorded evaluation look; 99 nights, macro-F1 0.761 against scorer 1 and 0.751 against scorer 2; human scorer agreement 0.802. Night 8 excluded before scoring because frontal EEG was missing. | Report both scorer comparisons and patient variation | `staging_window_model/transfer_isruc/FINDINGS.md`, `single_look.json`, `summary.csv` |
+
 ## Tried and rejected (don't repeat without a new reason)
 
 - **Learners:** multinomial logistic (0.458), bagged trees (0.609), tuned HGB (no gain over defaults).

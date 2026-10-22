@@ -14,7 +14,7 @@ Review before the talk; let the dashboard carry the detail.
 
 ## From methods to discussion
 
-- **2.1 Data and testing:** Mention **37 numbered development/history entries**, covering features, models, audits and testing—not 37 independent validation studies. “There was a lot of iteration; I'll show the decisions that mattered.” Boston: 320 development patients, 200 held out. Coimbra: 99 nights, two scorers. Boston held-out has two recorded evaluation looks; Coimbra has one.
+- **2.1 Data and testing:** Mention **38 numbered development/history entries**, covering features, models, audits and testing—not 37 independent validation studies. “There was a lot of iteration; I'll show the decisions that mattered.” Boston: 320 development patients, 200 held out. Coimbra: 99 nights, two scorers. Boston held-out has two recorded evaluation looks; Coimbra has one (#38).
 - **2.2 Features:** **Don't tour every feature.** Start with **N2 spindle proxy**: physiological idea → calculation → observed behaviour. If useful, contrast **N3 slow-wave coverage** with relative delta: amplitude and scalp location matter. Keep REM eyes plus chin for questions. “Which would you like to look at more closely?”
 - **2.3 Model:** Explain the diagram once: 20 measurements, 150-second window, default tree ensemble. Explicit inputs and a straightforward baseline. Future context makes it offline.
 - **3 Results:** Model comparison → N1 remains difficult → reliance → validation. “I swap one measurement between examples, keep the labels fixed, and see how much performance falls.” Small drop means little *additional* reliance. Use the validation graph to discuss patient variation. Don't open every tab.

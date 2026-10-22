@@ -1089,17 +1089,17 @@ function CompactStudyProtocol() {
         <div className="research-ablation-row research-data-row is-adopted" role="row">
           <span role="cell"><strong>Boston · CinC 2018, development</strong><small className="research-row-note">Massachusetts General Hospital, Boston <Citation number={24} /></small></span>
           <span role="cell">{data.source.subjects} nights<small className="research-row-note">{data.source.epochs.toLocaleString()} epochs</small></span>
-          <span role="cell"><b>Development and cross-validation.</b> Five-fold cross-validation split by patient. <Exp ids={[15]} /></span>
+          <span role="cell"><b>Development and cross-validation.</b> Five-fold cross-validation split by patient; development from <Exp ids={[15]} /> onward.</span>
         </div>
         <div className="research-ablation-row research-data-row" role="row">
           <span role="cell"><strong>Boston · CinC 2018, held out</strong><small className="research-row-note">Same hospital, set aside before modelling</small></span>
           <span role="cell">{data.generalisation?.holdout_subjects || 200} nights<small className="research-row-note">more apnea: 59% moderate or severe</small></span>
-          <span role="cell"><b>Two evaluation looks.</b> Look 1: the earlier 27-input model, alongside the 33-input, single-epoch and decoder comparisons <Exp ids={[30]} />. Look 2: final Model C, with 20 inputs <Exp ids={[37]} />.</span>
+          <span role="cell"><b>Two evaluation looks.</b> Initial held-out evaluation <Exp ids={[30]} />; evaluation after the final feature selection <Exp ids={[37]} />.</span>
         </div>
         <div className="research-ablation-row research-data-row" role="row">
           <span role="cell"><strong>Coimbra · ISRUC-Sleep</strong><small className="research-row-note">Coimbra, Portugal; subgroup I; two scorers per night</small></span>
           <span role="cell">{isrucStatus.final_complete ? isrucStatus.evaluated : 100} nights</span>
-          <span role="cell"><b>One recorded evaluation look.</b> Final Model C (20 inputs); the same predictions compared with each of the two scorers.</span>
+          <span role="cell"><b>One recorded evaluation look.</b> External evaluation after the final feature selection; predictions compared with both scorers. <Exp ids={[38]} /></span>
         </div>
       </div>
       <p className="research-dataset-line"><span>Stage distribution in the development set:</span></p>
@@ -1827,7 +1827,8 @@ const historyPhases: Array<{ phase: string; dataset: string; steps: HistoryStep[
       { n: 34, date: "Oct 22", question: "Can vague inputs be swapped for direct markers?", finding: "Swaps passed the accuracy rule, but the K-complex proxy ran the wrong way and the cleaned eye signal barely separated REM.", decision: "Check what a feature measures before testing it." },
       { n: 35, date: "Oct 22", question: "Which candidate markers mean what they claim?", finding: "Validated first: sawtooth theta (REM) and alpha dropout (N1) passed; REM eye bursts, K-complex events and slow eye movements failed.", decision: "Only validated markers enter the swaps." },
       { n: 36, date: "Oct 22", question: "Swap in the validated markers?", finding: "Passed the rule: spindle bursts for 1/f offset and gamma residual (−0.0026), sawtooth theta (−0.0019), alpha dropout (−0.0012). Only spindle bursts is used by the model (3rd-largest N2 importance); the others rank last.", decision: "Adopt the spindle swap: model C, 20 signals.", score: 0.773 },
-      { n: 37, date: "Oct 22", question: "Final test of model C (look #2)", finding: "0.729 on the same 200 held-out patients (27-signal model at look #1: 0.730).", decision: "Reported as is; no choice made from it.", score: 0.729, holdout: true }
+      { n: 37, date: "Oct 22", question: "Final test of model C (look #2)", finding: "0.729 on the same 200 held-out patients (27-signal model at look #1: 0.730).", decision: "Reported as is; no choice made from it.", score: 0.729, holdout: true },
+      { n: 38, date: "Oct 22", question: "Does final Model C transfer to Coimbra?", finding: "One recorded evaluation look on 99 nights: macro-F1 0.761 against scorer 1 and 0.751 against scorer 2; scorer-to-scorer agreement 0.802. Night 8 excluded before scoring because frontal EEG was missing.", decision: "Report both scorer comparisons and patient variation as external validation." }
     ]
   }
 ];
@@ -1841,7 +1842,7 @@ const historyWhere: Record<number, string> = {
   16: "exploration/cinc-models", 17: "exploration/cinc-features", 18: "exploration/cinc-subjects", 19: "exploration/cinc-context",
   20: "exploration/cinc-context", 21: "scripts/run_window_time_importance.py", 22: "dashboard comparison", 23: "scripts/run_window_hmm_staging.py",
   24: "staging_window_model/ablations", 25: "scripts/run_window_complexity.py", 26: "staging_window_model/cardio_full*",
-  27: "scripts/run_window_transfer.py", 28: "staging_window_model/ablations", 29: "exploration/signal-quality", 31: "exploration/no-eeg", 30: "holdout/LEDGER.csv", 32: "showcase explorer (2.2)", 33: "staging_window_model/cinc2018/feature_reduction", 34: "feature_reduction (round 2)", 35: "feature_reduction/round4_validation.csv", 36: "feature_reduction (rounds 3–4)", 37: "holdout/LEDGER.csv"
+  27: "scripts/run_window_transfer.py", 28: "staging_window_model/ablations", 29: "exploration/signal-quality", 31: "exploration/no-eeg", 30: "holdout/LEDGER.csv", 32: "showcase explorer (2.2)", 33: "staging_window_model/cinc2018/feature_reduction", 34: "feature_reduction (round 2)", 35: "feature_reduction/round4_validation.csv", 36: "feature_reduction (rounds 3–4)", 37: "holdout/LEDGER.csv", 38: "staging_window_model/transfer_isruc/FINDINGS.md; single_look.json"
 };
 
 const sectionNames: Record<string, string> = {
