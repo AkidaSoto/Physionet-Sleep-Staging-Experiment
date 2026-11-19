@@ -15,16 +15,20 @@ import {
 } from "../../content/staging-dashboard-data";
 
 const data = stagingDashboardData;
+// Modalities are told apart by name; their marks use three ink tones (EEG darkest) so colour stays free for stage.
+const modalityInk = { eeg: "#3b3a36", eog: "#7d7a72", emg: "#b0aca1" };
+const accentInk = "#1c5cab";
 const sensorColors: Record<string, string> = {
-  Brain: "#78d8ff", Eyes: "#ef8ab5", "Chin muscle": "#b49cf0", Heart: "#ff7d7d", Breathing: "#9fd36f"
+  Brain: modalityInk.eeg, Eyes: modalityInk.eog, "Chin muscle": modalityInk.emg, Heart: modalityInk.eog, Breathing: modalityInk.emg
 };
 
+// Validated with the dataviz palette checker on the paper surface (matches --stage-* in globals.css).
 const stageColors: Record<string, string> = {
-  Wake: "#91a9ce",
-  N1: "#72d2ff",
-  N2: "#6fc4a2",
-  N3: "#f0b36d",
-  REM: "#ef8ab5"
+  Wake: "#e34948",
+  N1: "#eda100",
+  N2: "#1baf7a",
+  N3: "#6250d6",
+  REM: "#008300"
 };
 
 function Citation({ number }: { number: number }) {
@@ -647,7 +651,7 @@ function StagePrimer() {
           <thead>
             <tr>
               <th scope="col">System</th>
-              {stages.map((stage) => <th scope="col" key={stage} style={{ color: stageColors[stage] }}>{stage}</th>)}
+              {stages.map((stage) => <th scope="col" key={stage} className="swatch" style={{ "--swatch": stageColors[stage] } as React.CSSProperties}>{stage}</th>)}
             </tr>
           </thead>
           <tbody>
@@ -704,7 +708,7 @@ function FeatureDistributionChart({
       </div>
       {feature.stages.map((stage) => (
         <div className="research-distribution-row" key={stage.stage}>
-          <strong style={{ color: stageColors[stage.stage] }}>{stage.stage}</strong>
+          <strong className="swatch" style={{ "--swatch": stageColors[stage.stage] } as React.CSSProperties}>{stage.stage}</strong>
           <div className="research-distribution-plot">
             <svg viewBox="0 0 600 40" role="img" aria-label={`${stage.stage}: median ${featureValue(stage.median)}, middle half ${featureValue(stage.p25)} to ${featureValue(stage.p75)}`} preserveAspectRatio="none">
               <line className="range" x1={x(stage.p10)} x2={x(stage.p90)} y1="20" y2="20" />
@@ -882,7 +886,7 @@ function PhysiologyExplorer() {
       <div className="research-family-tabs research-stage-tabs" role="tablist" aria-label="Choose an expert sleep-stage label">
         {stageFeatureTargets.map((item) => (
           <button key={item.stage} type="button" role="tab" aria-selected={item.stage === stageId} onClick={() => chooseStage(item)}>
-            <span style={{ color: item.stage === stageId ? stageColors[item.stage] : undefined }}>{item.stage}</span>
+            <span className="swatch" style={{ "--swatch": stageColors[item.stage] } as React.CSSProperties}>{item.stage}</span>
           </button>
         ))}
 
@@ -929,7 +933,7 @@ function PhysiologyExplorer() {
             <div className="research-epoch-example" key={kind}>
               <div className="research-epoch-example-label">
                 <u className={`research-example-marker is-${kind}`} />
-                <strong style={{ color: stageColors[example.stage] }}>{example.stage}</strong>
+                <strong className="swatch" style={{ "--swatch": stageColors[example.stage] } as React.CSSProperties}>{example.stage}</strong>
                 <span>{feature.name} {featureValue(example.feature_value)} · {example.record_id} · {formatClock(example.epoch_start_sec)}</span>
               </div>
               <SignalTrace signal={example.signal} active />
@@ -990,7 +994,7 @@ function SleepStructure() {
           <strong>Typical bout length</strong>
           {bouts.map((bout) => (
             <span key={bout.stage}>
-              <b style={{ color: stageColors[bout.stage] }}>{bout.stage}</b>
+              <b className="swatch" style={{ "--swatch": stageColors[bout.stage] } as React.CSSProperties}>{bout.stage}</b>
               median {bout.median_epochs * 0.5} min · {formatPercent(bout.share_single_epoch)} last one epoch
             </span>
           ))}
@@ -1004,7 +1008,7 @@ function SleepStructure() {
         </div>
         {matrix.map((values, rowIndex) => (
           <div className="research-confusion-row" key={stages[rowIndex]}>
-            <strong style={{ color: stageColors[stages[rowIndex]] }}>{stages[rowIndex]}</strong>
+            <strong className="swatch" style={{ "--swatch": stageColors[stages[rowIndex]] } as React.CSSProperties}>{stages[rowIndex]}</strong>
             {values.map((value, columnIndex) => (
               <span
                 key={columnIndex}
@@ -1138,7 +1142,7 @@ function ConfusionExplorer() {
           const specificity = 1 - falsePositives / Math.max(total - positives, 1);
           return (
             <div className="research-confusion-row" key={stage}>
-              <strong style={{ color: stageColors[stage] }}>{stage}</strong>
+              <strong className="swatch" style={{ "--swatch": stageColors[stage] } as React.CSSProperties}>{stage}</strong>
               {values.map((value, columnIndex) => (
                 <span
                   key={`${stage}-${columnIndex}`}
@@ -1162,13 +1166,13 @@ function ConfusionExplorer() {
 }
 
 const familyColors: Record<string, string> = {
-  spectrum: "#78d8ff",
-  spindles: "#6fc4a2",
-  topography: "#f0b36d",
-  "eye-movement": "#ef8ab5",
-  "muscle-tone": "#b49cf0",
-  heart: "#ff7d7d",
-  breathing: "#9fd36f"
+  spectrum: modalityInk.eeg,
+  spindles: modalityInk.eeg,
+  topography: modalityInk.eeg,
+  "eye-movement": modalityInk.eog,
+  "muscle-tone": modalityInk.emg,
+  heart: modalityInk.emg,
+  breathing: modalityInk.emg
 };
 
 // Short signal name (as the models and saliency export use it) → explorer name and family.
@@ -1231,15 +1235,15 @@ function IsrucResults() {
 function ModelEvidence({ part }: { part: "signals" | "time" }) {
   const measurements = [...data.signal_importance].sort((a, b) => b.importance - a.importance);
   const remainingGroups = [
-    { label: "Other EEG measurements", families: ["spectrum", "topography", "spindles"], color: "#78d8ff" },
-    { label: "Other eye measurements", families: ["eye-movement"], color: "#ef8ab5" },
-    { label: "Other chin measurements", families: ["muscle-tone"], color: "#b49cf0" }
+    { label: "Other EEG measurements", families: ["spectrum", "topography", "spindles"] },
+    { label: "Other eye measurements", families: ["eye-movement"] },
+    { label: "Other chin measurements", families: ["muscle-tone"] }
   ].map((group) => {
     const items = measurements.slice(8).filter((item) => group.families.includes(item.family_id));
     return { ...group, count: items.length, importance: items.reduce((sum, item) => sum + item.importance, 0) };
   }).filter((group) => group.count > 0);
   const max = Math.max(...measurements.slice(0, 8).map((item) => item.importance), .001);
-  const measurementColor = (family: string) => family === "eye-movement" ? "#ef8ab5" : family === "muscle-tone" ? "#b49cf0" : "#78d8ff";
+  const measurementColor = (family: string) => family === "eye-movement" ? modalityInk.eog : family === "muscle-tone" ? modalityInk.emg : modalityInk.eeg;
   const positive = (value: number) => Math.max(value, 0);
   const fine = data.time_importance.fine;
   const coarse = data.time_importance.epoch;
@@ -1252,7 +1256,7 @@ function ModelEvidence({ part }: { part: "signals" | "time" }) {
       {part === "time" ? <p className="research-evidence-lede">For the timing analysis, measurements are swapped only at the indicated position in the window. The upper plot tests a six-second step; the lower plot tests a whole epoch because those measurements repeat across its five steps. <Exp ids={[21]} /></p> : null}
       <div className="research-evidence-grid is-single">
         {part === "signals" ? <div>
-          <p className="research-signal-key"><span><i style={{ background: "#78d8ff" }} /> EEG</span><span><i style={{ background: "#ef8ab5" }} /> Eye activity</span><span><i style={{ background: "#b49cf0" }} /> Chin tone</span><span>Drop in macro-F1 · mean of {data.importance_folds} test folds</span></p>
+          <p className="research-signal-key"><span><i style={{ background: modalityInk.eeg }} /> EEG</span><span><i style={{ background: modalityInk.eog }} /> Eye activity</span><span><i style={{ background: modalityInk.emg }} /> Chin tone</span><span>Drop in macro-F1 · mean of {data.importance_folds} test folds</span></p>
           <div className="research-importance-bars research-individual-bars is-compact">
             {measurements.slice(0, 8).map((item) => {
               const label = item.id === "track.o_rel_alpha" ? "Occipital alpha · 2-s spectrum" : item.id === "topography_features.occipital_rel_alpha" ? "Occipital alpha · 30-s spectrum" : item.label.replace(" (1 s)", "");
@@ -1322,7 +1326,7 @@ function Generalisation() {
       <div className="research-ablation-table" role="table" aria-label="Held-out and cross-lab results">
         <div className="research-ablation-row is-head" role="row">
           <span role="columnheader">Test</span><span role="columnheader">Macro-F1</span><span role="columnheader">κ</span><span role="columnheader" />
-          {data.source.stages.map((stage) => <span role="columnheader" key={stage} style={{ color: stageColors[stage] }}>{stage}</span>)}
+          {data.source.stages.map((stage) => <span role="columnheader" key={stage} className="swatch" style={{ "--swatch": stageColors[stage] } as React.CSSProperties}>{stage}</span>)}
         </div>
         {rows.map(({ label, note, row, ci }) => (
           <div className="research-ablation-row" role="row" key={label}>
@@ -1427,7 +1431,7 @@ function SignalAblations() {
           <span role="columnheader">Macro-F1</span>
           <span role="columnheader">+ decoder</span>
           <span role="columnheader">4-class κ</span>
-          {data.source.stages.map((stage) => <span role="columnheader" key={stage} style={{ color: stageColors[stage] }}>{stage}</span>)}
+          {data.source.stages.map((stage) => <span role="columnheader" key={stage} className="swatch" style={{ "--swatch": stageColors[stage] } as React.CSSProperties}>{stage}</span>)}
         </div>
         {rows.map((row) => (
           <div className="research-ablation-row" role="row" key={row.config}>
@@ -1498,7 +1502,7 @@ function BlackBoxAgreement() {
       </p>
       <div className="research-agreement-table is-paired" style={{ gridTemplateColumns: `minmax(0, 1.5fr) repeat(${stages.length}, minmax(0, 1fr))` }}>
         <span className="research-agreement-key">% share · <b>C</b> / D</span>
-        {stages.map((stage) => <b key={stage} style={{ color: stageColors[stage] }}>{stage}</b>)}
+        {stages.map((stage) => <b key={stage} className="swatch" style={{ "--swatch": stageColors[stage] } as React.CSSProperties}>{stage}</b>)}
         {systems.map((system, f) => (
           <div key={system.id} className="research-agreement-row">
             <span><u style={{ background: system.color }} />{system.label}</span>
@@ -1824,9 +1828,9 @@ function ExpRefs({ ids }: { ids: number[] }) {
 
 // Dot colour = what the score was measured on.
 const scoreKinds = {
-  ucddb: { label: "UCDDB cross-validation (25 patients)", color: "#91a9ce" },
-  cinc: { label: "Boston cross-validation", color: "#78d8ff" },
-  holdout: { label: "Held-out Boston patients (two evaluation looks)", color: "#f0b36d" }
+  ucddb: { label: "UCDDB cross-validation (25 patients)", color: modalityInk.emg },
+  cinc: { label: "Boston cross-validation", color: modalityInk.eeg },
+  holdout: { label: "Held-out Boston patients (two evaluation looks)", color: accentInk }
 };
 const scoreKind = (step: HistoryStep) => (step.holdout ? "holdout" : step.n <= 14 ? "ucddb" : "cinc");
 
@@ -2452,7 +2456,7 @@ function RobustnessSummary() {
     return { min: sorted[0], q1: quantile(.25), median: quantile(.5), q3: quantile(.75), max: sorted[sorted.length - 1] };
   };
   const groups = [
-    { title: "Model C · all 20 inputs", color: "#78d8ff", rows: [
+    { title: "Model C · all 20 inputs", color: accentInk, rows: [
       { label: "Boston · cross-validation", note: `${data.source.subjects} patients`, value: adopted.metrics.macro_f1, spread: spread(data.diagnostics.subject_metrics.map((row) => row.macro_f1)) },
       { label: "Boston · held-out test", note: `${g?.holdout_subjects ?? 200} patients · ${g?.holdout_looks ?? 2} evaluation looks`, value: held?.macro_f1, spread: holdoutDistribution.verified ? spread(holdoutDistribution.subject_macro_f1) : undefined },
       { label: "Coimbra · external test, scorer 1", note: `${isrucStatus.final_complete ? isrucStatus.evaluated : 100} patients · 1 recorded evaluation look`, value: coimbra?.macro_f1, spread: spread(coimbraPatients) },
@@ -2467,7 +2471,7 @@ function RobustnessSummary() {
       <div className="research-transfer-chart" aria-label="Macro-F1 across patient cohorts, grouped by model inputs">
         <div className="research-model-compare-axis" aria-hidden="true"><span>Macro-F1</span><div>{ticks.map((tick) => <small key={tick} style={{ left: position(tick) }}>{tick.toFixed(2)}</small>)}</div><span /></div>
         {groups.map((group) => <div className="research-transfer-group" key={group.title}>
-          <h4 style={{ color: group.color }}>{group.title}</h4>
+          <h4>{group.title}</h4>
           {group.rows.map((row) => <div className="research-model-compare-row" key={row.label}>
             <strong>{row.label}<small className="research-row-note">{row.note}</small></strong>
             <div className="research-model-compare-track" role="img" aria-label={`${row.label}: ${row.value === undefined ? "result not available" : formatMetric(row.value)} macro-F1`}>

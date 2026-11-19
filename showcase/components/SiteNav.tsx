@@ -37,15 +37,12 @@ const subsections: Record<string, Array<{ id: string; label: string }>> = {
 
 export function SiteNav() {
   const [activeId, setActiveId] = useState("top");
-  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     const targets = ["top", ...items.map((item) => item.id)]
       .map((id) => document.getElementById(id))
       .filter((element): element is HTMLElement => Boolean(element));
     const updateScrollState = () => {
-      const scrollable = document.documentElement.scrollHeight - window.innerHeight;
-      setProgress(scrollable > 0 ? Math.min(window.scrollY / scrollable, 1) : 0);
       const readingLine = Math.min(180, window.innerHeight * 0.28);
       const visibleSection = document
         .elementFromPoint(window.innerWidth / 2, readingLine)
@@ -120,7 +117,6 @@ export function SiteNav() {
           </select>
         </label>
       </div>
-      <span className="site-nav-progress" style={{ transform: `scaleX(${progress})` }} aria-hidden="true" />
     </nav>
   );
 }
