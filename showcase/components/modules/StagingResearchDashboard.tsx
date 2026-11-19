@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import saliencyData from "../../content/generated/staging-saliency.json";
 import isrucStatus from "../../content/generated/isruc-status.json";
@@ -664,7 +665,7 @@ function StagePrimer() {
                   <em className={row.scoring ? "is-scoring" : "is-supporting"}>{row.scoring ? "AASM scoring" : "Follows stage"}</em>
                   <span className="research-row-cites">{row.cites.map((number) => <Citation key={number} number={number} />)}</span>
                 </th>
-                {row.cells.map((cell, index) => <td key={stages[index]}>{cell}</td>)}
+                {row.cells.map((cell, index) => <td key={stages[index]} data-stage={stages[index]}>{cell}</td>)}
               </tr>
             ))}
           </tbody>
@@ -944,7 +945,7 @@ function PhysiologyExplorer() {
       )}
 
       <Tabs label="About this feature" tabs={[
-        { id: "calculated", title: "How it is calculated", content: <div className="research-feature-tab"><p>{method}</p>{anchor ? <a className="research-text-link" href={`#code-${anchor}`}>View the Python implementation</a> : null}</div> },
+        { id: "calculated", title: "How it is calculated", content: <div className="research-feature-tab"><p>{method}</p>{anchor ? <Link className="research-text-link" href={`/history#code-${anchor}`}>View the Python implementation</Link> : null}</div> },
         { id: "fools", title: "What can fool it", content: <div className="research-feature-tab"><p>{family.limitation} {family.sources.map((number) => <Citation key={number} number={number} />)}</p></div> }
       ]} />
     </div>
@@ -1185,17 +1186,6 @@ function PhysiologyFindings() {
   return <div className="research-feature-tab">
     <ModelEvidence part="signals" />
   </div>;
-}
-
-function PerformanceSummary() {
-  const model = data.models.find((item) => item.id === data.headline.diagnostics_model_id) as ModelResult;
-  const items = [
-    { value: formatMetric(model.metrics.macro_f1), label: "Macro-F1", note: `Equal weight to each stage; balances precision and sensitivity. 95% CI ${formatInterval(intervals.cv.adopted.macro_f1_ci)}.` },
-    { value: `${(model.metrics.accuracy * 100).toFixed(1)}%`, label: "Accuracy", note: "Share of all epochs scored correctly; common stages count more." },
-    { value: `${(model.metrics.balanced_accuracy * 100).toFixed(1)}%`, label: "Balanced accuracy", note: "Average sensitivity across the five stages." },
-    { value: model.metrics.cohen_kappa.toFixed(2), label: "Cohen’s κ", note: "Agreement beyond that expected from the stage frequencies." }
-  ];
-  return <div className="research-glance-stats research-performance-metrics">{items.map((item) => <div key={item.label}><strong>{item.value}</strong><span><b>{item.label}</b><br />{item.note}</span></div>)}</div>;
 }
 
 function IsrucResults() {
@@ -1805,7 +1795,7 @@ const sectionNames: Record<string, string> = {
   staging: "1.1 Sleep staging", stages: "1.2 The physiology of each stage", night: "S3 Sleep structure", "supp-models": "S2 Model development",
   data: "2.1 Data and testing", features: "2.2 Features", model: "2.3 Model", testing: "2.1 Data and testing",
   evidence: "3.2 Features", performance: "3.1 Model", robustness: "3.3 Testing",
-  "history-details": "S5 Experiment history", "supp-simplify": "S2 Simpler models"
+"supp-simplify": "S2 Simpler models"
 };
 
 // A link to another section, written as "§2.4 Testing" so it reads as a place on the page.
@@ -1815,14 +1805,14 @@ function SecRef({ to }: { to: string }) {
 
 // Experiment numbers attached to the claim they support.
 function Exp({ ids, range }: { ids?: number[]; range?: [number, number] }) {
-  if (range) return <span className="research-exp-inline"><a href={`#exp-${range[0]}`}>exp. #{range[0]}–{range[1]}</a></span>;
-  return <span className="research-exp-inline">exp. {(ids ?? []).map((n, i) => <a key={n} href={`#exp-${n}`}>{i ? ", " : ""}#{n}</a>)}</span>;
+  if (range) return <span className="research-exp-inline"><Link href={`/history#exp-${range[0]}`}>exp. #{range[0]}–{range[1]}</Link></span>;
+  return <span className="research-exp-inline">exp. {(ids ?? []).map((n, i) => <Link key={n} href={`/history#exp-${n}`}>{i ? ", " : ""}#{n}</Link>)}</span>;
 }
 
 function ExpRefs({ ids }: { ids: number[] }) {
   return (
     <span className="research-exp-refs" aria-label="Experiments behind this result">
-      Experiments {ids.map((n) => <a key={n} href={`#exp-${n}`}>#{n}</a>)}
+      Experiments {ids.map((n) => <Link key={n} href={`/history#exp-${n}`}>#{n}</Link>)}
     </span>
   );
 }
@@ -1900,9 +1890,9 @@ function DiscussionExplorer() {
   return <div className="research-conclusion">
     <p className="research-takeaway">Physiological measurements combined with temporal context provide a <strong>credible offline staging baseline</strong>: a default tree ensemble retains useful performance when transferred to a second hospital. Its physiological assumptions can be checked against the recorded waveforms.</p>
     <ul className="research-conclusion-objectives">
-      <li><Objective n={1} /> The <strong>reliance on EEG background activity</strong> is consistent with research linking spectral slope to arousal. My slope calculation differs from the published implementation, so this is converging evidence rather than a replication. The weak N2 separation of broad spindle-band power supports measuring defining events directly instead of assuming a physiological name guarantees specificity. <Citation number={17} /> <Citation number={1} /></li>
-      <li><Objective n={2} /> In these experiments, <strong>temporal context contributed more</strong> than changing to the tested neural-network architecture. A compact set of explicit measurements can therefore be a competitive design choice. Published systems such as U-Sleep still provide a stronger benchmark for broad validation; different test cohorts prevent claiming equivalent performance. <Citation number={26} /></li>
-      <li><Objective n={3} /> Coimbra supports portability of the full input set, while the difficult held-out Boston nights show that transfer of an average score is not enough. The different scores against Coimbra’s two scorers also fit established evidence that the reference labels themselves vary. This strengthens the case for <strong>patient-level evaluation and multiple scorers</strong>, without attributing every model error to ambiguous labels. <Citation number={5} /></li>
+      <li>The <strong>reliance on EEG background activity</strong> is consistent with research linking spectral slope to arousal. My slope calculation differs from the published implementation, so this is converging evidence rather than a replication. The weak N2 separation of broad spindle-band power supports measuring defining events directly instead of assuming a physiological name guarantees specificity. <Citation number={17} /> <Citation number={1} /></li>
+      <li>In these experiments, <strong>temporal context contributed more</strong> than changing to the tested neural-network architecture. A compact set of explicit measurements can therefore be a competitive design choice. Published systems such as U-Sleep still provide a stronger benchmark for broad validation; different test cohorts prevent claiming equivalent performance. <Citation number={26} /></li>
+      <li>Coimbra supports portability of the full input set, while the difficult held-out Boston nights show that transfer of an average score is not enough. The different scores against Coimbra’s two scorers also fit established evidence that the reference labels themselves vary. This strengthens the case for <strong>patient-level evaluation and multiple scorers</strong>, without attributing every model error to ambiguous labels. <Citation number={5} /></li>
     </ul>
     <h4>Limitations</h4>
     <ul className="research-limits">
@@ -2370,16 +2360,10 @@ const objectives = [
   { n: 3, short: "Independent validation", line: "Separate training patients from test patients, report held-out scoring history, and examine transfer to other hospitals." }
 ];
 
-function Objective({ n }: { n: 1 | 2 | 3 }) {
-  const item = objectives[n - 1];
-  return <span className="research-objective-chip" title={item.line}><b>{n}</b>{item.short}</span>;
-}
-
-function SubHeading({ number, title, objective, refs }: { number: string; title: string; objective?: 1 | 2 | 3; refs?: number[] }) {
+function SubHeading({ number, title, refs }: { number: string; title: string; refs?: number[] }) {
   return (
     <div className="research-tool-heading">
       <h3><span className="research-subnumber">{number}</span>{title}</h3>
-      {objective ? <Objective n={objective} /> : null}
       {refs ? <ExpRefs ids={refs} /> : null}
     </div>
   );
@@ -2437,69 +2421,6 @@ function ExternalTestingDetails() {
   </>;
 }
 
-function RobustnessSummary() {
-  const adopted = data.models.find((model) => model.id === "adopted") as ModelResult;
-  const g = data.generalisation;
-  const held = g?.holdout.find((row) => row.config === "g20");
-  const heldRef = g?.holdout.find((row) => row.config === "epoch19");
-  const epochRef = data.models.find((model) => model.id === "epoch") as ModelResult;
-  const coimbra = isrucStatus.final_complete ? (isrucStatus.results as Array<{ evaluation: string; macro_f1: number }>).find((row) => row.evaluation === "transfer_cinc_to_isruc_scorer1") : undefined;
-  const coimbra2 = isrucStatus.final_complete ? (isrucStatus.results as Array<{ evaluation: string; macro_f1: number }>).find((row) => row.evaluation === "transfer_cinc_to_isruc_scorer2") : undefined;
-  // Per-night spreads share one definition (macro-F1 over the stages the expert scored that night): lead-figure.json.
-  const spread = (values: number[]) => {
-    if (!values.length) return undefined;
-    const sorted = [...values].sort((a, b) => a - b);
-    const quantile = (p: number) => {
-      const index = (sorted.length - 1) * p;
-      const low = Math.floor(index);
-      return sorted[low] + (sorted[Math.ceil(index)] - sorted[low]) * (index - low);
-    };
-    return { min: sorted[0], q1: quantile(.25), median: quantile(.5), q3: quantile(.75), max: sorted[sorted.length - 1] };
-  };
-  const groups = [
-    { title: "Model C · all 20 inputs", color: accentInk, rows: [
-      { label: "Boston · cross-validation", note: `${data.source.subjects} patients`, value: adopted.metrics.macro_f1, spread: spread(lead.patients.cv) },
-      { label: "Boston · held-out test", note: `${g?.holdout_subjects ?? 200} patients · ${g?.holdout_looks ?? 2} evaluation looks`, value: held?.macro_f1, spread: spread(lead.patients.holdout) },
-      { label: "Coimbra · external test, scorer 1", note: `${isrucStatus.final_complete ? isrucStatus.evaluated : 100} patients · 1 recorded evaluation look`, value: coimbra?.macro_f1, spread: spread(lead.patients.coimbra_scorer1) },
-      { label: "Coimbra · external test, scorer 2", note: "same nights and predictions", value: coimbra2?.macro_f1, spread: spread(lead.patients.coimbra_scorer2) }
-    ] },
-
-  ];
-  const ticks = [0, 0.2, 0.4, 0.6, 0.8, 1];
-  const position = (value: number) => `${value * 100}%`;
-  return (
-    <div className="research-robustness">
-      <div className="research-transfer-chart" aria-label="Macro-F1 across patient cohorts, grouped by model inputs">
-        <div className="research-model-compare-axis" aria-hidden="true"><span>Macro-F1</span><div>{ticks.map((tick) => <small key={tick} style={{ left: position(tick) }}>{tick.toFixed(2)}</small>)}</div><span /></div>
-        {groups.map((group) => <div className="research-transfer-group" key={group.title}>
-          <h4>{group.title}</h4>
-          {group.rows.map((row) => <div className="research-model-compare-row" key={row.label}>
-            <strong>{row.label}<small className="research-row-note">{row.note}</small></strong>
-            <div className="research-model-compare-track" role="img" aria-label={`${row.label}: ${row.value === undefined ? "result not available" : formatMetric(row.value)} macro-F1`}>
-              {ticks.map((tick) => <i key={tick} className="grid" style={{ left: position(tick) }} />)}
-              {row.spread ? <>
-                <i className="transfer-whisker" style={{ left: position(row.spread.min), width: position(row.spread.max - row.spread.min), background: group.color }} />
-                {[row.spread.min, row.spread.max].map((value, index) => <i key={index} className="transfer-cap" style={{ left: position(value), background: group.color }} />)}
-                <i className="transfer-box" style={{ left: position(row.spread.q1), width: position(row.spread.q3 - row.spread.q1), borderColor: group.color }} />
-                <i className="transfer-median" style={{ left: position(row.spread.median), background: group.color }} />
-              </> : null}
-              {row.value !== undefined ? <i className="research-transfer-dot" style={{ left: position(row.value), background: group.color }} /> : null}
-            </div>
-            <span>{row.value === undefined ? "—" : formatMetric(row.value)}{row.spread ? <small className="research-row-note">{row.spread.min.toFixed(2)}–{row.spread.max.toFixed(2)}</small> : null}</span>
-          </div>)}
-        </div>)}
-
-        <p className="research-chart-key research-transfer-key">
-          <span><u className="legend-score" /> headline macro-F1</span>
-          <span><u className="legend-box" /> middle 50% of patients</span>
-          <span><u className="legend-median" /> patient median</span>
-          <span><u className="legend-whisker" /> patient min–max</span>
-        </p>
-      </div>
-    </div>
-  );
-}
-
 // ---------------------------------------------------------------- comparison, compact
 function ComparisonCompact() {
   const models = publishedModels();
@@ -2551,15 +2472,27 @@ function StudySummary() {
           Sleep staging divides an overnight recording into wakefulness, non-REM and REM sleep based on changes in brain activity, eye movements and muscle tone. It helps clinicians assess sleep architecture and diagnose sleep disorders, but manual scoring is time-consuming and involves judgment. My study tests whether a simple model can use <strong>these physiological cues</strong> to identify sleep stages and reveal which measurements contribute to its predictions. A tree ensemble combines {data.source.tracks + data.source.features} EEG, eye and chin measurements with surrounding temporal context.{held ? <> On {data.generalisation?.holdout_subjects} held-out Boston patients it reaches macro-F1 {formatMetric(held.macro_f1)} (95% CI {formatInterval(intervals.holdout.macro_f1_ci)}; κ {held.kappa.toFixed(2)}).</> : null}{isrucStatus.final_complete && coimbraResult && coimbraResult2 ? <> In Coimbra it scores {formatMetric(coimbraResult.macro_f1)} and {formatMetric(coimbraResult2.macro_f1)} against two independent scorers, who agree with each other at {formatMetric(intervals.coimbra.scorer1_vs_scorer2.macro_f1)}.</> : null} Cross-validation on the {data.source.subjects} development patients, which was used to choose the model, gives {formatMetric(adopted.metrics.macro_f1)}. N1 and difficult individual nights remain challenges. Together, these findings show how <strong>physiologically motivated measurements</strong> can support automatic sleep staging while making the model’s reliance on those measurements explicit.
         </p>
         <p>
-          <b>Objectives.</b>
+          <b>Aims.</b> {objectives.map((item) => <span key={item.n}>({item.n}) <i>{item.short}.</i> {item.line} </span>)}
         </p>
-        <div className="research-objectives">
-          <ol>
-            {objectives.map((item) => <li key={item.n}><Objective n={item.n as 1 | 2 | 3} /><span>{item.line}</span></li>)}
-          </ol>
-        </div>
       </div>
     </section>
+  );
+}
+
+export function ExperimentLogPage() {
+  return (
+    <main className="research-page research-history-page">
+      <section className="research-section" id="history">
+        <p><Link href="/">← Automatic sleep staging from overnight polysomnography</Link></p>
+        <SectionHeading title="Experiment log and implementation" />
+        <HowItWasRun />
+        <ExperimentHistory />
+      </section>
+      <section className="research-section" id="supp-code">
+        <SectionHeading title="Python implementation" />
+        <TechnicalAppendix />
+      </section>
+    </main>
   );
 }
 
@@ -2597,12 +2530,12 @@ export function StagingResearchDashboard() {
       <section className="research-section" id="methods">
         <SectionHeading title="2 Methods" />
         <div className="research-method-block" id="data">
-          <SubHeading number="2.1" title="Data and testing" objective={3} />
+          <SubHeading number="2.1" title="Data and testing" />
           <TestingProtocol />
           <CompactStudyProtocol />
         </div>
         <div className="research-method-block" id="features">
-          <SubHeading number="2.2" title="Features: each stage's physiology, measured" objective={1} />
+          <SubHeading number="2.2" title="Features: each stage's physiology, measured" />
           <p className="research-takeaway">Each feature translates a physiological staging cue into a measurement, then checks whether it varies across stages as expected. The final model retains {data.source.tracks + data.source.features} EEG, eye and chin measurements every six seconds; heart and breathing candidates are also shown. A plausible physiological rationale is the starting point, not evidence that a feature works.</p>
           <div className="research-signal-key research-feature-sensors" aria-label="Measurement colors, matching the physiology table">
             {[
@@ -2619,7 +2552,7 @@ export function StagingResearchDashboard() {
           <PhysiologyExplorer />
         </div>
         <div className="research-method-block" id="model">
-          <SubHeading number="2.3" title="Model: the signals in context" objective={2} />
+          <SubHeading number="2.3" title="Model: the signals in context" />
           <ModelSection />
         </div>
       </section>
@@ -2627,17 +2560,16 @@ export function StagingResearchDashboard() {
       <section className="research-section" id="results">
         <SectionHeading title="3 Results" />
         <div className="research-results-block research-block" id="performance">
-          <SubHeading number="3.1" title="Model: how well it scores" objective={2} />
-          <p className="research-takeaway">Context provides the largest improvement, and reducing the inputs to Model C preserves most of that gain: {formatMetric(adopted.metrics.macro_f1)} macro-F1 (95% CI {formatInterval(intervals.cv.adopted.macro_f1_ci)}) in patient-separated cross-validation. Because these folds were also used to choose the model, the held-out score in <SecRef to="robustness" /> is the less biased estimate. N1 remains the main weakness, with {formatPercent(n1?.recall ?? 0)} sensitivity. The comparisons below show the gain, the remaining stage errors, and where published models stand.</p>
-          <PerformanceSummary />
+          <SubHeading number="3.1" title="Model: how well it scores" />
+          <p className="research-takeaway">Context provides the largest improvement, and reducing the inputs to Model C preserves most of that gain: {formatMetric(adopted.metrics.macro_f1)} macro-F1 (95% CI {formatInterval(intervals.cv.adopted.macro_f1_ci)}) in patient-separated cross-validation. Because these folds were also used to choose the model, the held-out score in <SecRef to="robustness" /> is the less biased estimate. Cohen&rsquo;s κ is {adopted.metrics.cohen_kappa.toFixed(2)}, accuracy {formatPercent(adopted.metrics.accuracy)} and balanced accuracy {formatPercent(adopted.metrics.balanced_accuracy)}. N1 remains the main weakness, with {formatPercent(n1?.recall ?? 0)} sensitivity: the matrix below shows where its epochs go. The comparisons below show the gain, the remaining stage errors, and where published models stand.</p>
+          <ConfusionExplorer />
           <Tabs label="Performance views" tabs={[
             { id: "ladder", title: "Model comparisons", content: <ModelExplorer /> },
-            { id: "errors", title: "Stage errors and metrics", content: <ConfusionExplorer /> },
             { id: "published", title: "Published models", content: <div id="comparison"><ComparisonCompact /></div> }
           ]} />
         </div>
         <div className="research-results-block research-block" id="evidence">
-          <SubHeading number="3.2" title="Which measurements does the model rely on?" objective={1} />
+          <SubHeading number="3.2" title="Which measurements does the model rely on?" />
           <p className="research-takeaway">These analyses ask which measurements Model C uses and when it needs them. Values are swapped between test examples while the stage labels stay unchanged; the fall in macro-F1 measures reliance. The tabs examine individual measurements and positions within the input window. A small drop means little additional reliance, since other inputs may carry similar information.</p>
           <Tabs label="What the model relies on" tabs={[
             { id: "signals", title: "Individual measurements", content: <PhysiologyFindings /> },
@@ -2645,9 +2577,10 @@ export function StagingResearchDashboard() {
           ]} />
         </div>
         <div className="research-results-block research-block" id="robustness">
-          <SubHeading number="3.3" title="Testing: does it hold up?" objective={3} />
+          <SubHeading number="3.3" title="Testing: does it hold up?" />
           <p className="research-takeaway">On {intervals.holdout.n_patients} held-out Boston patients Model C scores {formatMetric(intervals.holdout.macro_f1)} (95% CI {formatInterval(intervals.holdout.macro_f1_ci)}), below its {formatMetric(adopted.metrics.macro_f1)} in cross-validation; the single-epoch reference A falls by a similar amount ({formatMetric(epochRef.metrics.macro_f1)} to {heldRef ? formatMetric(heldRef.macro_f1) : "—"}), as expected if the held-out group, which has more sleep apnea, is simply harder. In Coimbra, with the same {data.source.tracks + data.source.features} inputs, it scores {formatMetric(intervals.coimbra.model_vs_scorer1.macro_f1)} ({formatInterval(intervals.coimbra.model_vs_scorer1.macro_f1_ci)}) against scorer 1 and {formatMetric(intervals.coimbra.model_vs_scorer2.macro_f1)} ({formatInterval(intervals.coimbra.model_vs_scorer2.macro_f1_ci)}) against scorer 2; the two scorers agree with each other at {formatMetric(intervals.coimbra.scorer1_vs_scorer2.macro_f1)} ({formatInterval(intervals.coimbra.scorer1_vs_scorer2.macro_f1_ci)}). Scores vary widely between patients in every cohort. The held-out set was scored twice and Coimbra once; no model was chosen from either.</p>
-          <RobustnessSummary />
+          <p>Figure 1B shows the score of every night in each test set.</p>
+          <ExternalTestingDetails />
         </div>
       </section>
 
@@ -2658,28 +2591,31 @@ export function StagingResearchDashboard() {
 
       <section className="research-section" id="supplementary">
         <SectionHeading title="Supplementary" />
-        <Evidence id="supp-patients" summary="S1 Patient variation and validation details">
-          <h4>Variation between patients</h4><SubjectVariability />
-          <div id="supp-testing"><h4>Held-out testing and per-stage scores</h4><ExternalTestingDetails /></div>
-        </Evidence>
-        <Evidence id="supp-models" summary="S2 Model development, simplification and size">
+        <div className="research-method-block" id="supp-patients">
+          <SubHeading number="S1" title="Variation between patients" />
+          <SubjectVariability />
+        </div>
+        <div className="research-method-block" id="supp-models">
+          <SubHeading number="S2" title="Model development, simplification and size" />
           <h4>From 33 inputs to 20</h4><ModelPath />
           <div id="supp-simplify"><h4>Simpler models</h4><ModelSimplification /></div>
           <div id="supp-published-size"><h4>Published models and parameter counts</h4><PublishedModelSize /></div>
-        </Evidence>
-        <Evidence id="supp-importance" summary="S3 Signal reliance and sleep structure">
+        </div>
+        <div className="research-method-block" id="supp-importance">
+          <SubHeading number="S3" title="Signal reliance and sleep structure" />
           <h4>Interpreting signal importance</h4>
           <p>Importance is the fall in macro-F1 after swapping one measurement’s complete input window between test epochs, keeping the stage labels and all other inputs unchanged ({data.importance_folds} folds). The trained model is scored again without being refitted. Drops are not additive; correlated measurements can substitute for one another, so a short bar indicates little additional reliance. EOG also contains frontal EEG, so eye-channel reliance is not specific evidence of eye movements. This measures model dependence, not a proven mechanism or an individual explanation.</p>
           <div id="night"><h4>Stage transitions and bout lengths</h4><SleepStructure /></div>
           <div id="supp-network"><h4>Exploratory neural-network attribution</h4><BlackBoxAgreement /></div>
-        </Evidence>
-        <Evidence id="supp-cardio" summary="S4 Heart and breathing: alternative sensor models">
+        </div>
+        <div className="research-method-block" id="supp-cardio">
+          <SubHeading number="S4" title="Heart and breathing: alternative sensor models" />
           <SignalAblations />
-        </Evidence>
-        <Evidence id="history-details" summary="S5 Experiment history and implementation">
-          <HowItWasRun /><div id="history"><ExperimentHistory /></div>
-          <div id="supp-code"><h4>Python implementation</h4><TechnicalAppendix /></div>
-        </Evidence>
+        </div>
+        <div className="research-method-block" id="supp-history">
+          <SubHeading number="S5" title="Experiment log and implementation" />
+          <p>Every experiment, numbered when it was declared, with its finding, decision and evidence folder, and the Python behind each measurement, are on a <Link href="/history">separate page</Link>.</p>
+        </div>
       </section>
       <ReferencesSection />
     </main>

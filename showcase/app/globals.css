@@ -3897,3 +3897,117 @@ body:has(.research-page) .site-nav-brand {
     gap: 28px;
   }
 }
+
+/* Contents: a fixed column in the left margin on wide screens; the jump menu below 1200 px. */
+.site-nav-group,
+.site-nav-sublink {
+  display: none;
+}
+
+@media (min-width: 1200px) {
+  .site-nav-links {
+    display: flex !important;
+    position: fixed;
+    top: 72px;
+    left: max(24px, calc((100vw - 1360px) / 2 + 24px));
+    width: 220px;
+    max-height: calc(100vh - 96px);
+    overflow-y: auto;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 0;
+    padding-right: 8px;
+  }
+
+  .site-nav-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 8px;
+  }
+
+  .site-nav-link {
+    padding: 3px 0 3px 10px;
+    border-bottom: 0;
+    border-left: 2px solid transparent;
+    color: var(--ink-2);
+    font-size: 0.8125rem;
+  }
+
+  .site-nav-link:hover {
+    color: var(--ink);
+  }
+
+  .site-nav-link[aria-current="location"] {
+    border-left-color: var(--accent);
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  .site-nav-sublink {
+    display: block;
+    padding: 2px 0 2px 22px;
+    color: var(--ink-3);
+    font-size: 0.8125rem;
+    line-height: 1.35;
+  }
+
+  .site-nav-sublink:hover {
+    color: var(--accent);
+  }
+
+  .site-nav-mobile {
+    display: none !important;
+  }
+
+  .research-page {
+    padding-left: 280px;
+  }
+}
+
+/* §1.2 on a phone: each system becomes a short list, one line per stage, instead of a six-column table. */
+@media (max-width: 760px) {
+  .research-stage-primer-scroll {
+    overflow-x: visible;
+  }
+
+  .research-stage-primer table,
+  .research-stage-primer tbody,
+  .research-stage-primer tr,
+  .research-stage-primer tbody th,
+  .research-stage-primer td {
+    display: block;
+    width: auto;
+    min-width: 0;
+  }
+
+  .research-stage-primer thead {
+    display: none;
+  }
+
+  .research-stage-primer tr {
+    padding: 14px 0;
+    border-top: 1px solid var(--rule);
+  }
+
+  .research-stage-primer td {
+    padding: 3px 0;
+    border: 0;
+  }
+
+  .research-stage-primer td::before {
+    content: attr(data-stage) " · ";
+    font-family: var(--sans);
+    font-weight: 600;
+    color: var(--ink);
+  }
+}
+
+/* Keep a swatch on the same line as its label even when the label is a grid or block item. */
+strong.swatch,
+b.swatch,
+span.swatch {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+}

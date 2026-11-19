@@ -27,11 +27,11 @@ const subsections: Record<string, Array<{ id: string; label: string }>> = {
     { id: "robustness", label: "3.3 Does it hold up?" }
   ],
   supplementary: [
-    { id: "supp-patients", label: "S1 Patient variation and validation" },
+    { id: "supp-patients", label: "S1 Variation between patients" },
     { id: "supp-models", label: "S2 Model development and size" },
     { id: "supp-importance", label: "S3 Signal reliance and sleep structure" },
     { id: "supp-cardio", label: "S4 Alternative sensor models" },
-    { id: "history-details", label: "S5 History and implementation" }
+    { id: "supp-history", label: "S5 Experiment log and code" }
   ]
 };
 
@@ -95,14 +95,18 @@ export function SiteNav() {
         </Link>
         <div className="site-nav-links">
           {items.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="site-nav-link"
-              aria-current={activeId === item.id ? "location" : undefined}
-            >
-              {item.label}
-            </Link>
+            <div key={item.href} className="site-nav-group">
+              <Link
+                href={item.href}
+                className="site-nav-link"
+                aria-current={activeId === item.id ? "location" : undefined}
+              >
+                {item.label}
+              </Link>
+              {(subsections[item.id] ?? []).map((sub) => (
+                <Link key={sub.id} href={`/#${sub.id}`} className="site-nav-sublink">{sub.label}</Link>
+              ))}
+            </div>
           ))}
         </div>
         <label className="site-nav-mobile">
