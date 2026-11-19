@@ -3808,3 +3808,92 @@ body:has(.research-page) .site-nav-brand {
 .research-glance-stats strong {
   color: var(--ink);
 }
+
+/* Figure 1: summary and lead figure above the abstract ------------------------------------------------------------ */
+.research-page .research-hero {
+  display: block;
+}
+
+.lead-summary {
+  margin: 20px 0 0;
+  font-size: 1.18rem;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.lead-figure {
+  margin: 36px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--rule-strong);
+}
+
+.lead-panels {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 36px;
+}
+
+.lead-panel svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  touch-action: pan-y;
+}
+
+.lead-panel-title {
+  margin: 0 0 6px;
+  font-family: var(--sans);
+  font-size: 0.875rem;
+  color: var(--ink);
+}
+
+.lead-panel-title b {
+  margin-right: 6px;
+}
+
+.lead-axis,
+.lead-track-label,
+.lead-row-label,
+.lead-median {
+  font-family: var(--sans);
+  fill: var(--ink-3);
+  font-size: 11px;
+}
+
+.lead-track-label,
+.lead-row-label {
+  fill: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.lead-median {
+  fill: var(--ink);
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.lead-readout {
+  min-height: 1.5em;
+  margin: 4px 0 0;
+  font-family: var(--sans);
+  font-size: 0.8125rem;
+  color: var(--ink-2);
+}
+
+.lead-figure figcaption {
+  max-width: var(--measure);
+  margin-top: 16px;
+  font-family: var(--sans);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+@media (max-width: 960px) {
+  .lead-panels {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 28px;
+  }
+}

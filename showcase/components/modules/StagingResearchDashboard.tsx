@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import saliencyData from "../../content/generated/staging-saliency.json";
 import isrucStatus from "../../content/generated/isruc-status.json";
-import holdoutDistribution from "../../content/generated/holdout-distribution.json";
+import lead from "../../content/generated/lead-figure.json";
 import intervals from "../../content/generated/metric-intervals.json";
 import { fmt, pct, r } from "../../lib/results";
+import { LeadFigure, LeadSummary } from "./LeadFigure";
 import {
   stagingDashboardData,
   type FeatureDistribution,
@@ -2444,7 +2445,7 @@ function RobustnessSummary() {
   const epochRef = data.models.find((model) => model.id === "epoch") as ModelResult;
   const coimbra = isrucStatus.final_complete ? (isrucStatus.results as Array<{ evaluation: string; macro_f1: number }>).find((row) => row.evaluation === "transfer_cinc_to_isruc_scorer1") : undefined;
   const coimbra2 = isrucStatus.final_complete ? (isrucStatus.results as Array<{ evaluation: string; macro_f1: number }>).find((row) => row.evaluation === "transfer_cinc_to_isruc_scorer2") : undefined;
-  const coimbraPatients = (isrucStatus as unknown as { subject_macro_f1_scorer1?: number[] }).subject_macro_f1_scorer1 ?? [];
+  // Per-night spreads share one definition (macro-F1 over the stages the expert scored that night): lead-figure.json.
   const spread = (values: number[]) => {
     if (!values.length) return undefined;
     const sorted = [...values].sort((a, b) => a - b);
@@ -2457,10 +2458,10 @@ function RobustnessSummary() {
   };
   const groups = [
     { title: "Model C · all 20 inputs", color: accentInk, rows: [
-      { label: "Boston · cross-validation", note: `${data.source.subjects} patients`, value: adopted.metrics.macro_f1, spread: spread(data.diagnostics.subject_metrics.map((row) => row.macro_f1)) },
-      { label: "Boston · held-out test", note: `${g?.holdout_subjects ?? 200} patients · ${g?.holdout_looks ?? 2} evaluation looks`, value: held?.macro_f1, spread: holdoutDistribution.verified ? spread(holdoutDistribution.subject_macro_f1) : undefined },
-      { label: "Coimbra · external test, scorer 1", note: `${isrucStatus.final_complete ? isrucStatus.evaluated : 100} patients · 1 recorded evaluation look`, value: coimbra?.macro_f1, spread: spread(coimbraPatients) },
-      { label: "Coimbra · external test, scorer 2", note: "same nights and predictions", value: coimbra2?.macro_f1, spread: spread(intervals.coimbra.model_vs_scorer2.subject_macro_f1) }
+      { label: "Boston · cross-validation", note: `${data.source.subjects} patients`, value: adopted.metrics.macro_f1, spread: spread(lead.patients.cv) },
+      { label: "Boston · held-out test", note: `${g?.holdout_subjects ?? 200} patients · ${g?.holdout_looks ?? 2} evaluation looks`, value: held?.macro_f1, spread: spread(lead.patients.holdout) },
+      { label: "Coimbra · external test, scorer 1", note: `${isrucStatus.final_complete ? isrucStatus.evaluated : 100} patients · 1 recorded evaluation look`, value: coimbra?.macro_f1, spread: spread(lead.patients.coimbra_scorer1) },
+      { label: "Coimbra · external test, scorer 2", note: "same nights and predictions", value: coimbra2?.macro_f1, spread: spread(lead.patients.coimbra_scorer2) }
     ] },
 
   ];
@@ -2574,7 +2575,9 @@ export function StagingResearchDashboard() {
       <section className="research-hero" id="top">
         <div className="research-hero-copy">
           <h1>Automatic sleep staging from overnight polysomnography</h1>
+          <LeadSummary />
         </div>
+        <LeadFigure />
       </section>
 
       <StudySummary />

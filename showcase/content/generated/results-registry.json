@@ -16,7 +16,8 @@
   "artifacts/exploration/no-eeg/sequence/proba_tcn_base_fine_raw_pos_4seeds.npz": "dd031ba678ac0d7bc63a33bd66d36e18f0f0f43eaea2af8484766bf0e10fb72c",
   "artifacts/staging_window_model/cinc2018/predictions.parquet": "dac5c481557bf79c5f3aa044ab263cf59d5a7a89e492f57684e0a7f1b28bf335",
   "showcase/content/generated/staging-dashboard.json": "94dfdb7bbb35c827006bb2bd9603616e26d15666f3c2d72ceba764d30047ee94",
-  "artifacts/staging_window_model/cinc2018/feature_reduction/effect_sizes.csv": "8133f427e7b224a10877930d099dd1fa25e7acbb71c4c6eae01ead08c6180ad4"
+  "artifacts/staging_window_model/cinc2018/feature_reduction/effect_sizes.csv": "8133f427e7b224a10877930d099dd1fa25e7acbb71c4c6eae01ead08c6180ad4",
+  "showcase/content/generated/lead-figure.json": "3dba5733f779842a049081a25610b53b4b9cc155ff36267fdbe9ae067bd9b7a8"
  },
  "entries": {
   "coimbra.in_lab_cinc_cv.kappa": {
@@ -2245,6 +2246,244 @@
    "kind": "measured",
    "label": "Held-out Boston (200 patients), look #2, g20, macro_f1",
    "source": "artifacts/staging_window_model/cinc2018/holdout/summary.csv",
+   "exp": 37
+  },
+  "lead.coimbra_scorer1.max": {
+   "value": 0.8634627896335079,
+   "kind": "measured",
+   "label": "Per-night macro-F1 (Per-night macro-F1 over the stages the expert scored that night.) coimbra_scorer1, max",
+   "source": "showcase/content/generated/lead-figure.json",
+   "exp": 37
+  },
+  "lead.coimbra_scorer1.median": {
+   "value": 0.7593164052529225,
+   "kind": "measured",
+   "label": "Per-night macro-F1 (Per-night macro-F1 over the stages the expert scored that night.) coimbra_scorer1, median",
+   "source": "showcase/content/generated/lead-figure.json",
+   "exp": 37
+  },
+  "lead.coimbra_scorer1.min": {
+   "value": 0.40005289286055257,
+   "kind": "measured",
+   "label": "Per-night macro-F1 (Per-night macro-F1 over the stages the expert scored that night.) coimbra_scorer1, min",
+   "source": "showcase/content/generated/lead-figure.json",
+   "exp": 37
+  },
+  "lead.coimbra_scorer1.n": {
+   "value": 99.0,
+   "kind": "measured",
+   "label": "Per-night macro-F1 (Per-night macro-F1 over the stages the expert scored that night.) coimbra_scorer1, n",
+   "source": "showcase/content/generated/lead-figure.json",
+   "exp": 37
+  },
+  "lead.coimbra_scorer1.q1": {
+   "value": 0.7125658459814505,
+   "kind": "measured",
+   "label": "Per-night macro-F1 (Per-night macro-F1 over the stages the expert scored that night.) coimbra_scorer1, q1",
+   "source": "showcase/content/generated/lead-figure.json",
+   "exp": 37
+  },
+  "lead.coimbra_scorer1.q3": {
+   "value": 0.7945576860998488,
+   "kind": "measured",
+   "label": "Per-night macro-F1 (Per-night macro-F1 over the stages the expert scored that night.) coimbra_scorer1, q3",
+   "source": "showcase/content/generated/lead-figure.json",
+   "exp": 37
+  },
+  "lead.coimbra_scorer2.max": {
+   "value": 0.8845585982354811,
+   "kind": "measured",
+   "label": "Per-night macro-F1 (Per-night macro-F1 over the stages the expert scored that night.) coimbra_scorer2, max",
+   "source": "showcase/content/generated/lead-figure.json",
+   "exp": 37
+  },
+  "lead.coimbra_scorer2.median": {
+   "value": 0.7483911066036649,
+   "kind": "measured",
+   "label": "Per-night macro-F1 (Per-night macro-F1 over the stages the expert scored that night.) coimbra_scorer2, median",
+   "source": "showcase/content/generated/lead-figure.json",
+   "exp": 37
+  },
+  "lead.coimbra_scorer2.min": {
+   "value": 0.39751174957896773,
+   "kind": "measured",
+   "label": "Per-night macro-F1 (Per-night macro-F1 over the stages the expert scored that night.) coimbra_scorer2, min",
+   "source": "showcase/content/generated/lead-figure.json",
+   "exp": 37
+  },
+  "lead.coimbra_scorer2.n": {
+   "value": 99.0,
+   "kind": "measured",
+   "label": "Per-night macro-F1 (Per-night macro-F1 over the stages the expert scored that night.) coimbra_scorer2, n",
+   "source": "showcase/content/generated/lead-figure.json",
+   "exp": 37
+  },
+  "lead.coimbra_scorer2.q1": {
+   "value": 0.7060104416730685,
+   "kind": "measured",
+   "label": "Per-night macro-F1 (Per-night macro-F1 over the stages the expert scored that night.) coimbra_scorer2, q1",
+   "source": "showcase/content/generated/lead-figure.json",
+   "exp": 37
+  },
+  "lead.coimbra_scorer2.q3": {
+   "value": 0.7865797826031169,
+   "kind": "measured",
+   "label": "Per-night macro-F1 (Per-night macro-F1 over the stages the expert scored that night.) coimbra_scorer2, q3",
+   "source": "showcase/content/generated/lead-figure.json",
+   "exp": 37
+  },
+  "lead.coimbra_scorers.max": {
+   "value": 0.8962465665673033,
+   "kind": "measured",
+   "label": "Per-night macro-F1 (Per-night macro-F1 over the stages the expert scored that night.) coimbra_scorers, max",
+   "source": "showcase/content/generated/lead-figure.json",
+   "exp": 37
+  },
+  "lead.coimbra_scorers.median": {
+   "value": 0.7959767986458083,
+   "kind": "measured",
+   "label": "Per-night macro-F1 (Per-night macro-F1 over the stages the expert scored that night.) coimbra_scorers, median",
+   "source": "showcase/content/generated/lead-figure.json",
+   "exp": 37
+  },
+  "lead.coimbra_scorers.min": {
+   "value": 0.6693850238584602,
+   "kind": "measured",
+   "label": "Per-night macro-F1 (Per-night macro-F1 over the stages the expert scored that night.) coimbra_scorers, min",
+   "source": "showcase/content/generated/lead-figure.json",
+   "exp": 37
+  },
+  "lead.coimbra_scorers.n": {
+   "value": 99.0,
+   "kind": "measured",
+   "label": "Per-night macro-F1 (Per-night macro-F1 over the stages the expert scored that night.) coimbra_scorers, n",
+   "source": "showcase/content/generated/lead-figure.json",
+   "exp": 37
+  },
+  "lead.coimbra_scorers.q1": {
+   "value": 0.7633186311100875,
+   "kind": "measured",
+   "label": "Per-night macro-F1 (Per-night macro-F1 over the stages the expert scored that night.) coimbra_scorers, q1",
+   "source": "showcase/content/generated/lead-figure.json",
+   "exp": 37
+  },
+  "lead.coimbra_scorers.q3": {
+   "value": 0.8170724303419966,
+   "kind": "measured",
+   "label": "Per-night macro-F1 (Per-night macro-F1 over the stages the expert scored that night.) coimbra_scorers, q3",
+   "source": "showcase/content/generated/lead-figure.json",
+   "exp": 37
+  },
+  "lead.cv.max": {
+   "value": 0.8999013211845309,
+   "kind": "measured",
+   "label": "Per-night macro-F1 (Per-night macro-F1 over the stages the expert scored that night.) cv, max",
+   "source": "showcase/content/generated/lead-figure.json",
+   "exp": 37
+  },
+  "lead.cv.median": {
+   "value": 0.7562138847551882,
+   "kind": "measured",
+   "label": "Per-night macro-F1 (Per-night macro-F1 over the stages the expert scored that night.) cv, median",
+   "source": "showcase/content/generated/lead-figure.json",
+   "exp": 37
+  },
+  "lead.cv.min": {
+   "value": 0.42684066131221765,
+   "kind": "measured",
+   "label": "Per-night macro-F1 (Per-night macro-F1 over the stages the expert scored that night.) cv, min",
+   "source": "showcase/content/generated/lead-figure.json",
+   "exp": 37
+  },
+  "lead.cv.n": {
+   "value": 320.0,
+   "kind": "measured",
+   "label": "Per-night macro-F1 (Per-night macro-F1 over the stages the expert scored that night.) cv, n",
+   "source": "showcase/content/generated/lead-figure.json",
+   "exp": 37
+  },
+  "lead.cv.q1": {
+   "value": 0.7029255991383458,
+   "kind": "measured",
+   "label": "Per-night macro-F1 (Per-night macro-F1 over the stages the expert scored that night.) cv, q1",
+   "source": "showcase/content/generated/lead-figure.json",
+   "exp": 37
+  },
+  "lead.cv.q3": {
+   "value": 0.8032634317909202,
+   "kind": "measured",
+   "label": "Per-night macro-F1 (Per-night macro-F1 over the stages the expert scored that night.) cv, q3",
+   "source": "showcase/content/generated/lead-figure.json",
+   "exp": 37
+  },
+  "lead.holdout.max": {
+   "value": 0.8870416826007693,
+   "kind": "measured",
+   "label": "Per-night macro-F1 (Per-night macro-F1 over the stages the expert scored that night.) holdout, max",
+   "source": "showcase/content/generated/lead-figure.json",
+   "exp": 37
+  },
+  "lead.holdout.median": {
+   "value": 0.7069482038162171,
+   "kind": "measured",
+   "label": "Per-night macro-F1 (Per-night macro-F1 over the stages the expert scored that night.) holdout, median",
+   "source": "showcase/content/generated/lead-figure.json",
+   "exp": 37
+  },
+  "lead.holdout.min": {
+   "value": 0.31086220311638846,
+   "kind": "measured",
+   "label": "Per-night macro-F1 (Per-night macro-F1 over the stages the expert scored that night.) holdout, min",
+   "source": "showcase/content/generated/lead-figure.json",
+   "exp": 37
+  },
+  "lead.holdout.n": {
+   "value": 200.0,
+   "kind": "measured",
+   "label": "Per-night macro-F1 (Per-night macro-F1 over the stages the expert scored that night.) holdout, n",
+   "source": "showcase/content/generated/lead-figure.json",
+   "exp": 37
+  },
+  "lead.holdout.q1": {
+   "value": 0.6296454999436665,
+   "kind": "measured",
+   "label": "Per-night macro-F1 (Per-night macro-F1 over the stages the expert scored that night.) holdout, q1",
+   "source": "showcase/content/generated/lead-figure.json",
+   "exp": 37
+  },
+  "lead.holdout.q3": {
+   "value": 0.7768898794284933,
+   "kind": "measured",
+   "label": "Per-night macro-F1 (Per-night macro-F1 over the stages the expert scored that night.) holdout, q3",
+   "source": "showcase/content/generated/lead-figure.json",
+   "exp": 37
+  },
+  "lead.night.accuracy": {
+   "value": 0.7896825396825397,
+   "kind": "measured",
+   "label": "Example held-out night tr06-0307 (closest to the held-out median), accuracy",
+   "source": "showcase/content/generated/lead-figure.json",
+   "exp": 37
+  },
+  "lead.night.disagreements": {
+   "value": 159.0,
+   "kind": "measured",
+   "label": "Example held-out night tr06-0307 (closest to the held-out median), epochs where model and expert differ",
+   "source": "showcase/content/generated/lead-figure.json",
+   "exp": 37
+  },
+  "lead.night.epochs": {
+   "value": 756.0,
+   "kind": "measured",
+   "label": "Example held-out night tr06-0307 (closest to the held-out median), scored epochs",
+   "source": "showcase/content/generated/lead-figure.json",
+   "exp": 37
+  },
+  "lead.night.macro_f1": {
+   "value": 0.7064806403914021,
+   "kind": "measured",
+   "label": "Example held-out night tr06-0307 (closest to the held-out median), macro-F1 over the stages present",
+   "source": "showcase/content/generated/lead-figure.json",
    "exp": 37
   },
   "lit.aasm.agreement": {

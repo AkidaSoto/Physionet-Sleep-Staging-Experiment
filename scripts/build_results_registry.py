@@ -149,6 +149,21 @@ def _effect_sizes(path: Path) -> list[Entry]:
             for r in _rows(path)]
 
 
+def _lead_figure(path: Path) -> list[Entry]:
+    """Figure 1 (scripts/export_lead_figure.py): the example night and per-night score summaries."""
+    data = json.loads(path.read_text(encoding="utf-8"))
+    night = data["night"]
+    what = f"Example held-out night {night['record']} (closest to the held-out median)"
+    out = [("lead.night.macro_f1", night["macro_f1"], f"{what}, macro-F1 over the stages present"),
+           ("lead.night.accuracy", night["accuracy"], f"{what}, accuracy"),
+           ("lead.night.epochs", float(night["epochs"]), f"{what}, scored epochs"),
+           ("lead.night.disagreements", float(night["disagreements"]), f"{what}, epochs where model and expert differ")]
+    for cohort, s in data["summary"].items():
+        out += [(f"lead.{cohort}.{k}", float(s[k]), f"Per-night macro-F1 ({data['definition']}) {cohort}, {k}")
+                for k in ("n", "median", "min", "max", "q1", "q3")]
+    return out
+
+
 MEASURED = [
     Source(f"{WINDOW}/summary.csv", _cv_summary("Window model"), exp=23),
     Source(f"{WINDOW}/ablations/summary.csv", _cv_summary("Signal ablation"), exp=24),
@@ -165,6 +180,7 @@ MEASURED = [
            also=(f"{NO_EEG}/sequence/proba_tcn_base_fine_raw_pos_4seeds.npz", f"{WINDOW}/predictions.parquet")),
     Source("showcase/content/generated/staging-dashboard.json", _signal_ablations, exp=26),
     Source(f"{WINDOW}/feature_reduction/effect_sizes.csv", _effect_sizes, exp=32),
+    Source("showcase/content/generated/lead-figure.json", _lead_figure, exp=37),
 ]
 
 
