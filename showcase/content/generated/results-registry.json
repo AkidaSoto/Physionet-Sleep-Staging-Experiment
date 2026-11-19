@@ -1,0 +1,3112 @@
+{
+ "generated_by": "scripts/build_results_registry.py",
+ "files": {
+  "artifacts/staging_window_model/cinc2018/summary.csv": "7e3473de503cd96763f7209e2d4c8c506a509878886c480ac2df221b72e755c4",
+  "artifacts/staging_window_model/cinc2018/ablations/summary.csv": "b08132859b4a84164ebd5badabd33f5e715b2863c08f984e23e2adf7261b7709",
+  "artifacts/staging_window_model/cinc2018/cardio_full/summary.csv": "f92c5714f147267493ad1aa743b67d662115b8951b9e4cba61d491707699b13d",
+  "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv": "538cbd4c796ee05b6e1128904235b223db50e10dc1750da0e17560e137425db4",
+  "artifacts/staging_window_model/cinc2018/complexity/summary.csv": "05192bb44cef687bf952996f80194f0b85048bad7d288d188d5879434c5dde88",
+  "artifacts/staging_window_model/cinc2018/holdout/summary_look1.csv": "0d2032db87ee7c435b18e4fdc9748e66066c4996433bd80099a29c6ff22f33e2",
+  "artifacts/staging_window_model/cinc2018/holdout/summary.csv": "ccf0b9789415cf054dac141596c077a3b26db67448b9d406935b2625b751d1ff",
+  "artifacts/staging_window_model/cinc2018/holdout/LEDGER.csv": "ed33891fa6c97c6299a16f1fc5bf8cc0574d69bc36b1a5e1be8c1839ea31d108",
+  "artifacts/staging_window_model/transfer_isruc/summary.csv": "a67d38763b786769d82a3862d0ba86289de72e2eb0931c5843e57a6e3afe6a8e",
+  "artifacts/staging_window_model/transfer/summary_d27.csv": "0dd7be12f97b9e7a1ea47aa714a459bd02a1c4d18010635c8a12fb7ad0d751c2",
+  "artifacts/exploration/no-eeg/sequence/summary.csv": "8981f01594e866b7effab412518b3ce580c8403598021c5fa719ffe41b6f5d69",
+  "artifacts/exploration/no-eeg/sequence/proba_gru_base_fine_raw_pos_4seeds.npz": "5e480f49a81c6b2b2eff2cdcceb56c3324ab78f5d451f20f980277f42db54e13",
+  "artifacts/exploration/no-eeg/sequence/proba_tcn_base_fine_raw_pos_4seeds.npz": "dd031ba678ac0d7bc63a33bd66d36e18f0f0f43eaea2af8484766bf0e10fb72c",
+  "artifacts/staging_window_model/cinc2018/predictions.parquet": "dac5c481557bf79c5f3aa044ab263cf59d5a7a89e492f57684e0a7f1b28bf335",
+  "showcase/content/generated/staging-dashboard.json": "94dfdb7bbb35c827006bb2bd9603616e26d15666f3c2d72ceba764d30047ee94",
+  "artifacts/staging_window_model/cinc2018/feature_reduction/effect_sizes.csv": "8133f427e7b224a10877930d099dd1fa25e7acbb71c4c6eae01ead08c6180ad4"
+ },
+ "entries": {
+  "coimbra.in_lab_cinc_cv.kappa": {
+   "value": 0.7157877539778923,
+   "kind": "measured",
+   "label": "Coimbra, in_lab_cinc_cv, kappa",
+   "source": "artifacts/staging_window_model/transfer_isruc/summary.csv",
+   "exp": 38
+  },
+  "coimbra.in_lab_cinc_cv.macro_f1": {
+   "value": 0.7728017742592055,
+   "kind": "measured",
+   "label": "Coimbra, in_lab_cinc_cv, macro-F1",
+   "source": "artifacts/staging_window_model/transfer_isruc/summary.csv",
+   "exp": 38
+  },
+  "coimbra.isruc_scorer1_vs_scorer2.kappa": {
+   "value": 0.7672488698583564,
+   "kind": "measured",
+   "label": "Coimbra, isruc_scorer1_vs_scorer2, kappa",
+   "source": "artifacts/staging_window_model/transfer_isruc/summary.csv",
+   "exp": 38
+  },
+  "coimbra.isruc_scorer1_vs_scorer2.macro_f1": {
+   "value": 0.8015206398695651,
+   "kind": "measured",
+   "label": "Coimbra, isruc_scorer1_vs_scorer2, macro-F1",
+   "source": "artifacts/staging_window_model/transfer_isruc/summary.csv",
+   "exp": 38
+  },
+  "coimbra.transfer_cinc_to_isruc_scorer1.kappa": {
+   "value": 0.7092061856674072,
+   "kind": "measured",
+   "label": "Coimbra, transfer_cinc_to_isruc_scorer1, kappa",
+   "source": "artifacts/staging_window_model/transfer_isruc/summary.csv",
+   "exp": 38
+  },
+  "coimbra.transfer_cinc_to_isruc_scorer1.macro_f1": {
+   "value": 0.7610837150087015,
+   "kind": "measured",
+   "label": "Coimbra, transfer_cinc_to_isruc_scorer1, macro-F1",
+   "source": "artifacts/staging_window_model/transfer_isruc/summary.csv",
+   "exp": 38
+  },
+  "coimbra.transfer_cinc_to_isruc_scorer1_on_epochs_both_scored.kappa": {
+   "value": 0.7092061856674072,
+   "kind": "measured",
+   "label": "Coimbra, transfer_cinc_to_isruc_scorer1_on_epochs_both_scored, kappa",
+   "source": "artifacts/staging_window_model/transfer_isruc/summary.csv",
+   "exp": 38
+  },
+  "coimbra.transfer_cinc_to_isruc_scorer1_on_epochs_both_scored.macro_f1": {
+   "value": 0.7610837150087015,
+   "kind": "measured",
+   "label": "Coimbra, transfer_cinc_to_isruc_scorer1_on_epochs_both_scored, macro-F1",
+   "source": "artifacts/staging_window_model/transfer_isruc/summary.csv",
+   "exp": 38
+  },
+  "coimbra.transfer_cinc_to_isruc_scorer2.kappa": {
+   "value": 0.7040307831802322,
+   "kind": "measured",
+   "label": "Coimbra, transfer_cinc_to_isruc_scorer2, kappa",
+   "source": "artifacts/staging_window_model/transfer_isruc/summary.csv",
+   "exp": 38
+  },
+  "coimbra.transfer_cinc_to_isruc_scorer2.macro_f1": {
+   "value": 0.7505959623598524,
+   "kind": "measured",
+   "label": "Coimbra, transfer_cinc_to_isruc_scorer2, macro-F1",
+   "source": "artifacts/staging_window_model/transfer_isruc/summary.csv",
+   "exp": 38
+  },
+  "coimbra.transfer_on_epochs_where_scorers_agree.kappa": {
+   "value": 0.7953244910327621,
+   "kind": "measured",
+   "label": "Coimbra, transfer_on_epochs_where_scorers_agree, kappa",
+   "source": "artifacts/staging_window_model/transfer_isruc/summary.csv",
+   "exp": 38
+  },
+  "coimbra.transfer_on_epochs_where_scorers_agree.macro_f1": {
+   "value": 0.8072634438592443,
+   "kind": "measured",
+   "label": "Coimbra, transfer_on_epochs_where_scorers_agree, macro-F1",
+   "source": "artifacts/staging_window_model/transfer_isruc/summary.csv",
+   "exp": 38
+  },
+  "complexity.hgb_l2_i200.learned_values": {
+   "value": 3000.0,
+   "kind": "measured",
+   "label": "learner hgb_l2_i200, learned values (fold mean)",
+   "source": "artifacts/staging_window_model/cinc2018/complexity/summary.csv",
+   "exp": 25
+  },
+  "complexity.hgb_l2_i200.macro_f1": {
+   "value": 0.7488428945727756,
+   "kind": "measured",
+   "label": "Model C inputs, learner hgb_l2_i200, macro-F1",
+   "source": "artifacts/staging_window_model/cinc2018/complexity/summary.csv",
+   "exp": 25
+  },
+  "complexity.hgb_l31_i100.learned_values": {
+   "value": 30134.0,
+   "kind": "measured",
+   "label": "learner hgb_l31_i100, learned values (fold mean)",
+   "source": "artifacts/staging_window_model/cinc2018/complexity/summary.csv",
+   "exp": 25
+  },
+  "complexity.hgb_l31_i100.macro_f1": {
+   "value": 0.7728017742592055,
+   "kind": "measured",
+   "label": "Model C inputs, learner hgb_l31_i100, macro-F1",
+   "source": "artifacts/staging_window_model/cinc2018/complexity/summary.csv",
+   "exp": 25
+  },
+  "complexity.hgb_l4_i100.learned_values": {
+   "value": 3500.0,
+   "kind": "measured",
+   "label": "learner hgb_l4_i100, learned values (fold mean)",
+   "source": "artifacts/staging_window_model/cinc2018/complexity/summary.csv",
+   "exp": 25
+  },
+  "complexity.hgb_l4_i100.macro_f1": {
+   "value": 0.755732425489593,
+   "kind": "measured",
+   "label": "Model C inputs, learner hgb_l4_i100, macro-F1",
+   "source": "artifacts/staging_window_model/cinc2018/complexity/summary.csv",
+   "exp": 25
+  },
+  "complexity.hgb_l8_i100.learned_values": {
+   "value": 7335.0,
+   "kind": "measured",
+   "label": "learner hgb_l8_i100, learned values (fold mean)",
+   "source": "artifacts/staging_window_model/cinc2018/complexity/summary.csv",
+   "exp": 25
+  },
+  "complexity.hgb_l8_i100.macro_f1": {
+   "value": 0.7629149200403536,
+   "kind": "measured",
+   "label": "Model C inputs, learner hgb_l8_i100, macro-F1",
+   "source": "artifacts/staging_window_model/cinc2018/complexity/summary.csv",
+   "exp": 25
+  },
+  "complexity.tree_d4.learned_values": {
+   "value": 31.0,
+   "kind": "measured",
+   "label": "learner tree_d4, learned values (fold mean)",
+   "source": "artifacts/staging_window_model/cinc2018/complexity/summary.csv",
+   "exp": 25
+  },
+  "complexity.tree_d4.macro_f1": {
+   "value": 0.5964015296380522,
+   "kind": "measured",
+   "label": "Model C inputs, learner tree_d4, macro-F1",
+   "source": "artifacts/staging_window_model/cinc2018/complexity/summary.csv",
+   "exp": 25
+  },
+  "complexity.tree_d6.learned_values": {
+   "value": 126.0,
+   "kind": "measured",
+   "label": "learner tree_d6, learned values (fold mean)",
+   "source": "artifacts/staging_window_model/cinc2018/complexity/summary.csv",
+   "exp": 25
+  },
+  "complexity.tree_d6.macro_f1": {
+   "value": 0.632630267562274,
+   "kind": "measured",
+   "label": "Model C inputs, learner tree_d6, macro-F1",
+   "source": "artifacts/staging_window_model/cinc2018/complexity/summary.csv",
+   "exp": 25
+  },
+  "complexity.tree_d8.learned_values": {
+   "value": 386.0,
+   "kind": "measured",
+   "label": "learner tree_d8, learned values (fold mean)",
+   "source": "artifacts/staging_window_model/cinc2018/complexity/summary.csv",
+   "exp": 25
+  },
+  "complexity.tree_d8.macro_f1": {
+   "value": 0.6579618395497174,
+   "kind": "measured",
+   "label": "Model C inputs, learner tree_d8, macro-F1",
+   "source": "artifacts/staging_window_model/cinc2018/complexity/summary.csv",
+   "exp": 25
+  },
+  "cv.cardio6.epoch.f1_N1": {
+   "value": 0.32299238540670683,
+   "kind": "measured",
+   "label": "Signal ablation: cardio6 (epoch-only), Boston 5-fold CV, N1 F1",
+   "source": "artifacts/staging_window_model/cinc2018/ablations/summary.csv",
+   "exp": 24
+  },
+  "cv.cardio6.epoch.f1_N2": {
+   "value": 0.40355296447035527,
+   "kind": "measured",
+   "label": "Signal ablation: cardio6 (epoch-only), Boston 5-fold CV, N2 F1",
+   "source": "artifacts/staging_window_model/cinc2018/ablations/summary.csv",
+   "exp": 24
+  },
+  "cv.cardio6.epoch.f1_N3": {
+   "value": 0.49062444719617904,
+   "kind": "measured",
+   "label": "Signal ablation: cardio6 (epoch-only), Boston 5-fold CV, N3 F1",
+   "source": "artifacts/staging_window_model/cinc2018/ablations/summary.csv",
+   "exp": 24
+  },
+  "cv.cardio6.epoch.f1_REM": {
+   "value": 0.43011768334409606,
+   "kind": "measured",
+   "label": "Signal ablation: cardio6 (epoch-only), Boston 5-fold CV, REM F1",
+   "source": "artifacts/staging_window_model/cinc2018/ablations/summary.csv",
+   "exp": 24
+  },
+  "cv.cardio6.epoch.f1_Wake": {
+   "value": 0.5571283250005411,
+   "kind": "measured",
+   "label": "Signal ablation: cardio6 (epoch-only), Boston 5-fold CV, Wake F1",
+   "source": "artifacts/staging_window_model/cinc2018/ablations/summary.csv",
+   "exp": 24
+  },
+  "cv.cardio6.epoch.kappa": {
+   "value": 0.2976179861298542,
+   "kind": "measured",
+   "label": "Signal ablation: cardio6 (epoch-only), Boston 5-fold CV, Cohen's kappa",
+   "source": "artifacts/staging_window_model/cinc2018/ablations/summary.csv",
+   "exp": 24
+  },
+  "cv.cardio6.epoch.kappa4": {
+   "value": 0.32527514903863197,
+   "kind": "measured",
+   "label": "cardio6 (epoch-only), 4-class kappa (Wake / N1+N2 / N3 / REM)",
+   "source": "showcase/content/generated/staging-dashboard.json",
+   "exp": 26
+  },
+  "cv.cardio6.epoch.macro_f1": {
+   "value": 0.44083553660914043,
+   "kind": "measured",
+   "label": "Signal ablation: cardio6 (epoch-only), Boston 5-fold CV, macro-F1",
+   "source": "artifacts/staging_window_model/cinc2018/ablations/summary.csv",
+   "exp": 24
+  },
+  "cv.cardio6.hmm.f1_N1": {
+   "value": 0.2957315772255963,
+   "kind": "measured",
+   "label": "Signal ablation: cardio6 (hmm), Boston 5-fold CV, N1 F1",
+   "source": "artifacts/staging_window_model/cinc2018/ablations/summary.csv",
+   "exp": 24
+  },
+  "cv.cardio6.hmm.f1_N2": {
+   "value": 0.4944581159562949,
+   "kind": "measured",
+   "label": "Signal ablation: cardio6 (hmm), Boston 5-fold CV, N2 F1",
+   "source": "artifacts/staging_window_model/cinc2018/ablations/summary.csv",
+   "exp": 24
+  },
+  "cv.cardio6.hmm.f1_N3": {
+   "value": 0.5253694227918321,
+   "kind": "measured",
+   "label": "Signal ablation: cardio6 (hmm), Boston 5-fold CV, N3 F1",
+   "source": "artifacts/staging_window_model/cinc2018/ablations/summary.csv",
+   "exp": 24
+  },
+  "cv.cardio6.hmm.f1_REM": {
+   "value": 0.4828187321768624,
+   "kind": "measured",
+   "label": "Signal ablation: cardio6 (hmm), Boston 5-fold CV, REM F1",
+   "source": "artifacts/staging_window_model/cinc2018/ablations/summary.csv",
+   "exp": 24
+  },
+  "cv.cardio6.hmm.f1_Wake": {
+   "value": 0.5817109269731467,
+   "kind": "measured",
+   "label": "Signal ablation: cardio6 (hmm), Boston 5-fold CV, Wake F1",
+   "source": "artifacts/staging_window_model/cinc2018/ablations/summary.csv",
+   "exp": 24
+  },
+  "cv.cardio6.hmm.kappa": {
+   "value": 0.34197127356210216,
+   "kind": "measured",
+   "label": "Signal ablation: cardio6 (hmm), Boston 5-fold CV, Cohen's kappa",
+   "source": "artifacts/staging_window_model/cinc2018/ablations/summary.csv",
+   "exp": 24
+  },
+  "cv.cardio6.hmm.kappa4": {
+   "value": 0.36884688023436996,
+   "kind": "measured",
+   "label": "cardio6 (hmm), 4-class kappa (Wake / N1+N2 / N3 / REM)",
+   "source": "showcase/content/generated/staging-dashboard.json",
+   "exp": 26
+  },
+  "cv.cardio6.hmm.macro_f1": {
+   "value": 0.4759705370243295,
+   "kind": "measured",
+   "label": "Signal ablation: cardio6 (hmm), Boston 5-fold CV, macro-F1",
+   "source": "artifacts/staging_window_model/cinc2018/ablations/summary.csv",
+   "exp": 24
+  },
+  "cv.cardio6_c5.epoch.f1_N1": {
+   "value": 0.33732280597965825,
+   "kind": "measured",
+   "label": "Signal ablation: cardio6_c5 (epoch-only), Boston 5-fold CV, N1 F1",
+   "source": "artifacts/staging_window_model/cinc2018/ablations/summary.csv",
+   "exp": 24
+  },
+  "cv.cardio6_c5.epoch.f1_N2": {
+   "value": 0.42902471700467004,
+   "kind": "measured",
+   "label": "Signal ablation: cardio6_c5 (epoch-only), Boston 5-fold CV, N2 F1",
+   "source": "artifacts/staging_window_model/cinc2018/ablations/summary.csv",
+   "exp": 24
+  },
+  "cv.cardio6_c5.epoch.f1_N3": {
+   "value": 0.5149968322925151,
+   "kind": "measured",
+   "label": "Signal ablation: cardio6_c5 (epoch-only), Boston 5-fold CV, N3 F1",
+   "source": "artifacts/staging_window_model/cinc2018/ablations/summary.csv",
+   "exp": 24
+  },
+  "cv.cardio6_c5.epoch.f1_REM": {
+   "value": 0.4580930617007828,
+   "kind": "measured",
+   "label": "Signal ablation: cardio6_c5 (epoch-only), Boston 5-fold CV, REM F1",
+   "source": "artifacts/staging_window_model/cinc2018/ablations/summary.csv",
+   "exp": 24
+  },
+  "cv.cardio6_c5.epoch.f1_Wake": {
+   "value": 0.5778919528269164,
+   "kind": "measured",
+   "label": "Signal ablation: cardio6_c5 (epoch-only), Boston 5-fold CV, Wake F1",
+   "source": "artifacts/staging_window_model/cinc2018/ablations/summary.csv",
+   "exp": 24
+  },
+  "cv.cardio6_c5.epoch.kappa": {
+   "value": 0.32381666672384246,
+   "kind": "measured",
+   "label": "Signal ablation: cardio6_c5 (epoch-only), Boston 5-fold CV, Cohen's kappa",
+   "source": "artifacts/staging_window_model/cinc2018/ablations/summary.csv",
+   "exp": 24
+  },
+  "cv.cardio6_c5.epoch.kappa4": {
+   "value": 0.3544496047173983,
+   "kind": "measured",
+   "label": "cardio6_c5 (epoch-only), 4-class kappa (Wake / N1+N2 / N3 / REM)",
+   "source": "showcase/content/generated/staging-dashboard.json",
+   "exp": 26
+  },
+  "cv.cardio6_c5.epoch.macro_f1": {
+   "value": 0.4634686219747305,
+   "kind": "measured",
+   "label": "Signal ablation: cardio6_c5 (epoch-only), Boston 5-fold CV, macro-F1",
+   "source": "artifacts/staging_window_model/cinc2018/ablations/summary.csv",
+   "exp": 24
+  },
+  "cv.cardio6_c5.hmm.f1_N1": {
+   "value": 0.30138546754189866,
+   "kind": "measured",
+   "label": "Signal ablation: cardio6_c5 (hmm), Boston 5-fold CV, N1 F1",
+   "source": "artifacts/staging_window_model/cinc2018/ablations/summary.csv",
+   "exp": 24
+  },
+  "cv.cardio6_c5.hmm.f1_N2": {
+   "value": 0.49952016070886934,
+   "kind": "measured",
+   "label": "Signal ablation: cardio6_c5 (hmm), Boston 5-fold CV, N2 F1",
+   "source": "artifacts/staging_window_model/cinc2018/ablations/summary.csv",
+   "exp": 24
+  },
+  "cv.cardio6_c5.hmm.f1_N3": {
+   "value": 0.5362339501420846,
+   "kind": "measured",
+   "label": "Signal ablation: cardio6_c5 (hmm), Boston 5-fold CV, N3 F1",
+   "source": "artifacts/staging_window_model/cinc2018/ablations/summary.csv",
+   "exp": 24
+  },
+  "cv.cardio6_c5.hmm.f1_REM": {
+   "value": 0.4942036337673562,
+   "kind": "measured",
+   "label": "Signal ablation: cardio6_c5 (hmm), Boston 5-fold CV, REM F1",
+   "source": "artifacts/staging_window_model/cinc2018/ablations/summary.csv",
+   "exp": 24
+  },
+  "cv.cardio6_c5.hmm.f1_Wake": {
+   "value": 0.5955526501692271,
+   "kind": "measured",
+   "label": "Signal ablation: cardio6_c5 (hmm), Boston 5-fold CV, Wake F1",
+   "source": "artifacts/staging_window_model/cinc2018/ablations/summary.csv",
+   "exp": 24
+  },
+  "cv.cardio6_c5.hmm.kappa": {
+   "value": 0.3551289740134346,
+   "kind": "measured",
+   "label": "Signal ablation: cardio6_c5 (hmm), Boston 5-fold CV, Cohen's kappa",
+   "source": "artifacts/staging_window_model/cinc2018/ablations/summary.csv",
+   "exp": 24
+  },
+  "cv.cardio6_c5.hmm.kappa4": {
+   "value": 0.382985403164802,
+   "kind": "measured",
+   "label": "cardio6_c5 (hmm), 4-class kappa (Wake / N1+N2 / N3 / REM)",
+   "source": "showcase/content/generated/staging-dashboard.json",
+   "exp": 26
+  },
+  "cv.cardio6_c5.hmm.macro_f1": {
+   "value": 0.48535497005433276,
+   "kind": "measured",
+   "label": "Signal ablation: cardio6_c5 (hmm), Boston 5-fold CV, macro-F1",
+   "source": "artifacts/staging_window_model/cinc2018/ablations/summary.csv",
+   "exp": 24
+  },
+  "cv.cardiofull_c10.epoch.f1_N1": {
+   "value": 0.34996587030716725,
+   "kind": "measured",
+   "label": "Heart and breathing only: cardiofull_c10 (epoch-only), Boston 5-fold CV, N1 F1",
+   "source": "artifacts/staging_window_model/cinc2018/cardio_full/summary.csv",
+   "exp": 26
+  },
+  "cv.cardiofull_c10.epoch.f1_N2": {
+   "value": 0.5302413448230576,
+   "kind": "measured",
+   "label": "Heart and breathing only: cardiofull_c10 (epoch-only), Boston 5-fold CV, N2 F1",
+   "source": "artifacts/staging_window_model/cinc2018/cardio_full/summary.csv",
+   "exp": 26
+  },
+  "cv.cardiofull_c10.epoch.f1_N3": {
+   "value": 0.5715788141122397,
+   "kind": "measured",
+   "label": "Heart and breathing only: cardiofull_c10 (epoch-only), Boston 5-fold CV, N3 F1",
+   "source": "artifacts/staging_window_model/cinc2018/cardio_full/summary.csv",
+   "exp": 26
+  },
+  "cv.cardiofull_c10.epoch.f1_REM": {
+   "value": 0.5614983706658169,
+   "kind": "measured",
+   "label": "Heart and breathing only: cardiofull_c10 (epoch-only), Boston 5-fold CV, REM F1",
+   "source": "artifacts/staging_window_model/cinc2018/cardio_full/summary.csv",
+   "exp": 26
+  },
+  "cv.cardiofull_c10.epoch.f1_Wake": {
+   "value": 0.6043999043499054,
+   "kind": "measured",
+   "label": "Heart and breathing only: cardiofull_c10 (epoch-only), Boston 5-fold CV, Wake F1",
+   "source": "artifacts/staging_window_model/cinc2018/cardio_full/summary.csv",
+   "exp": 26
+  },
+  "cv.cardiofull_c10.epoch.kappa": {
+   "value": 0.3973051417276577,
+   "kind": "measured",
+   "label": "Heart and breathing only: cardiofull_c10 (epoch-only), Boston 5-fold CV, Cohen's kappa",
+   "source": "artifacts/staging_window_model/cinc2018/cardio_full/summary.csv",
+   "exp": 26
+  },
+  "cv.cardiofull_c10.epoch.kappa4": {
+   "value": 0.44045130658929466,
+   "kind": "measured",
+   "label": "cardiofull_c10 (epoch-only), 4-class kappa (Wake / N1+N2 / N3 / REM)",
+   "source": "showcase/content/generated/staging-dashboard.json",
+   "exp": 26
+  },
+  "cv.cardiofull_c10.epoch.macro_f1": {
+   "value": 0.5235776947001369,
+   "kind": "measured",
+   "label": "Heart and breathing only: cardiofull_c10 (epoch-only), Boston 5-fold CV, macro-F1",
+   "source": "artifacts/staging_window_model/cinc2018/cardio_full/summary.csv",
+   "exp": 26
+  },
+  "cv.cardiofull_c10.hmm.f1_N1": {
+   "value": 0.30015046213369634,
+   "kind": "measured",
+   "label": "Heart and breathing only: cardiofull_c10 (hmm), Boston 5-fold CV, N1 F1",
+   "source": "artifacts/staging_window_model/cinc2018/cardio_full/summary.csv",
+   "exp": 26
+  },
+  "cv.cardiofull_c10.hmm.f1_N2": {
+   "value": 0.5760672513927874,
+   "kind": "measured",
+   "label": "Heart and breathing only: cardiofull_c10 (hmm), Boston 5-fold CV, N2 F1",
+   "source": "artifacts/staging_window_model/cinc2018/cardio_full/summary.csv",
+   "exp": 26
+  },
+  "cv.cardiofull_c10.hmm.f1_N3": {
+   "value": 0.586175780545028,
+   "kind": "measured",
+   "label": "Heart and breathing only: cardiofull_c10 (hmm), Boston 5-fold CV, N3 F1",
+   "source": "artifacts/staging_window_model/cinc2018/cardio_full/summary.csv",
+   "exp": 26
+  },
+  "cv.cardiofull_c10.hmm.f1_REM": {
+   "value": 0.5849911712772219,
+   "kind": "measured",
+   "label": "Heart and breathing only: cardiofull_c10 (hmm), Boston 5-fold CV, REM F1",
+   "source": "artifacts/staging_window_model/cinc2018/cardio_full/summary.csv",
+   "exp": 26
+  },
+  "cv.cardiofull_c10.hmm.f1_Wake": {
+   "value": 0.617036040203541,
+   "kind": "measured",
+   "label": "Heart and breathing only: cardiofull_c10 (hmm), Boston 5-fold CV, Wake F1",
+   "source": "artifacts/staging_window_model/cinc2018/cardio_full/summary.csv",
+   "exp": 26
+  },
+  "cv.cardiofull_c10.hmm.kappa": {
+   "value": 0.4192855728405772,
+   "kind": "measured",
+   "label": "Heart and breathing only: cardiofull_c10 (hmm), Boston 5-fold CV, Cohen's kappa",
+   "source": "artifacts/staging_window_model/cinc2018/cardio_full/summary.csv",
+   "exp": 26
+  },
+  "cv.cardiofull_c10.hmm.kappa4": {
+   "value": 0.4581629046635364,
+   "kind": "measured",
+   "label": "cardiofull_c10 (hmm), 4-class kappa (Wake / N1+N2 / N3 / REM)",
+   "source": "showcase/content/generated/staging-dashboard.json",
+   "exp": 26
+  },
+  "cv.cardiofull_c10.hmm.macro_f1": {
+   "value": 0.5329454611148785,
+   "kind": "measured",
+   "label": "Heart and breathing only: cardiofull_c10 (hmm), Boston 5-fold CV, macro-F1",
+   "source": "artifacts/staging_window_model/cinc2018/cardio_full/summary.csv",
+   "exp": 26
+  },
+  "cv.cardiofull_c10_unbalanced.epoch.kappa4": {
+   "value": 0.4465619806029061,
+   "kind": "measured",
+   "label": "cardiofull_c10_unbalanced (epoch-only), 4-class kappa (Wake / N1+N2 / N3 / REM)",
+   "source": "showcase/content/generated/staging-dashboard.json",
+   "exp": 26
+  },
+  "cv.cardiofull_c10_unbalanced.hmm.kappa4": {
+   "value": 0.45634007316901615,
+   "kind": "measured",
+   "label": "cardiofull_c10_unbalanced (hmm), 4-class kappa (Wake / N1+N2 / N3 / REM)",
+   "source": "showcase/content/generated/staging-dashboard.json",
+   "exp": 26
+  },
+  "cv.cardiofull_c5.epoch.f1_N1": {
+   "value": 0.33946793002915454,
+   "kind": "measured",
+   "label": "Heart and breathing only: cardiofull_c5 (epoch-only), Boston 5-fold CV, N1 F1",
+   "source": "artifacts/staging_window_model/cinc2018/cardio_full/summary.csv",
+   "exp": 26
+  },
+  "cv.cardiofull_c5.epoch.f1_N2": {
+   "value": 0.5007774288215003,
+   "kind": "measured",
+   "label": "Heart and breathing only: cardiofull_c5 (epoch-only), Boston 5-fold CV, N2 F1",
+   "source": "artifacts/staging_window_model/cinc2018/cardio_full/summary.csv",
+   "exp": 26
+  },
+  "cv.cardiofull_c5.epoch.f1_N3": {
+   "value": 0.5486638041832878,
+   "kind": "measured",
+   "label": "Heart and breathing only: cardiofull_c5 (epoch-only), Boston 5-fold CV, N3 F1",
+   "source": "artifacts/staging_window_model/cinc2018/cardio_full/summary.csv",
+   "exp": 26
+  },
+  "cv.cardiofull_c5.epoch.f1_REM": {
+   "value": 0.5330607512281451,
+   "kind": "measured",
+   "label": "Heart and breathing only: cardiofull_c5 (epoch-only), Boston 5-fold CV, REM F1",
+   "source": "artifacts/staging_window_model/cinc2018/cardio_full/summary.csv",
+   "exp": 26
+  },
+  "cv.cardiofull_c5.epoch.f1_Wake": {
+   "value": 0.5915718426859343,
+   "kind": "measured",
+   "label": "Heart and breathing only: cardiofull_c5 (epoch-only), Boston 5-fold CV, Wake F1",
+   "source": "artifacts/staging_window_model/cinc2018/cardio_full/summary.csv",
+   "exp": 26
+  },
+  "cv.cardiofull_c5.epoch.kappa": {
+   "value": 0.3719128125140509,
+   "kind": "measured",
+   "label": "Heart and breathing only: cardiofull_c5 (epoch-only), Boston 5-fold CV, Cohen's kappa",
+   "source": "artifacts/staging_window_model/cinc2018/cardio_full/summary.csv",
+   "exp": 26
+  },
+  "cv.cardiofull_c5.epoch.kappa4": {
+   "value": 0.4104294756761926,
+   "kind": "measured",
+   "label": "cardiofull_c5 (epoch-only), 4-class kappa (Wake / N1+N2 / N3 / REM)",
+   "source": "showcase/content/generated/staging-dashboard.json",
+   "exp": 26
+  },
+  "cv.cardiofull_c5.epoch.macro_f1": {
+   "value": 0.5026829712478292,
+   "kind": "measured",
+   "label": "Heart and breathing only: cardiofull_c5 (epoch-only), Boston 5-fold CV, macro-F1",
+   "source": "artifacts/staging_window_model/cinc2018/cardio_full/summary.csv",
+   "exp": 26
+  },
+  "cv.cardiofull_c5.hmm.f1_N1": {
+   "value": 0.30112855949363504,
+   "kind": "measured",
+   "label": "Heart and breathing only: cardiofull_c5 (hmm), Boston 5-fold CV, N1 F1",
+   "source": "artifacts/staging_window_model/cinc2018/cardio_full/summary.csv",
+   "exp": 26
+  },
+  "cv.cardiofull_c5.hmm.f1_N2": {
+   "value": 0.556354961923292,
+   "kind": "measured",
+   "label": "Heart and breathing only: cardiofull_c5 (hmm), Boston 5-fold CV, N2 F1",
+   "source": "artifacts/staging_window_model/cinc2018/cardio_full/summary.csv",
+   "exp": 26
+  },
+  "cv.cardiofull_c5.hmm.f1_N3": {
+   "value": 0.5671970916025985,
+   "kind": "measured",
+   "label": "Heart and breathing only: cardiofull_c5 (hmm), Boston 5-fold CV, N3 F1",
+   "source": "artifacts/staging_window_model/cinc2018/cardio_full/summary.csv",
+   "exp": 26
+  },
+  "cv.cardiofull_c5.hmm.f1_REM": {
+   "value": 0.5657293308146306,
+   "kind": "measured",
+   "label": "Heart and breathing only: cardiofull_c5 (hmm), Boston 5-fold CV, REM F1",
+   "source": "artifacts/staging_window_model/cinc2018/cardio_full/summary.csv",
+   "exp": 26
+  },
+  "cv.cardiofull_c5.hmm.f1_Wake": {
+   "value": 0.6089349678042837,
+   "kind": "measured",
+   "label": "Heart and breathing only: cardiofull_c5 (hmm), Boston 5-fold CV, Wake F1",
+   "source": "artifacts/staging_window_model/cinc2018/cardio_full/summary.csv",
+   "exp": 26
+  },
+  "cv.cardiofull_c5.hmm.kappa": {
+   "value": 0.40088070004118165,
+   "kind": "measured",
+   "label": "Heart and breathing only: cardiofull_c5 (hmm), Boston 5-fold CV, Cohen's kappa",
+   "source": "artifacts/staging_window_model/cinc2018/cardio_full/summary.csv",
+   "exp": 26
+  },
+  "cv.cardiofull_c5.hmm.kappa4": {
+   "value": 0.4372344568998776,
+   "kind": "measured",
+   "label": "cardiofull_c5 (hmm), 4-class kappa (Wake / N1+N2 / N3 / REM)",
+   "source": "showcase/content/generated/staging-dashboard.json",
+   "exp": 26
+  },
+  "cv.cardiofull_c5.hmm.macro_f1": {
+   "value": 0.5198364731351706,
+   "kind": "measured",
+   "label": "Heart and breathing only: cardiofull_c5 (hmm), Boston 5-fold CV, macro-F1",
+   "source": "artifacts/staging_window_model/cinc2018/cardio_full/summary.csv",
+   "exp": 26
+  },
+  "cv.dropAB.epoch.f1_N1": {
+   "value": 0.5734925692603313,
+   "kind": "measured",
+   "label": "Feature reduction: dropAB (epoch-only), Boston 5-fold CV, N1 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.dropAB.epoch.f1_N2": {
+   "value": 0.8150284470779476,
+   "kind": "measured",
+   "label": "Feature reduction: dropAB (epoch-only), Boston 5-fold CV, N2 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.dropAB.epoch.f1_N3": {
+   "value": 0.8096186108936361,
+   "kind": "measured",
+   "label": "Feature reduction: dropAB (epoch-only), Boston 5-fold CV, N3 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.dropAB.epoch.f1_REM": {
+   "value": 0.8443909153475567,
+   "kind": "measured",
+   "label": "Feature reduction: dropAB (epoch-only), Boston 5-fold CV, REM F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.dropAB.epoch.f1_Wake": {
+   "value": 0.8123170407167568,
+   "kind": "measured",
+   "label": "Feature reduction: dropAB (epoch-only), Boston 5-fold CV, Wake F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.dropAB.epoch.kappa": {
+   "value": 0.7130659630397206,
+   "kind": "measured",
+   "label": "Feature reduction: dropAB (epoch-only), Boston 5-fold CV, Cohen's kappa",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.dropAB.epoch.macro_f1": {
+   "value": 0.7708900954372837,
+   "kind": "measured",
+   "label": "Feature reduction: dropAB (epoch-only), Boston 5-fold CV, macro-F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.epoch19.epoch.f1_N1": {
+   "value": 0.497499424807159,
+   "kind": "measured",
+   "label": "Window model: epoch19 (epoch-only), Boston 5-fold CV, N1 F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.epoch19.epoch.f1_N2": {
+   "value": 0.7811442701684536,
+   "kind": "measured",
+   "label": "Window model: epoch19 (epoch-only), Boston 5-fold CV, N2 F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.epoch19.epoch.f1_N3": {
+   "value": 0.782531331348923,
+   "kind": "measured",
+   "label": "Window model: epoch19 (epoch-only), Boston 5-fold CV, N3 F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.epoch19.epoch.f1_REM": {
+   "value": 0.7778217284676152,
+   "kind": "measured",
+   "label": "Window model: epoch19 (epoch-only), Boston 5-fold CV, REM F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.epoch19.epoch.f1_Wake": {
+   "value": 0.7686939073728749,
+   "kind": "measured",
+   "label": "Window model: epoch19 (epoch-only), Boston 5-fold CV, Wake F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.epoch19.epoch.kappa": {
+   "value": 0.6548891769519388,
+   "kind": "measured",
+   "label": "Window model: epoch19 (epoch-only), Boston 5-fold CV, Cohen's kappa",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.epoch19.epoch.macro_f1": {
+   "value": 0.7214940772592722,
+   "kind": "measured",
+   "label": "Window model: epoch19 (epoch-only), Boston 5-fold CV, macro-F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.epoch19.hmm.f1_N1": {
+   "value": 0.5189093636168846,
+   "kind": "measured",
+   "label": "Window model: epoch19 (hmm), Boston 5-fold CV, N1 F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.epoch19.hmm.f1_N2": {
+   "value": 0.8152113304338129,
+   "kind": "measured",
+   "label": "Window model: epoch19 (hmm), Boston 5-fold CV, N2 F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.epoch19.hmm.f1_N3": {
+   "value": 0.7997607736489918,
+   "kind": "measured",
+   "label": "Window model: epoch19 (hmm), Boston 5-fold CV, N3 F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.epoch19.hmm.f1_REM": {
+   "value": 0.8394874666490991,
+   "kind": "measured",
+   "label": "Window model: epoch19 (hmm), Boston 5-fold CV, REM F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.epoch19.hmm.f1_Wake": {
+   "value": 0.7985299326957138,
+   "kind": "measured",
+   "label": "Window model: epoch19 (hmm), Boston 5-fold CV, Wake F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.epoch19.hmm.kappa": {
+   "value": 0.7005030229729534,
+   "kind": "measured",
+   "label": "Window model: epoch19 (hmm), Boston 5-fold CV, Cohen's kappa",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.epoch19.hmm.macro_f1": {
+   "value": 0.7543429582337514,
+   "kind": "measured",
+   "label": "Window model: epoch19 (hmm), Boston 5-fold CV, macro-F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.g20.epoch.f1_N1": {
+   "value": 0.5727476456973511,
+   "kind": "measured",
+   "label": "Window model: g20 (epoch-only), Boston 5-fold CV, N1 F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.g20.epoch.f1_N2": {
+   "value": 0.8168391115453737,
+   "kind": "measured",
+   "label": "Window model: g20 (epoch-only), Boston 5-fold CV, N2 F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.g20.epoch.f1_N3": {
+   "value": 0.8109535693103102,
+   "kind": "measured",
+   "label": "Window model: g20 (epoch-only), Boston 5-fold CV, N3 F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.g20.epoch.f1_REM": {
+   "value": 0.8492689187330981,
+   "kind": "measured",
+   "label": "Window model: g20 (epoch-only), Boston 5-fold CV, REM F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.g20.epoch.f1_Wake": {
+   "value": 0.814612215972007,
+   "kind": "measured",
+   "label": "Window model: g20 (epoch-only), Boston 5-fold CV, Wake F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.g20.epoch.kappa": {
+   "value": 0.7157543948386603,
+   "kind": "measured",
+   "label": "Window model: g20 (epoch-only), Boston 5-fold CV, Cohen's kappa",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.g20.epoch.macro_f1": {
+   "value": 0.7728017742592055,
+   "kind": "measured",
+   "label": "Window model: g20 (epoch-only), Boston 5-fold CV, macro-F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.g20.hmm.f1_N1": {
+   "value": 0.5493319630010277,
+   "kind": "measured",
+   "label": "Window model: g20 (hmm), Boston 5-fold CV, N1 F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.g20.hmm.f1_N2": {
+   "value": 0.8283598206232453,
+   "kind": "measured",
+   "label": "Window model: g20 (hmm), Boston 5-fold CV, N2 F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.g20.hmm.f1_N3": {
+   "value": 0.8139083888088731,
+   "kind": "measured",
+   "label": "Window model: g20 (hmm), Boston 5-fold CV, N3 F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.g20.hmm.f1_REM": {
+   "value": 0.8634916363962509,
+   "kind": "measured",
+   "label": "Window model: g20 (hmm), Boston 5-fold CV, REM F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.g20.hmm.f1_Wake": {
+   "value": 0.8152566003496581,
+   "kind": "measured",
+   "label": "Window model: g20 (hmm), Boston 5-fold CV, Wake F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.g20.hmm.kappa": {
+   "value": 0.7234774949574267,
+   "kind": "measured",
+   "label": "Window model: g20 (hmm), Boston 5-fold CV, Cohen's kappa",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.g20.hmm.macro_f1": {
+   "value": 0.7739820862023981,
+   "kind": "measured",
+   "label": "Window model: g20 (hmm), Boston 5-fold CV, macro-F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.nocardio27.epoch.f1_N1": {
+   "value": 0.5778396327766383,
+   "kind": "measured",
+   "label": "Window model: nocardio27 (epoch-only), Boston 5-fold CV, N1 F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.nocardio27.epoch.f1_N2": {
+   "value": 0.8178966427433957,
+   "kind": "measured",
+   "label": "Window model: nocardio27 (epoch-only), Boston 5-fold CV, N2 F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.nocardio27.epoch.f1_N3": {
+   "value": 0.8122556433092477,
+   "kind": "measured",
+   "label": "Window model: nocardio27 (epoch-only), Boston 5-fold CV, N3 F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.nocardio27.epoch.f1_REM": {
+   "value": 0.8498598478347921,
+   "kind": "measured",
+   "label": "Window model: nocardio27 (epoch-only), Boston 5-fold CV, REM F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.nocardio27.epoch.f1_Wake": {
+   "value": 0.8197959115690825,
+   "kind": "measured",
+   "label": "Window model: nocardio27 (epoch-only), Boston 5-fold CV, Wake F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.nocardio27.epoch.kappa": {
+   "value": 0.7186240741983487,
+   "kind": "measured",
+   "label": "Window model: nocardio27 (epoch-only), Boston 5-fold CV, Cohen's kappa",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.nocardio27.epoch.kappa4": {
+   "value": 0.7594284478844843,
+   "kind": "measured",
+   "label": "nocardio27 (epoch-only), 4-class kappa (Wake / N1+N2 / N3 / REM)",
+   "source": "showcase/content/generated/staging-dashboard.json",
+   "exp": 26
+  },
+  "cv.nocardio27.epoch.macro_f1": {
+   "value": 0.7754573130120097,
+   "kind": "measured",
+   "label": "Window model: nocardio27 (epoch-only), Boston 5-fold CV, macro-F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.nocardio27.hmm.f1_N1": {
+   "value": 0.5531301760008618,
+   "kind": "measured",
+   "label": "Window model: nocardio27 (hmm), Boston 5-fold CV, N1 F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.nocardio27.hmm.f1_N2": {
+   "value": 0.8288369177600651,
+   "kind": "measured",
+   "label": "Window model: nocardio27 (hmm), Boston 5-fold CV, N2 F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.nocardio27.hmm.f1_N3": {
+   "value": 0.8150712137547523,
+   "kind": "measured",
+   "label": "Window model: nocardio27 (hmm), Boston 5-fold CV, N3 F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.nocardio27.hmm.f1_REM": {
+   "value": 0.8625419147910148,
+   "kind": "measured",
+   "label": "Window model: nocardio27 (hmm), Boston 5-fold CV, REM F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.nocardio27.hmm.f1_Wake": {
+   "value": 0.8208943639327175,
+   "kind": "measured",
+   "label": "Window model: nocardio27 (hmm), Boston 5-fold CV, Wake F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.nocardio27.hmm.kappa": {
+   "value": 0.725436809076713,
+   "kind": "measured",
+   "label": "Window model: nocardio27 (hmm), Boston 5-fold CV, Cohen's kappa",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.nocardio27.hmm.kappa4": {
+   "value": 0.7663669269064609,
+   "kind": "measured",
+   "label": "nocardio27 (hmm), 4-class kappa (Wake / N1+N2 / N3 / REM)",
+   "source": "showcase/content/generated/staging-dashboard.json",
+   "exp": 26
+  },
+  "cv.nocardio27.hmm.macro_f1": {
+   "value": 0.7760202487219818,
+   "kind": "measured",
+   "label": "Window model: nocardio27 (hmm), Boston 5-fold CV, macro-F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.nocardio27_bursts.epoch.f1_N1": {
+   "value": 0.5773784018706463,
+   "kind": "measured",
+   "label": "Feature reduction: nocardio27_bursts (epoch-only), Boston 5-fold CV, N1 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.nocardio27_bursts.epoch.f1_N2": {
+   "value": 0.8185272331154684,
+   "kind": "measured",
+   "label": "Feature reduction: nocardio27_bursts (epoch-only), Boston 5-fold CV, N2 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.nocardio27_bursts.epoch.f1_N3": {
+   "value": 0.8134000269166929,
+   "kind": "measured",
+   "label": "Feature reduction: nocardio27_bursts (epoch-only), Boston 5-fold CV, N3 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.nocardio27_bursts.epoch.f1_REM": {
+   "value": 0.8509244948193944,
+   "kind": "measured",
+   "label": "Feature reduction: nocardio27_bursts (epoch-only), Boston 5-fold CV, REM F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.nocardio27_bursts.epoch.f1_Wake": {
+   "value": 0.8202631053530626,
+   "kind": "measured",
+   "label": "Feature reduction: nocardio27_bursts (epoch-only), Boston 5-fold CV, Wake F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.nocardio27_bursts.epoch.kappa": {
+   "value": 0.7194336714482651,
+   "kind": "measured",
+   "label": "Feature reduction: nocardio27_bursts (epoch-only), Boston 5-fold CV, Cohen's kappa",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.nocardio27_bursts.epoch.macro_f1": {
+   "value": 0.7760336019596032,
+   "kind": "measured",
+   "label": "Feature reduction: nocardio27_bursts (epoch-only), Boston 5-fold CV, macro-F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.prune6.epoch.f1_N1": {
+   "value": 0.577661260821851,
+   "kind": "measured",
+   "label": "Feature reduction: prune6 (epoch-only), Boston 5-fold CV, N1 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.prune6.epoch.f1_N2": {
+   "value": 0.8162610580789538,
+   "kind": "measured",
+   "label": "Feature reduction: prune6 (epoch-only), Boston 5-fold CV, N2 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.prune6.epoch.f1_N3": {
+   "value": 0.8123922341402243,
+   "kind": "measured",
+   "label": "Feature reduction: prune6 (epoch-only), Boston 5-fold CV, N3 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.prune6.epoch.f1_REM": {
+   "value": 0.8522549478661078,
+   "kind": "measured",
+   "label": "Feature reduction: prune6 (epoch-only), Boston 5-fold CV, REM F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.prune6.epoch.f1_Wake": {
+   "value": 0.8188139785065489,
+   "kind": "measured",
+   "label": "Feature reduction: prune6 (epoch-only), Boston 5-fold CV, Wake F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.prune6.epoch.kappa": {
+   "value": 0.7181478805560001,
+   "kind": "measured",
+   "label": "Feature reduction: prune6 (epoch-only), Boston 5-fold CV, Cohen's kappa",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.prune6.epoch.macro_f1": {
+   "value": 0.7753943698102804,
+   "kind": "measured",
+   "label": "Feature reduction: prune6 (epoch-only), Boston 5-fold CV, macro-F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.prune6_bursts.epoch.f1_N1": {
+   "value": 0.5767925198828474,
+   "kind": "measured",
+   "label": "Feature reduction: prune6_bursts (epoch-only), Boston 5-fold CV, N1 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.prune6_bursts.epoch.f1_N2": {
+   "value": 0.8171694728065618,
+   "kind": "measured",
+   "label": "Feature reduction: prune6_bursts (epoch-only), Boston 5-fold CV, N2 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.prune6_bursts.epoch.f1_N3": {
+   "value": 0.81236015394254,
+   "kind": "measured",
+   "label": "Feature reduction: prune6_bursts (epoch-only), Boston 5-fold CV, N3 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.prune6_bursts.epoch.f1_REM": {
+   "value": 0.8513998400182836,
+   "kind": "measured",
+   "label": "Feature reduction: prune6_bursts (epoch-only), Boston 5-fold CV, REM F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.prune6_bursts.epoch.f1_Wake": {
+   "value": 0.8186511277529136,
+   "kind": "measured",
+   "label": "Feature reduction: prune6_bursts (epoch-only), Boston 5-fold CV, Wake F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.prune6_bursts.epoch.kappa": {
+   "value": 0.7183486198214035,
+   "kind": "measured",
+   "label": "Feature reduction: prune6_bursts (epoch-only), Boston 5-fold CV, Cohen's kappa",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.prune6_bursts.epoch.macro_f1": {
+   "value": 0.775189358038442,
+   "kind": "measured",
+   "label": "Feature reduction: prune6_bursts (epoch-only), Boston 5-fold CV, macro-F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.prune6_sigratio.epoch.f1_N1": {
+   "value": 0.5792501584515626,
+   "kind": "measured",
+   "label": "Feature reduction: prune6_sigratio (epoch-only), Boston 5-fold CV, N1 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.prune6_sigratio.epoch.f1_N2": {
+   "value": 0.8166921430755121,
+   "kind": "measured",
+   "label": "Feature reduction: prune6_sigratio (epoch-only), Boston 5-fold CV, N2 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.prune6_sigratio.epoch.f1_N3": {
+   "value": 0.8116629557939962,
+   "kind": "measured",
+   "label": "Feature reduction: prune6_sigratio (epoch-only), Boston 5-fold CV, N3 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.prune6_sigratio.epoch.f1_REM": {
+   "value": 0.8506875328894685,
+   "kind": "measured",
+   "label": "Feature reduction: prune6_sigratio (epoch-only), Boston 5-fold CV, REM F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.prune6_sigratio.epoch.f1_Wake": {
+   "value": 0.8194489177152631,
+   "kind": "measured",
+   "label": "Feature reduction: prune6_sigratio (epoch-only), Boston 5-fold CV, Wake F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.prune6_sigratio.epoch.kappa": {
+   "value": 0.7182466074194581,
+   "kind": "measured",
+   "label": "Feature reduction: prune6_sigratio (epoch-only), Boston 5-fold CV, Cohen's kappa",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.prune6_sigratio.epoch.macro_f1": {
+   "value": 0.7754742343855765,
+   "kind": "measured",
+   "label": "Feature reduction: prune6_sigratio (epoch-only), Boston 5-fold CV, macro-F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swap4_alpha.epoch.f1_N1": {
+   "value": 0.5759929756954183,
+   "kind": "measured",
+   "label": "Feature reduction: swap4_alpha (epoch-only), Boston 5-fold CV, N1 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swap4_alpha.epoch.f1_N2": {
+   "value": 0.8156578780718956,
+   "kind": "measured",
+   "label": "Feature reduction: swap4_alpha (epoch-only), Boston 5-fold CV, N2 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swap4_alpha.epoch.f1_N3": {
+   "value": 0.8107047119126933,
+   "kind": "measured",
+   "label": "Feature reduction: swap4_alpha (epoch-only), Boston 5-fold CV, N3 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swap4_alpha.epoch.f1_REM": {
+   "value": 0.8507624650179908,
+   "kind": "measured",
+   "label": "Feature reduction: swap4_alpha (epoch-only), Boston 5-fold CV, REM F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swap4_alpha.epoch.f1_Wake": {
+   "value": 0.818125360422304,
+   "kind": "measured",
+   "label": "Feature reduction: swap4_alpha (epoch-only), Boston 5-fold CV, Wake F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swap4_alpha.epoch.kappa": {
+   "value": 0.7166723787064271,
+   "kind": "measured",
+   "label": "Feature reduction: swap4_alpha (epoch-only), Boston 5-fold CV, Cohen's kappa",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swap4_alpha.epoch.macro_f1": {
+   "value": 0.7741770211678698,
+   "kind": "measured",
+   "label": "Feature reduction: swap4_alpha (epoch-only), Boston 5-fold CV, macro-F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swap4_combo.epoch.f1_N1": {
+   "value": 0.5731898977838964,
+   "kind": "measured",
+   "label": "Feature reduction: swap4_combo (epoch-only), Boston 5-fold CV, N1 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swap4_combo.epoch.f1_N2": {
+   "value": 0.8159643103463328,
+   "kind": "measured",
+   "label": "Feature reduction: swap4_combo (epoch-only), Boston 5-fold CV, N2 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swap4_combo.epoch.f1_N3": {
+   "value": 0.8101288515406162,
+   "kind": "measured",
+   "label": "Feature reduction: swap4_combo (epoch-only), Boston 5-fold CV, N3 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swap4_combo.epoch.f1_REM": {
+   "value": 0.846819385077295,
+   "kind": "measured",
+   "label": "Feature reduction: swap4_combo (epoch-only), Boston 5-fold CV, REM F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swap4_combo.epoch.f1_Wake": {
+   "value": 0.8162278464166094,
+   "kind": "measured",
+   "label": "Feature reduction: swap4_combo (epoch-only), Boston 5-fold CV, Wake F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swap4_combo.epoch.kappa": {
+   "value": 0.7148941400477594,
+   "kind": "measured",
+   "label": "Feature reduction: swap4_combo (epoch-only), Boston 5-fold CV, Cohen's kappa",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swap4_combo.epoch.macro_f1": {
+   "value": 0.7723826500300388,
+   "kind": "measured",
+   "label": "Feature reduction: swap4_combo (epoch-only), Boston 5-fold CV, macro-F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swap4_saw.epoch.f1_N1": {
+   "value": 0.5757450532354514,
+   "kind": "measured",
+   "label": "Feature reduction: swap4_saw (epoch-only), Boston 5-fold CV, N1 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swap4_saw.epoch.f1_N2": {
+   "value": 0.815487220726548,
+   "kind": "measured",
+   "label": "Feature reduction: swap4_saw (epoch-only), Boston 5-fold CV, N2 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swap4_saw.epoch.f1_N3": {
+   "value": 0.8110870099957512,
+   "kind": "measured",
+   "label": "Feature reduction: swap4_saw (epoch-only), Boston 5-fold CV, N3 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swap4_saw.epoch.f1_REM": {
+   "value": 0.8478512557744994,
+   "kind": "measured",
+   "label": "Feature reduction: swap4_saw (epoch-only), Boston 5-fold CV, REM F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swap4_saw.epoch.f1_Wake": {
+   "value": 0.8176540455337618,
+   "kind": "measured",
+   "label": "Feature reduction: swap4_saw (epoch-only), Boston 5-fold CV, Wake F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swap4_saw.epoch.kappa": {
+   "value": 0.7158180265877705,
+   "kind": "measured",
+   "label": "Feature reduction: swap4_saw (epoch-only), Boston 5-fold CV, Cohen's kappa",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swap4_saw.epoch.macro_f1": {
+   "value": 0.7734937302492451,
+   "kind": "measured",
+   "label": "Feature reduction: swap4_saw (epoch-only), Boston 5-fold CV, macro-F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapA.epoch.f1_N1": {
+   "value": 0.574283402398058,
+   "kind": "measured",
+   "label": "Feature reduction: swapA (epoch-only), Boston 5-fold CV, N1 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapA.epoch.f1_N2": {
+   "value": 0.8173209043441847,
+   "kind": "measured",
+   "label": "Feature reduction: swapA (epoch-only), Boston 5-fold CV, N2 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapA.epoch.f1_N3": {
+   "value": 0.8128929762144503,
+   "kind": "measured",
+   "label": "Feature reduction: swapA (epoch-only), Boston 5-fold CV, N3 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapA.epoch.f1_REM": {
+   "value": 0.8488566392748415,
+   "kind": "measured",
+   "label": "Feature reduction: swapA (epoch-only), Boston 5-fold CV, REM F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapA.epoch.f1_Wake": {
+   "value": 0.8157740238161174,
+   "kind": "measured",
+   "label": "Feature reduction: swapA (epoch-only), Boston 5-fold CV, Wake F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapA.epoch.kappa": {
+   "value": 0.7169180868636266,
+   "kind": "measured",
+   "label": "Feature reduction: swapA (epoch-only), Boston 5-fold CV, Cohen's kappa",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapA.epoch.macro_f1": {
+   "value": 0.7737518982924192,
+   "kind": "measured",
+   "label": "Feature reduction: swapA (epoch-only), Boston 5-fold CV, macro-F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapAB.epoch.f1_N1": {
+   "value": 0.5738314339691633,
+   "kind": "measured",
+   "label": "Feature reduction: swapAB (epoch-only), Boston 5-fold CV, N1 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapAB.epoch.f1_N2": {
+   "value": 0.8167730332370068,
+   "kind": "measured",
+   "label": "Feature reduction: swapAB (epoch-only), Boston 5-fold CV, N2 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapAB.epoch.f1_N3": {
+   "value": 0.8106428172163219,
+   "kind": "measured",
+   "label": "Feature reduction: swapAB (epoch-only), Boston 5-fold CV, N3 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapAB.epoch.f1_REM": {
+   "value": 0.8448989418414024,
+   "kind": "measured",
+   "label": "Feature reduction: swapAB (epoch-only), Boston 5-fold CV, REM F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapAB.epoch.f1_Wake": {
+   "value": 0.8169076653117434,
+   "kind": "measured",
+   "label": "Feature reduction: swapAB (epoch-only), Boston 5-fold CV, Wake F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapAB.epoch.kappa": {
+   "value": 0.7153128482998572,
+   "kind": "measured",
+   "label": "Feature reduction: swapAB (epoch-only), Boston 5-fold CV, Cohen's kappa",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapAB.epoch.macro_f1": {
+   "value": 0.7725270084643372,
+   "kind": "measured",
+   "label": "Feature reduction: swapAB (epoch-only), Boston 5-fold CV, macro-F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapB.epoch.f1_N1": {
+   "value": 0.5751676953605298,
+   "kind": "measured",
+   "label": "Feature reduction: swapB (epoch-only), Boston 5-fold CV, N1 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapB.epoch.f1_N2": {
+   "value": 0.8157754408049444,
+   "kind": "measured",
+   "label": "Feature reduction: swapB (epoch-only), Boston 5-fold CV, N2 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapB.epoch.f1_N3": {
+   "value": 0.8100295117152566,
+   "kind": "measured",
+   "label": "Feature reduction: swapB (epoch-only), Boston 5-fold CV, N3 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapB.epoch.f1_REM": {
+   "value": 0.8496083252330036,
+   "kind": "measured",
+   "label": "Feature reduction: swapB (epoch-only), Boston 5-fold CV, REM F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapB.epoch.f1_Wake": {
+   "value": 0.8198542481336651,
+   "kind": "measured",
+   "label": "Feature reduction: swapB (epoch-only), Boston 5-fold CV, Wake F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapB.epoch.kappa": {
+   "value": 0.7165464163804645,
+   "kind": "measured",
+   "label": "Feature reduction: swapB (epoch-only), Boston 5-fold CV, Cohen's kappa",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapB.epoch.macro_f1": {
+   "value": 0.774014010670283,
+   "kind": "measured",
+   "label": "Feature reduction: swapB (epoch-only), Boston 5-fold CV, macro-F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapS1.epoch.f1_N1": {
+   "value": 0.5727596468120396,
+   "kind": "measured",
+   "label": "Feature reduction: swapS1 (epoch-only), Boston 5-fold CV, N1 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapS1.epoch.f1_N2": {
+   "value": 0.8163438156234584,
+   "kind": "measured",
+   "label": "Feature reduction: swapS1 (epoch-only), Boston 5-fold CV, N2 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapS1.epoch.f1_N3": {
+   "value": 0.8105677598317749,
+   "kind": "measured",
+   "label": "Feature reduction: swapS1 (epoch-only), Boston 5-fold CV, N3 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapS1.epoch.f1_REM": {
+   "value": 0.8471079595653621,
+   "kind": "measured",
+   "label": "Feature reduction: swapS1 (epoch-only), Boston 5-fold CV, REM F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapS1.epoch.f1_Wake": {
+   "value": 0.8167109929078015,
+   "kind": "measured",
+   "label": "Feature reduction: swapS1 (epoch-only), Boston 5-fold CV, Wake F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapS1.epoch.kappa": {
+   "value": 0.7153092103509756,
+   "kind": "measured",
+   "label": "Feature reduction: swapS1 (epoch-only), Boston 5-fold CV, Cohen's kappa",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapS1.epoch.macro_f1": {
+   "value": 0.772629000250278,
+   "kind": "measured",
+   "label": "Feature reduction: swapS1 (epoch-only), Boston 5-fold CV, macro-F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapS2.epoch.f1_N1": {
+   "value": 0.5727476456973511,
+   "kind": "measured",
+   "label": "Feature reduction: swapS2 (epoch-only), Boston 5-fold CV, N1 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapS2.epoch.f1_N2": {
+   "value": 0.8168391115453737,
+   "kind": "measured",
+   "label": "Feature reduction: swapS2 (epoch-only), Boston 5-fold CV, N2 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapS2.epoch.f1_N3": {
+   "value": 0.8109535693103102,
+   "kind": "measured",
+   "label": "Feature reduction: swapS2 (epoch-only), Boston 5-fold CV, N3 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapS2.epoch.f1_REM": {
+   "value": 0.8492689187330981,
+   "kind": "measured",
+   "label": "Feature reduction: swapS2 (epoch-only), Boston 5-fold CV, REM F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapS2.epoch.f1_Wake": {
+   "value": 0.814612215972007,
+   "kind": "measured",
+   "label": "Feature reduction: swapS2 (epoch-only), Boston 5-fold CV, Wake F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapS2.epoch.kappa": {
+   "value": 0.7157543948386603,
+   "kind": "measured",
+   "label": "Feature reduction: swapS2 (epoch-only), Boston 5-fold CV, Cohen's kappa",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapS2.epoch.macro_f1": {
+   "value": 0.7728017742592055,
+   "kind": "measured",
+   "label": "Feature reduction: swapS2 (epoch-only), Boston 5-fold CV, macro-F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapS3.epoch.f1_N1": {
+   "value": 0.5730295927336654,
+   "kind": "measured",
+   "label": "Feature reduction: swapS3 (epoch-only), Boston 5-fold CV, N1 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapS3.epoch.f1_N2": {
+   "value": 0.8171727876559686,
+   "kind": "measured",
+   "label": "Feature reduction: swapS3 (epoch-only), Boston 5-fold CV, N2 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapS3.epoch.f1_N3": {
+   "value": 0.8110887096774193,
+   "kind": "measured",
+   "label": "Feature reduction: swapS3 (epoch-only), Boston 5-fold CV, N3 F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapS3.epoch.f1_REM": {
+   "value": 0.8461017882336748,
+   "kind": "measured",
+   "label": "Feature reduction: swapS3 (epoch-only), Boston 5-fold CV, REM F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapS3.epoch.f1_Wake": {
+   "value": 0.8149035262807718,
+   "kind": "measured",
+   "label": "Feature reduction: swapS3 (epoch-only), Boston 5-fold CV, Wake F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapS3.epoch.kappa": {
+   "value": 0.7152838143890781,
+   "kind": "measured",
+   "label": "Feature reduction: swapS3 (epoch-only), Boston 5-fold CV, Cohen's kappa",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.swapS3.epoch.macro_f1": {
+   "value": 0.7723806734956106,
+   "kind": "measured",
+   "label": "Feature reduction: swapS3 (epoch-only), Boston 5-fold CV, macro-F1",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/summary.csv",
+   "exp": 33
+  },
+  "cv.window19.epoch.f1_N1": {
+   "value": 0.5691338313975455,
+   "kind": "measured",
+   "label": "Window model: window19 (epoch-only), Boston 5-fold CV, N1 F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.window19.epoch.f1_N2": {
+   "value": 0.8124064395829503,
+   "kind": "measured",
+   "label": "Window model: window19 (epoch-only), Boston 5-fold CV, N2 F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.window19.epoch.f1_N3": {
+   "value": 0.8053005311713727,
+   "kind": "measured",
+   "label": "Window model: window19 (epoch-only), Boston 5-fold CV, N3 F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.window19.epoch.f1_REM": {
+   "value": 0.8459336935616815,
+   "kind": "measured",
+   "label": "Window model: window19 (epoch-only), Boston 5-fold CV, REM F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.window19.epoch.f1_Wake": {
+   "value": 0.8101727108087813,
+   "kind": "measured",
+   "label": "Window model: window19 (epoch-only), Boston 5-fold CV, Wake F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.window19.epoch.kappa": {
+   "value": 0.7101067184933619,
+   "kind": "measured",
+   "label": "Window model: window19 (epoch-only), Boston 5-fold CV, Cohen's kappa",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.window19.epoch.macro_f1": {
+   "value": 0.7685314645279883,
+   "kind": "measured",
+   "label": "Window model: window19 (epoch-only), Boston 5-fold CV, macro-F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.window19.hmm.f1_N1": {
+   "value": 0.5456482742807818,
+   "kind": "measured",
+   "label": "Window model: window19 (hmm), Boston 5-fold CV, N1 F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.window19.hmm.f1_N2": {
+   "value": 0.8260081270089296,
+   "kind": "measured",
+   "label": "Window model: window19 (hmm), Boston 5-fold CV, N2 F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.window19.hmm.f1_N3": {
+   "value": 0.809222032935832,
+   "kind": "measured",
+   "label": "Window model: window19 (hmm), Boston 5-fold CV, N3 F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.window19.hmm.f1_REM": {
+   "value": 0.8615845747774348,
+   "kind": "measured",
+   "label": "Window model: window19 (hmm), Boston 5-fold CV, REM F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.window19.hmm.f1_Wake": {
+   "value": 0.8128513170946765,
+   "kind": "measured",
+   "label": "Window model: window19 (hmm), Boston 5-fold CV, Wake F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.window19.hmm.kappa": {
+   "value": 0.7198440665376122,
+   "kind": "measured",
+   "label": "Window model: window19 (hmm), Boston 5-fold CV, Cohen's kappa",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.window19.hmm.macro_f1": {
+   "value": 0.7710063011731354,
+   "kind": "measured",
+   "label": "Window model: window19 (hmm), Boston 5-fold CV, macro-F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.window33.epoch.f1_N1": {
+   "value": 0.5804227325333495,
+   "kind": "measured",
+   "label": "Window model: window33 (epoch-only), Boston 5-fold CV, N1 F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.window33.epoch.f1_N2": {
+   "value": 0.8189105499585677,
+   "kind": "measured",
+   "label": "Window model: window33 (epoch-only), Boston 5-fold CV, N2 F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.window33.epoch.f1_N3": {
+   "value": 0.8143579373104146,
+   "kind": "measured",
+   "label": "Window model: window33 (epoch-only), Boston 5-fold CV, N3 F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.window33.epoch.f1_REM": {
+   "value": 0.8521015701780449,
+   "kind": "measured",
+   "label": "Window model: window33 (epoch-only), Boston 5-fold CV, REM F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.window33.epoch.f1_Wake": {
+   "value": 0.8218776054694014,
+   "kind": "measured",
+   "label": "Window model: window33 (epoch-only), Boston 5-fold CV, Wake F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.window33.epoch.kappa": {
+   "value": 0.7208490627021917,
+   "kind": "measured",
+   "label": "Window model: window33 (epoch-only), Boston 5-fold CV, Cohen's kappa",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.window33.epoch.kappa4": {
+   "value": 0.7622717213891252,
+   "kind": "measured",
+   "label": "window33 (epoch-only), 4-class kappa (Wake / N1+N2 / N3 / REM)",
+   "source": "showcase/content/generated/staging-dashboard.json",
+   "exp": 26
+  },
+  "cv.window33.epoch.macro_f1": {
+   "value": 0.7774596627151502,
+   "kind": "measured",
+   "label": "Window model: window33 (epoch-only), Boston 5-fold CV, macro-F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.window33.hmm.f1_N1": {
+   "value": 0.5584833510616812,
+   "kind": "measured",
+   "label": "Window model: window33 (hmm), Boston 5-fold CV, N1 F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.window33.hmm.f1_N2": {
+   "value": 0.8316563565740592,
+   "kind": "measured",
+   "label": "Window model: window33 (hmm), Boston 5-fold CV, N2 F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.window33.hmm.f1_N3": {
+   "value": 0.8174435953213444,
+   "kind": "measured",
+   "label": "Window model: window33 (hmm), Boston 5-fold CV, N3 F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.window33.hmm.f1_REM": {
+   "value": 0.8659583757822733,
+   "kind": "measured",
+   "label": "Window model: window33 (hmm), Boston 5-fold CV, REM F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.window33.hmm.f1_Wake": {
+   "value": 0.8240320486500283,
+   "kind": "measured",
+   "label": "Window model: window33 (hmm), Boston 5-fold CV, Wake F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.window33.hmm.kappa": {
+   "value": 0.7296941318759077,
+   "kind": "measured",
+   "label": "Window model: window33 (hmm), Boston 5-fold CV, Cohen's kappa",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "cv.window33.hmm.kappa4": {
+   "value": 0.7700546333726571,
+   "kind": "measured",
+   "label": "window33 (hmm), 4-class kappa (Wake / N1+N2 / N3 / REM)",
+   "source": "showcase/content/generated/staging-dashboard.json",
+   "exp": 26
+  },
+  "cv.window33.hmm.macro_f1": {
+   "value": 0.7794272611324812,
+   "kind": "measured",
+   "label": "Window model: window33 (hmm), Boston 5-fold CV, macro-F1",
+   "source": "artifacts/staging_window_model/cinc2018/summary.csv",
+   "exp": 23
+  },
+  "delta.cardio_with_eeg": {
+   "value": 0.0020023497031405046,
+   "kind": "derived",
+   "label": "Gain from adding heart and breathing to EEG, eyes and chin (B minus 27 signals)",
+   "from": [
+    "cv.window33.epoch.macro_f1",
+    "cv.nocardio27.epoch.macro_f1"
+   ]
+  },
+  "delta.decoder_with_window": {
+   "value": 0.0019675984173309624,
+   "kind": "derived",
+   "label": "Gain from the whole-night decoder on the 33-signal window model",
+   "from": [
+    "cv.window33.hmm.macro_f1",
+    "cv.window33.epoch.macro_f1"
+   ]
+  },
+  "delta.spindle_additions_best": {
+   "value": 0.0005762889475935395,
+   "kind": "derived",
+   "label": "Largest gain from adding a spindle measure (exp #33)",
+   "from": [
+    "cv.nocardio27_bursts.epoch.macro_f1",
+    "cv.nocardio27.epoch.macro_f1",
+    "cv.prune6_sigratio.epoch.macro_f1",
+    "cv.prune6.epoch.macro_f1",
+    "cv.prune6_bursts.epoch.macro_f1"
+   ]
+  },
+  "delta.swap_spindle": {
+   "value": -0.0025925955510749388,
+   "kind": "derived",
+   "label": "Spindle-burst swap (model C) minus the 21-signal model",
+   "from": [
+    "cv.swapS2.epoch.macro_f1",
+    "cv.prune6.epoch.macro_f1"
+   ]
+  },
+  "effect.c_rel_sigma.d_N2": {
+   "value": 0.023467454575806287,
+   "kind": "measured",
+   "label": "c_rel_sigma: N2 vs rest, Cohen's d (raw)",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/effect_sizes.csv",
+   "exp": 32
+  },
+  "effect.c_sigratio.d_N2": {
+   "value": 0.8495373122849275,
+   "kind": "measured",
+   "label": "c_sigratio: N2 vs rest, Cohen's d (raw)",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/effect_sizes.csv",
+   "exp": 32
+  },
+  "effect.spindle_bursts.d_N2": {
+   "value": 0.902891919925732,
+   "kind": "measured",
+   "label": "spindle_bursts: N2 vs rest, Cohen's d (raw)",
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/effect_sizes.csv",
+   "exp": 32
+  },
+  "exp11.ratio_gain": {
+   "kind": "recorded",
+   "exp": 11,
+   "value": 0.028,
+   "digits": 3,
+   "source": "artifacts/exploration/ratio-normalization/FINDINGS.md",
+   "label": "UCDDB, gain from gain-free ratio features under HGB, macro-F1"
+  },
+  "exp14.after": {
+   "kind": "recorded",
+   "exp": 14,
+   "value": 0.744,
+   "digits": 3,
+   "source": "docs/experiment-history.md",
+   "label": "UCDDB, after the audit fixes, macro-F1"
+  },
+  "exp14.before": {
+   "kind": "recorded",
+   "exp": 14,
+   "value": 0.669,
+   "digits": 3,
+   "source": "docs/experiment-history.md",
+   "label": "UCDDB, before the audit fixes, macro-F1"
+  },
+  "exp15.boston120": {
+   "kind": "recorded",
+   "exp": 15,
+   "value": 0.749,
+   "digits": 3,
+   "source": "docs/experiment-history.md",
+   "label": "Boston (120 records), epoch pipeline, macro-F1"
+  },
+  "exp15.ucddb_to_boston": {
+   "kind": "recorded",
+   "exp": 15,
+   "value": 0.679,
+   "digits": 3,
+   "source": "docs/experiment-history.md",
+   "label": "Trained on UCDDB, tested on Boston, macro-F1"
+  },
+  "exp17.event_features": {
+   "kind": "recorded",
+   "exp": 17,
+   "value": 0.006,
+   "digits": 3,
+   "source": "docs/experiment-history.md",
+   "label": "Boston, gain from event-count features, macro-F1"
+  },
+  "exp19.epoch16_hmm": {
+   "kind": "recorded",
+   "exp": 19,
+   "value": 0.751,
+   "digits": 3,
+   "source": "docs/experiment-history.md",
+   "label": "Boston 320, 16 epoch features + HMM (the pre-window best), macro-F1"
+  },
+  "exp2.bagged_trees": {
+   "kind": "recorded",
+   "exp": 2,
+   "value": 0.608,
+   "digits": 3,
+   "source": "docs/experiment-history.md",
+   "label": "UCDDB, bagged trees on epoch features, macro-F1"
+  },
+  "exp2.hsmm": {
+   "kind": "recorded",
+   "exp": 2,
+   "value": 0.629,
+   "digits": 3,
+   "source": "docs/experiment-history.md",
+   "label": "UCDDB, bagged trees + HSMM smoothing, macro-F1"
+  },
+  "exp21.prev_next_ratio": {
+   "kind": "recorded",
+   "exp": 21,
+   "value": 3.8,
+   "digits": 1,
+   "source": "docs/experiment-history.md",
+   "label": "Window model at exp #21: previous-epoch importance over next-epoch importance"
+  },
+  "exp25.stumps": {
+   "kind": "recorded",
+   "exp": 25,
+   "value": 0.751,
+   "digits": 3,
+   "source": "docs/experiment-history.md",
+   "label": "27-signal inputs at exp #25, boosted single splits, macro-F1"
+  },
+  "exp25.tree_d4": {
+   "kind": "recorded",
+   "exp": 25,
+   "value": 0.596,
+   "digits": 3,
+   "source": "docs/experiment-history.md",
+   "label": "27-signal inputs at exp #25, one depth-4 tree, macro-F1"
+  },
+  "exp27.best_ucddb_trained": {
+   "kind": "recorded",
+   "exp": 27,
+   "value": 0.744,
+   "digits": 3,
+   "source": "docs/experiment-history.md",
+   "label": "Best model ever trained on UCDDB, macro-F1"
+  },
+  "exp29.clean_lead": {
+   "kind": "recorded",
+   "exp": 29,
+   "value": 0.7756,
+   "digits": 4,
+   "source": "artifacts/exploration/signal-quality/FINDINGS.md",
+   "label": "27-signal model with clean-lead tracks, macro-F1"
+  },
+  "exp3.experts.high": {
+   "kind": "recorded",
+   "exp": 3,
+   "value": 0.47,
+   "digits": 2,
+   "source": "docs/experiment-history.md",
+   "label": "UCDDB, feature and signal experts, macro-F1 (high end)"
+  },
+  "exp3.experts.low": {
+   "kind": "recorded",
+   "exp": 3,
+   "value": 0.39,
+   "digits": 2,
+   "source": "docs/experiment-history.md",
+   "label": "UCDDB, feature and signal experts, macro-F1 (low end)"
+  },
+  "exp3.sequence.high": {
+   "kind": "recorded",
+   "exp": 3,
+   "value": 0.6,
+   "digits": 2,
+   "source": "docs/experiment-history.md",
+   "label": "UCDDB, 30-s CNN / 6-s TCN, macro-F1 (high end, validation)"
+  },
+  "exp3.sequence.low": {
+   "kind": "recorded",
+   "exp": 3,
+   "value": 0.58,
+   "digits": 2,
+   "source": "docs/experiment-history.md",
+   "label": "UCDDB, 30-s CNN / 6-s TCN, macro-F1 (low end, validation)"
+  },
+  "exp36.swap_alpha_dropout": {
+   "kind": "recorded",
+   "exp": 36,
+   "value": -0.0012,
+   "digits": 4,
+   "source": "docs/experiment-history.md",
+   "label": "Alpha-dropout swap minus the 21-signal model, macro-F1"
+  },
+  "exp36.swap_sawtooth": {
+   "kind": "recorded",
+   "exp": 36,
+   "value": -0.0019,
+   "digits": 4,
+   "source": "docs/experiment-history.md",
+   "label": "Sawtooth-theta swap minus the 21-signal model, macro-F1"
+  },
+  "exp4.linear_head": {
+   "kind": "recorded",
+   "exp": 4,
+   "value": 0.62,
+   "digits": 2,
+   "source": "docs/experiment-history.md",
+   "label": "UCDDB, hierarchical network with a linear head, macro-F1"
+  },
+  "exp4.raw": {
+   "kind": "recorded",
+   "exp": 4,
+   "value": 0.4,
+   "digits": 2,
+   "source": "docs/experiment-history.md",
+   "label": "UCDDB, hierarchical network raw output, macro-F1 (2-fold)"
+  },
+  "exp6.best_smoother": {
+   "kind": "recorded",
+   "exp": 6,
+   "value": 0.67,
+   "digits": 2,
+   "source": "docs/experiment-history.md",
+   "label": "UCDDB, best smoother at the audit, macro-F1"
+  },
+  "exp7.ceiling": {
+   "kind": "recorded",
+   "exp": 7,
+   "value": 0.66,
+   "digits": 2,
+   "source": "docs/experiment-history.md",
+   "label": "UCDDB, score plateau before the label-map fix, macro-F1"
+  },
+  "exp9.bagged_trees": {
+   "kind": "recorded",
+   "exp": 9,
+   "value": 0.609,
+   "digits": 3,
+   "source": "docs/experiment-history.md",
+   "label": "UCDDB, inherited 21-leaf bagged trees, macro-F1"
+  },
+  "exp9.hgb": {
+   "kind": "recorded",
+   "exp": 9,
+   "value": 0.68,
+   "digits": 3,
+   "source": "docs/experiment-history.md",
+   "label": "UCDDB, default gradient boosting, macro-F1"
+  },
+  "holdout.look1.epoch19.accuracy": {
+   "value": 0.6850316534120351,
+   "kind": "measured",
+   "label": "Held-out Boston (200 patients), look #1, epoch19, accuracy",
+   "source": "artifacts/staging_window_model/cinc2018/holdout/summary_look1.csv",
+   "exp": 30
+  },
+  "holdout.look1.epoch19.kappa": {
+   "value": 0.5852419622698513,
+   "kind": "measured",
+   "label": "Held-out Boston (200 patients), look #1, epoch19, kappa",
+   "source": "artifacts/staging_window_model/cinc2018/holdout/summary_look1.csv",
+   "exp": 30
+  },
+  "holdout.look1.epoch19.macro_f1": {
+   "value": 0.6726084416307884,
+   "kind": "measured",
+   "label": "Held-out Boston (200 patients), look #1, epoch19, macro_f1",
+   "source": "artifacts/staging_window_model/cinc2018/holdout/summary_look1.csv",
+   "exp": 30
+  },
+  "holdout.look1.nocardio27.accuracy": {
+   "value": 0.7384594588505644,
+   "kind": "measured",
+   "label": "Held-out Boston (200 patients), look #1, nocardio27, accuracy",
+   "source": "artifacts/staging_window_model/cinc2018/holdout/summary_look1.csv",
+   "exp": 30
+  },
+  "holdout.look1.nocardio27.kappa": {
+   "value": 0.6531254962778994,
+   "kind": "measured",
+   "label": "Held-out Boston (200 patients), look #1, nocardio27, kappa",
+   "source": "artifacts/staging_window_model/cinc2018/holdout/summary_look1.csv",
+   "exp": 30
+  },
+  "holdout.look1.nocardio27.macro_f1": {
+   "value": 0.7295916051390714,
+   "kind": "measured",
+   "label": "Held-out Boston (200 patients), look #1, nocardio27, macro_f1",
+   "source": "artifacts/staging_window_model/cinc2018/holdout/summary_look1.csv",
+   "exp": 30
+  },
+  "holdout.look1.rerun_shift": {
+   "value": 0.0001588817751896343,
+   "kind": "measured",
+   "label": "Held-out look #1: change after rebuilding the one failed record and rerunning the same batch",
+   "source": "artifacts/staging_window_model/cinc2018/holdout/LEDGER.csv",
+   "exp": 30
+  },
+  "holdout.look1.window33.accuracy": {
+   "value": 0.7391409646968707,
+   "kind": "measured",
+   "label": "Held-out Boston (200 patients), look #1, window33, accuracy",
+   "source": "artifacts/staging_window_model/cinc2018/holdout/summary_look1.csv",
+   "exp": 30
+  },
+  "holdout.look1.window33.kappa": {
+   "value": 0.6538921984091932,
+   "kind": "measured",
+   "label": "Held-out Boston (200 patients), look #1, window33, kappa",
+   "source": "artifacts/staging_window_model/cinc2018/holdout/summary_look1.csv",
+   "exp": 30
+  },
+  "holdout.look1.window33.macro_f1": {
+   "value": 0.7312170881201524,
+   "kind": "measured",
+   "label": "Held-out Boston (200 patients), look #1, window33, macro_f1",
+   "source": "artifacts/staging_window_model/cinc2018/holdout/summary_look1.csv",
+   "exp": 30
+  },
+  "holdout.look1.window33_decoder.accuracy": {
+   "value": 0.7536271881406719,
+   "kind": "measured",
+   "label": "Held-out Boston (200 patients), look #1, window33_decoder, accuracy",
+   "source": "artifacts/staging_window_model/cinc2018/holdout/summary_look1.csv",
+   "exp": 30
+  },
+  "holdout.look1.window33_decoder.kappa": {
+   "value": 0.6695796536276504,
+   "kind": "measured",
+   "label": "Held-out Boston (200 patients), look #1, window33_decoder, kappa",
+   "source": "artifacts/staging_window_model/cinc2018/holdout/summary_look1.csv",
+   "exp": 30
+  },
+  "holdout.look1.window33_decoder.macro_f1": {
+   "value": 0.7396752397689592,
+   "kind": "measured",
+   "label": "Held-out Boston (200 patients), look #1, window33_decoder, macro_f1",
+   "source": "artifacts/staging_window_model/cinc2018/holdout/summary_look1.csv",
+   "exp": 30
+  },
+  "holdout.look2.g20.accuracy": {
+   "value": 0.7383355486966905,
+   "kind": "measured",
+   "label": "Held-out Boston (200 patients), look #2, g20, accuracy",
+   "source": "artifacts/staging_window_model/cinc2018/holdout/summary.csv",
+   "exp": 37
+  },
+  "holdout.look2.g20.kappa": {
+   "value": 0.652843207799523,
+   "kind": "measured",
+   "label": "Held-out Boston (200 patients), look #2, g20, kappa",
+   "source": "artifacts/staging_window_model/cinc2018/holdout/summary.csv",
+   "exp": 37
+  },
+  "holdout.look2.g20.macro_f1": {
+   "value": 0.7291014050896892,
+   "kind": "measured",
+   "label": "Held-out Boston (200 patients), look #2, g20, macro_f1",
+   "source": "artifacts/staging_window_model/cinc2018/holdout/summary.csv",
+   "exp": 37
+  },
+  "lit.aasm.agreement": {
+   "kind": "literature",
+   "cite": 29,
+   "exp": 22,
+   "value": 0.826,
+   "digits": 3,
+   "label": "AASM inter-scorer program, agreement with the majority, all epochs"
+  },
+  "lit.aasm.agreement_N1": {
+   "kind": "literature",
+   "cite": 29,
+   "value": 0.63,
+   "digits": 3,
+   "label": "AASM inter-scorer program, agreement on N1 epochs"
+  },
+  "lit.aasm.agreement_N3": {
+   "kind": "literature",
+   "cite": 29,
+   "value": 0.674,
+   "digits": 3,
+   "label": "AASM inter-scorer program, agreement on N3 epochs"
+  },
+  "lit.cardio_kappa4.high": {
+   "kind": "recorded",
+   "exp": 26,
+   "value": 0.68,
+   "digits": 2,
+   "source": "docs/experiment-history.md",
+   "label": "Published heart-rate staging, 4-class kappa, high end (Bakker 2021); not in the page's reference list"
+  },
+  "lit.cardio_kappa4.low": {
+   "kind": "recorded",
+   "exp": 26,
+   "value": 0.61,
+   "digits": 2,
+   "source": "docs/experiment-history.md",
+   "label": "Published heart-rate staging, 4-class kappa, low end (Radha 2019); not in the page's reference list"
+  },
+  "lit.sleepnet.accuracy": {
+   "kind": "literature",
+   "cite": 28,
+   "value": 0.858,
+   "digits": 3,
+   "label": "SLEEPNET on 1,000 MGH recordings, accuracy"
+  },
+  "lit.sleepnet.kappa": {
+   "kind": "literature",
+   "cite": 28,
+   "value": 0.795,
+   "digits": 3,
+   "label": "SLEEPNET on 1,000 MGH recordings, kappa"
+  },
+  "lit.usleep.f1_N1": {
+   "kind": "literature",
+   "cite": 26,
+   "value": 0.6,
+   "digits": 2,
+   "label": "U-Sleep, N1 F1"
+  },
+  "lit.usleep.f1_N2": {
+   "kind": "literature",
+   "cite": 26,
+   "value": 0.84,
+   "digits": 2,
+   "label": "U-Sleep, N2 F1"
+  },
+  "lit.usleep.f1_N3": {
+   "kind": "literature",
+   "cite": 26,
+   "value": 0.81,
+   "digits": 2,
+   "label": "U-Sleep, N3 F1"
+  },
+  "lit.usleep.f1_REM": {
+   "kind": "literature",
+   "cite": 26,
+   "value": 0.87,
+   "digits": 2,
+   "label": "U-Sleep, REM F1"
+  },
+  "lit.usleep.f1_Wake": {
+   "kind": "literature",
+   "cite": 26,
+   "value": 0.84,
+   "digits": 2,
+   "label": "U-Sleep, Wake F1"
+  },
+  "lit.usleep.macro_f1": {
+   "kind": "literature",
+   "cite": 26,
+   "exp": 22,
+   "value": 0.79,
+   "digits": 2,
+   "label": "U-Sleep on Boston (CinC 2018), macro-F1"
+  },
+  "lit.utime.macro_f1": {
+   "kind": "literature",
+   "cite": 27,
+   "value": 0.77,
+   "digits": 2,
+   "label": "U-Time on Boston, macro-F1"
+  },
+  "noeeg.ensemble.f1_N1": {
+   "value": 0.4475764948067746,
+   "kind": "measured",
+   "label": "No-EEG post hoc ensemble (4 GRU + 4 TCN seeds), heart, breathing and oximetry, whole night, N1 F1",
+   "source": "artifacts/exploration/no-eeg/sequence/proba_gru_base_fine_raw_pos_4seeds.npz",
+   "exp": 31
+  },
+  "noeeg.ensemble.kappa4": {
+   "value": 0.6016336759850512,
+   "kind": "measured",
+   "label": "No-EEG post hoc ensemble (4 GRU + 4 TCN seeds), heart, breathing and oximetry, whole night, 4-class kappa",
+   "source": "artifacts/exploration/no-eeg/sequence/proba_gru_base_fine_raw_pos_4seeds.npz",
+   "exp": 31
+  },
+  "noeeg.ensemble.macro_f1": {
+   "value": 0.6490910325249535,
+   "kind": "measured",
+   "label": "No-EEG post hoc ensemble (4 GRU + 4 TCN seeds), heart, breathing and oximetry, whole night, macro-F1",
+   "source": "artifacts/exploration/no-eeg/sequence/proba_gru_base_fine_raw_pos_4seeds.npz",
+   "exp": 31
+  },
+  "noeeg.gru_base_fine_raw_pos.epoch.f1_N1": {
+   "value": 0.441911343976843,
+   "kind": "measured",
+   "label": "No-EEG whole-night network gru_base_fine_raw_pos (epoch-only, seeds 0,1), N1 F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.gru_base_fine_raw_pos.epoch.kappa4": {
+   "value": 0.5915455853871003,
+   "kind": "measured",
+   "label": "No-EEG whole-night network gru_base_fine_raw_pos (epoch-only, seeds 0,1), 4-class kappa",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.gru_base_fine_raw_pos.epoch.macro_f1": {
+   "value": 0.6398389871690116,
+   "kind": "measured",
+   "label": "No-EEG whole-night network gru_base_fine_raw_pos (epoch-only, seeds 0,1), macro-F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.gru_base_fine_raw_pos.hmm.f1_N1": {
+   "value": 0.4050878065377267,
+   "kind": "measured",
+   "label": "No-EEG whole-night network gru_base_fine_raw_pos (hmm, seeds 0,1), N1 F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.gru_base_fine_raw_pos.hmm.kappa4": {
+   "value": 0.5884779652665786,
+   "kind": "measured",
+   "label": "No-EEG whole-night network gru_base_fine_raw_pos (hmm, seeds 0,1), 4-class kappa",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.gru_base_fine_raw_pos.hmm.macro_f1": {
+   "value": 0.6352092616159147,
+   "kind": "measured",
+   "label": "No-EEG whole-night network gru_base_fine_raw_pos (hmm, seeds 0,1), macro-F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.gru_base_fine_raw_pos_seeds23.epoch.f1_N1": {
+   "value": 0.444685392104272,
+   "kind": "measured",
+   "label": "No-EEG whole-night network gru_base_fine_raw_pos_seeds23 (epoch-only, seeds 2,3), N1 F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.gru_base_fine_raw_pos_seeds23.epoch.kappa4": {
+   "value": 0.5935567658803333,
+   "kind": "measured",
+   "label": "No-EEG whole-night network gru_base_fine_raw_pos_seeds23 (epoch-only, seeds 2,3), 4-class kappa",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.gru_base_fine_raw_pos_seeds23.epoch.macro_f1": {
+   "value": 0.6428927716681736,
+   "kind": "measured",
+   "label": "No-EEG whole-night network gru_base_fine_raw_pos_seeds23 (epoch-only, seeds 2,3), macro-F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.gru_base_fine_raw_pos_seeds23.hmm.f1_N1": {
+   "value": 0.4043879598662207,
+   "kind": "measured",
+   "label": "No-EEG whole-night network gru_base_fine_raw_pos_seeds23 (hmm, seeds 2,3), N1 F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.gru_base_fine_raw_pos_seeds23.hmm.kappa4": {
+   "value": 0.5901583638725474,
+   "kind": "measured",
+   "label": "No-EEG whole-night network gru_base_fine_raw_pos_seeds23 (hmm, seeds 2,3), 4-class kappa",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.gru_base_fine_raw_pos_seeds23.hmm.macro_f1": {
+   "value": 0.6367789750720763,
+   "kind": "measured",
+   "label": "No-EEG whole-night network gru_base_fine_raw_pos_seeds23 (hmm, seeds 2,3), macro-F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.gru_beltonly_pos.epoch.f1_N1": {
+   "value": 0.4004392773043579,
+   "kind": "measured",
+   "label": "No-EEG whole-night network gru_beltonly_pos (epoch-only, seeds 0,1), N1 F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.gru_beltonly_pos.epoch.kappa4": {
+   "value": 0.5272180707073904,
+   "kind": "measured",
+   "label": "No-EEG whole-night network gru_beltonly_pos (epoch-only, seeds 0,1), 4-class kappa",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.gru_beltonly_pos.epoch.macro_f1": {
+   "value": 0.5885161403807506,
+   "kind": "measured",
+   "label": "No-EEG whole-night network gru_beltonly_pos (epoch-only, seeds 0,1), macro-F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.gru_beltonly_pos.hmm.f1_N1": {
+   "value": 0.3704177965250577,
+   "kind": "measured",
+   "label": "No-EEG whole-night network gru_beltonly_pos (hmm, seeds 0,1), N1 F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.gru_beltonly_pos.hmm.kappa4": {
+   "value": 0.5274141391153898,
+   "kind": "measured",
+   "label": "No-EEG whole-night network gru_beltonly_pos (hmm, seeds 0,1), 4-class kappa",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.gru_beltonly_pos.hmm.macro_f1": {
+   "value": 0.588058371893015,
+   "kind": "measured",
+   "label": "No-EEG whole-night network gru_beltonly_pos (hmm, seeds 0,1), macro-F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.gru_ecgonly_pos.epoch.f1_N1": {
+   "value": 0.3550196168936072,
+   "kind": "measured",
+   "label": "No-EEG whole-night network gru_ecgonly_pos (epoch-only, seeds 0,1), N1 F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.gru_ecgonly_pos.epoch.kappa4": {
+   "value": 0.469160903190903,
+   "kind": "measured",
+   "label": "No-EEG whole-night network gru_ecgonly_pos (epoch-only, seeds 0,1), 4-class kappa",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.gru_ecgonly_pos.epoch.macro_f1": {
+   "value": 0.5471298820977782,
+   "kind": "measured",
+   "label": "No-EEG whole-night network gru_ecgonly_pos (epoch-only, seeds 0,1), macro-F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.gru_ecgonly_pos.hmm.f1_N1": {
+   "value": 0.2983133509449299,
+   "kind": "measured",
+   "label": "No-EEG whole-night network gru_ecgonly_pos (hmm, seeds 0,1), N1 F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.gru_ecgonly_pos.hmm.kappa4": {
+   "value": 0.4661296800214478,
+   "kind": "measured",
+   "label": "No-EEG whole-night network gru_ecgonly_pos (hmm, seeds 0,1), 4-class kappa",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.gru_ecgonly_pos.hmm.macro_f1": {
+   "value": 0.5402860799171728,
+   "kind": "measured",
+   "label": "No-EEG whole-night network gru_ecgonly_pos (hmm, seeds 0,1), macro-F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.gru_ecgonly_spo2_pos.epoch.f1_N1": {
+   "value": 0.4082105760682414,
+   "kind": "measured",
+   "label": "No-EEG whole-night network gru_ecgonly_spo2_pos (epoch-only, seeds 0,1), N1 F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.gru_ecgonly_spo2_pos.epoch.kappa4": {
+   "value": 0.5433022370653071,
+   "kind": "measured",
+   "label": "No-EEG whole-night network gru_ecgonly_spo2_pos (epoch-only, seeds 0,1), 4-class kappa",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.gru_ecgonly_spo2_pos.epoch.macro_f1": {
+   "value": 0.6035557867687515,
+   "kind": "measured",
+   "label": "No-EEG whole-night network gru_ecgonly_spo2_pos (epoch-only, seeds 0,1), macro-F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.gru_ecgonly_spo2_pos.hmm.f1_N1": {
+   "value": 0.3721004810261892,
+   "kind": "measured",
+   "label": "No-EEG whole-night network gru_ecgonly_spo2_pos (hmm, seeds 0,1), N1 F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.gru_ecgonly_spo2_pos.hmm.kappa4": {
+   "value": 0.5410129478567749,
+   "kind": "measured",
+   "label": "No-EEG whole-night network gru_ecgonly_spo2_pos (hmm, seeds 0,1), 4-class kappa",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.gru_ecgonly_spo2_pos.hmm.macro_f1": {
+   "value": 0.5996728565272763,
+   "kind": "measured",
+   "label": "No-EEG whole-night network gru_ecgonly_spo2_pos (hmm, seeds 0,1), macro-F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_pos.epoch.f1_N1": {
+   "value": 0.3812887138811476,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_pos (epoch-only, seeds 0,1), N1 F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_pos.epoch.kappa4": {
+   "value": 0.5028276867108945,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_pos (epoch-only, seeds 0,1), 4-class kappa",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_pos.epoch.macro_f1": {
+   "value": 0.5741065052834683,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_pos (epoch-only, seeds 0,1), macro-F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_pos.hmm.f1_N1": {
+   "value": 0.3161088077662048,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_pos (hmm, seeds 0,1), N1 F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_pos.hmm.kappa4": {
+   "value": 0.5009114346443729,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_pos (hmm, seeds 0,1), 4-class kappa",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_pos.hmm.macro_f1": {
+   "value": 0.5659642286221069,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_pos (hmm, seeds 0,1), macro-F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_raw_ihr_pos.epoch.f1_N1": {
+   "value": 0.4235183110219968,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_raw_ihr_pos (epoch-only, seeds 0,1), N1 F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_raw_ihr_pos.epoch.kappa4": {
+   "value": 0.576685339752718,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_raw_ihr_pos (epoch-only, seeds 0,1), 4-class kappa",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_raw_ihr_pos.epoch.macro_f1": {
+   "value": 0.6279286782071012,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_raw_ihr_pos (epoch-only, seeds 0,1), macro-F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_raw_ihr_pos.hmm.f1_N1": {
+   "value": 0.3744672471270026,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_raw_ihr_pos (hmm, seeds 0,1), N1 F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_raw_ihr_pos.hmm.kappa4": {
+   "value": 0.5723995826073276,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_raw_ihr_pos (hmm, seeds 0,1), 4-class kappa",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_raw_ihr_pos.hmm.macro_f1": {
+   "value": 0.6204377217310421,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_raw_ihr_pos (hmm, seeds 0,1), macro-F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_raw_pos.epoch.f1_N1": {
+   "value": 0.4238123069215997,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_raw_pos (epoch-only, seeds 0,1), N1 F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_raw_pos.epoch.kappa4": {
+   "value": 0.5709054823441665,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_raw_pos (epoch-only, seeds 0,1), 4-class kappa",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_raw_pos.epoch.macro_f1": {
+   "value": 0.6264191700063984,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_raw_pos (epoch-only, seeds 0,1), macro-F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_raw_pos.hmm.f1_N1": {
+   "value": 0.3726473200217721,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_raw_pos (hmm, seeds 0,1), N1 F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_raw_pos.hmm.kappa4": {
+   "value": 0.5677407039999153,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_raw_pos (hmm, seeds 0,1), 4-class kappa",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_raw_pos.hmm.macro_f1": {
+   "value": 0.6183139814718309,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_raw_pos (hmm, seeds 0,1), macro-F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_raw_pos_seeds23.epoch.f1_N1": {
+   "value": 0.4189089172734869,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_raw_pos_seeds23 (epoch-only, seeds 2,3), N1 F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_raw_pos_seeds23.epoch.kappa4": {
+   "value": 0.5667197244216258,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_raw_pos_seeds23 (epoch-only, seeds 2,3), 4-class kappa",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_raw_pos_seeds23.epoch.macro_f1": {
+   "value": 0.6217872376976157,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_raw_pos_seeds23 (epoch-only, seeds 2,3), macro-F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_raw_pos_seeds23.hmm.f1_N1": {
+   "value": 0.3662234998203377,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_raw_pos_seeds23 (hmm, seeds 2,3), N1 F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_raw_pos_seeds23.hmm.kappa4": {
+   "value": 0.5641674634336051,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_raw_pos_seeds23 (hmm, seeds 2,3), 4-class kappa",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_raw_pos_seeds23.hmm.macro_f1": {
+   "value": 0.6142950158119052,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_raw_pos_seeds23 (hmm, seeds 2,3), macro-F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_rawbreath_rawmove_rawspo2_pos.epoch.f1_N1": {
+   "value": 0.4190923018000766,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_rawbreath_rawmove_rawspo2_pos (epoch-only, seeds 0,1), N1 F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_rawbreath_rawmove_rawspo2_pos.epoch.kappa4": {
+   "value": 0.567343916122662,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_rawbreath_rawmove_rawspo2_pos (epoch-only, seeds 0,1), 4-class kappa",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_rawbreath_rawmove_rawspo2_pos.epoch.macro_f1": {
+   "value": 0.6225252702052857,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_rawbreath_rawmove_rawspo2_pos (epoch-only, seeds 0,1), macro-F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_rawbreath_rawmove_rawspo2_pos.hmm.f1_N1": {
+   "value": 0.3697476559787012,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_rawbreath_rawmove_rawspo2_pos (hmm, seeds 0,1), N1 F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_rawbreath_rawmove_rawspo2_pos.hmm.kappa4": {
+   "value": 0.5669314986449752,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_rawbreath_rawmove_rawspo2_pos (hmm, seeds 0,1), 4-class kappa",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_rawbreath_rawmove_rawspo2_pos.hmm.macro_f1": {
+   "value": 0.6163694079653658,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_rawbreath_rawmove_rawspo2_pos (hmm, seeds 0,1), macro-F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_rawheart_rawbreath_rawspo2_pos.epoch.f1_N1": {
+   "value": 0.4049916508393774,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_rawheart_rawbreath_rawspo2_pos (epoch-only, seeds 0,1), N1 F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_rawheart_rawbreath_rawspo2_pos.epoch.kappa4": {
+   "value": 0.5636982924016998,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_rawheart_rawbreath_rawspo2_pos (epoch-only, seeds 0,1), 4-class kappa",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_rawheart_rawbreath_rawspo2_pos.epoch.macro_f1": {
+   "value": 0.6188410690742793,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_rawheart_rawbreath_rawspo2_pos (epoch-only, seeds 0,1), macro-F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_rawheart_rawbreath_rawspo2_pos.hmm.f1_N1": {
+   "value": 0.3493250131290352,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_rawheart_rawbreath_rawspo2_pos (hmm, seeds 0,1), N1 F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_rawheart_rawbreath_rawspo2_pos.hmm.kappa4": {
+   "value": 0.5607066028906108,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_rawheart_rawbreath_rawspo2_pos (hmm, seeds 0,1), 4-class kappa",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_rawheart_rawbreath_rawspo2_pos.hmm.macro_f1": {
+   "value": 0.6109115317661697,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_rawheart_rawbreath_rawspo2_pos (hmm, seeds 0,1), macro-F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_rawheart_rawmove_rawspo2_pos.epoch.f1_N1": {
+   "value": 0.4000720201656463,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_rawheart_rawmove_rawspo2_pos (epoch-only, seeds 0,1), N1 F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_rawheart_rawmove_rawspo2_pos.epoch.kappa4": {
+   "value": 0.5519528703856733,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_rawheart_rawmove_rawspo2_pos (epoch-only, seeds 0,1), 4-class kappa",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_rawheart_rawmove_rawspo2_pos.epoch.macro_f1": {
+   "value": 0.6091945435632418,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_rawheart_rawmove_rawspo2_pos (epoch-only, seeds 0,1), macro-F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_rawheart_rawmove_rawspo2_pos.hmm.f1_N1": {
+   "value": 0.3376501794351693,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_rawheart_rawmove_rawspo2_pos (hmm, seeds 0,1), N1 F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_rawheart_rawmove_rawspo2_pos.hmm.kappa4": {
+   "value": 0.5469193823194951,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_rawheart_rawmove_rawspo2_pos (hmm, seeds 0,1), 4-class kappa",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_rawheart_rawmove_rawspo2_pos.hmm.macro_f1": {
+   "value": 0.5985300061511627,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_rawheart_rawmove_rawspo2_pos (hmm, seeds 0,1), macro-F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_rawnospo2_pos.epoch.f1_N1": {
+   "value": 0.3914214488832099,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_rawnospo2_pos (epoch-only, seeds 0,1), N1 F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_rawnospo2_pos.epoch.kappa4": {
+   "value": 0.5420461877343222,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_rawnospo2_pos (epoch-only, seeds 0,1), 4-class kappa",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_rawnospo2_pos.epoch.macro_f1": {
+   "value": 0.6031908491167852,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_rawnospo2_pos (epoch-only, seeds 0,1), macro-F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_rawnospo2_pos.hmm.f1_N1": {
+   "value": 0.323207401696222,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_rawnospo2_pos (hmm, seeds 0,1), N1 F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_rawnospo2_pos.hmm.kappa4": {
+   "value": 0.5402075038166732,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_rawnospo2_pos (hmm, seeds 0,1), 4-class kappa",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_base_fine_rawnospo2_pos.hmm.macro_f1": {
+   "value": 0.5927435261135944,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_base_fine_rawnospo2_pos (hmm, seeds 0,1), macro-F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_beltonly_pos.epoch.f1_N1": {
+   "value": 0.3863176023309468,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_beltonly_pos (epoch-only, seeds 0,1), N1 F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_beltonly_pos.epoch.kappa4": {
+   "value": 0.5027265682134042,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_beltonly_pos (epoch-only, seeds 0,1), 4-class kappa",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_beltonly_pos.epoch.macro_f1": {
+   "value": 0.5710224396778676,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_beltonly_pos (epoch-only, seeds 0,1), macro-F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_beltonly_pos.hmm.f1_N1": {
+   "value": 0.3365847566982559,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_beltonly_pos (hmm, seeds 0,1), N1 F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_beltonly_pos.hmm.kappa4": {
+   "value": 0.5015331508099012,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_beltonly_pos (hmm, seeds 0,1), 4-class kappa",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_beltonly_pos.hmm.macro_f1": {
+   "value": 0.5676471719851679,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_beltonly_pos (hmm, seeds 0,1), macro-F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_ecgonly_pos.epoch.f1_N1": {
+   "value": 0.3514877173613028,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_ecgonly_pos (epoch-only, seeds 0,1), N1 F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_ecgonly_pos.epoch.kappa4": {
+   "value": 0.4736054592432748,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_ecgonly_pos (epoch-only, seeds 0,1), 4-class kappa",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_ecgonly_pos.epoch.macro_f1": {
+   "value": 0.5488196916407372,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_ecgonly_pos (epoch-only, seeds 0,1), macro-F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_ecgonly_pos.hmm.f1_N1": {
+   "value": 0.2938511692233873,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_ecgonly_pos (hmm, seeds 0,1), N1 F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_ecgonly_pos.hmm.kappa4": {
+   "value": 0.4756339784875892,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_ecgonly_pos (hmm, seeds 0,1), 4-class kappa",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_ecgonly_pos.hmm.macro_f1": {
+   "value": 0.5450816733662455,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_ecgonly_pos (hmm, seeds 0,1), macro-F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_ecgonly_spo2_pos.epoch.f1_N1": {
+   "value": 0.3688618146841936,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_ecgonly_spo2_pos (epoch-only, seeds 0,1), N1 F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_ecgonly_spo2_pos.epoch.kappa4": {
+   "value": 0.5310456623481835,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_ecgonly_spo2_pos (epoch-only, seeds 0,1), 4-class kappa",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_ecgonly_spo2_pos.epoch.macro_f1": {
+   "value": 0.5891930967472104,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_ecgonly_spo2_pos (epoch-only, seeds 0,1), macro-F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_ecgonly_spo2_pos.hmm.f1_N1": {
+   "value": 0.305816428750313,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_ecgonly_spo2_pos (hmm, seeds 0,1), N1 F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_ecgonly_spo2_pos.hmm.kappa4": {
+   "value": 0.5298857948499485,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_ecgonly_spo2_pos (hmm, seeds 0,1), 4-class kappa",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "noeeg.tcn_ecgonly_spo2_pos.hmm.macro_f1": {
+   "value": 0.5802955617827278,
+   "kind": "measured",
+   "label": "No-EEG whole-night network tcn_ecgonly_spo2_pos (hmm, seeds 0,1), macro-F1",
+   "source": "artifacts/exploration/no-eeg/sequence/summary.csv",
+   "exp": 31
+  },
+  "protocol.adoption_gain": {
+   "kind": "protocol",
+   "exp": 17,
+   "value": 0.01,
+   "digits": 2,
+   "source": "docs/experiment-history.md",
+   "label": "Adoption rule: a feature must add at least this much macro-F1 or replace two"
+  },
+  "protocol.swap_tolerance": {
+   "kind": "protocol",
+   "exp": 33,
+   "value": 0.005,
+   "digits": 3,
+   "source": "artifacts/staging_window_model/cinc2018/feature_reduction/FINDINGS.md",
+   "label": "Swap rule: a swap must stay within this macro-F1 of the 21-signal model overall and in every fold"
+  },
+  "range.cardio_alone.high": {
+   "value": 0.48535497005433276,
+   "kind": "derived",
+   "label": "Heart and breathing alone, 6 signals: highest of 2.5/5.5 min, with or without decoder",
+   "from": [
+    "cv.cardio6.epoch.macro_f1",
+    "cv.cardio6.hmm.macro_f1",
+    "cv.cardio6_c5.epoch.macro_f1",
+    "cv.cardio6_c5.hmm.macro_f1"
+   ]
+  },
+  "range.cardio_alone.low": {
+   "value": 0.44083553660914043,
+   "kind": "derived",
+   "label": "Heart and breathing alone, 6 signals: lowest of 2.5/5.5 min, with or without decoder",
+   "from": [
+    "cv.cardio6.epoch.macro_f1",
+    "cv.cardio6.hmm.macro_f1",
+    "cv.cardio6_c5.epoch.macro_f1",
+    "cv.cardio6_c5.hmm.macro_f1"
+   ]
+  },
+  "ucddb_transfer.d27.in_lab_cinc_cv.kappa": {
+   "value": 0.7078002643658777,
+   "kind": "measured",
+   "label": "27-signal shared-lead model, in_lab_cinc_cv, kappa",
+   "source": "artifacts/staging_window_model/transfer/summary_d27.csv",
+   "exp": 27
+  },
+  "ucddb_transfer.d27.in_lab_cinc_cv.macro_f1": {
+   "value": 0.7669655675206274,
+   "kind": "measured",
+   "label": "27-signal shared-lead model, in_lab_cinc_cv, macro-F1",
+   "source": "artifacts/staging_window_model/transfer/summary_d27.csv",
+   "exp": 27
+  },
+  "ucddb_transfer.d27.transfer_cinc_to_ucddb.kappa": {
+   "value": 0.6776547163907002,
+   "kind": "measured",
+   "label": "27-signal shared-lead model, transfer_cinc_to_ucddb, kappa",
+   "source": "artifacts/staging_window_model/transfer/summary_d27.csv",
+   "exp": 27
+  },
+  "ucddb_transfer.d27.transfer_cinc_to_ucddb.macro_f1": {
+   "value": 0.7504079333658107,
+   "kind": "measured",
+   "label": "27-signal shared-lead model, transfer_cinc_to_ucddb, macro-F1",
+   "source": "artifacts/staging_window_model/transfer/summary_d27.csv",
+   "exp": 27
+  }
+ }
+}

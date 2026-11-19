@@ -4,7 +4,10 @@
   "version": "0.1.0",
   "scripts": {
     "data:staging": "python ../scripts/export_staging_dashboard_data.py",
+    "data:registry": "python ../scripts/build_results_registry.py",
+    "check:results": "node scripts/check-results.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/check-results.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
