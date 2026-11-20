@@ -78,7 +78,7 @@ const eegSpectrumFeatures: FeatureSpec[] = [
     name: "1/f slope",
     signal: "EEG",
     summary: "Slope of the 1/f background of the EEG spectrum.",
-    measurement: "Negative slope of a linear fit of log spectral magnitude against log frequency over 2–7 Hz and 14–24 Hz, per 2-second window. My adaptation uses different bands and spectral magnitude rather than the power spectrum in the cited method.",
+    measurement: "Negative slope of a linear fit of log spectral magnitude against log frequency over 2–7 Hz and 14–24 Hz, per 2-second window. This version uses different bands, and spectral magnitude in place of the power spectrum used in the cited method.",
     stageUse: "Background spectral shape is associated with arousal; this measurement is not a direct assay of excitation/inhibition balance."
   },
   {
@@ -130,7 +130,7 @@ const eegSpectrumFeatures: FeatureSpec[] = [
     name: "Central EEG power",
     signal: "EEG",
     summary: "Total 0.5–30 Hz central EEG power each second, on a log scale.",
-    measurement: `${trackMethod} log10 of 0.5–30 Hz power, C3 and C4 spectra averaged. Scaled per subject (median and IQR) before modelling.`,
+    measurement: `${trackMethod} log10 of 0.5–30 Hz power, C3 and C4 spectra averaged. Scaled per night (median and IQR) before modelling.`,
     stageUse: "High-voltage slow waves and K-complexes raise it; wake and REM are low-voltage."
   }
 ];
@@ -142,7 +142,7 @@ const featureFamilies: FeatureFamily[] = [
     signal: "EEG",
     summary: "Measurements describe the central EEG spectrum: its background slope, overall power, and activity in different frequency bands.",
     evidence: "Sleep depth changes the shape of the EEG spectrum: delta tends to rise with deeper non-REM sleep while alpha falls. Spectral ratios can separate some stages strongly, but no single measure separates all five reliably.",
-    limitation: "Spectral summaries describe a window, not a waveform: a K-complex and a burst of movement can raise the same band. Muscle activity inflates beta and gamma on the scalp.",
+    limitation: "A spectral summary describes the whole window, so a K-complex and a burst of movement can raise the same band. Muscle activity inflates beta and gamma on the scalp.",
     sources: [1, 6],
     features: eegSpectrumFeatures
   },
@@ -152,7 +152,7 @@ const featureFamilies: FeatureFamily[] = [
     signal: "EEG",
     summary: "Spindle-band power and detected spindle bursts describe brief N2 activity.",
     evidence: "Sleep spindles are 0.5–2 second bursts of 11–16 Hz activity and the defining feature of N2. Averaged over 30 seconds a few spindles barely move the spindle-band share; at 1-second resolution each one is a separate peak. Model C includes both spindle-band share and a spindle-burst detector; the latter more directly targets brief events.",
-    limitation: "Sigma-band power suggests spindle activity but does not detect individual spindle events. Alpha bursts at 11–12 Hz overlap the band, and spindle density falls with age.",
+    limitation: "Sigma-band power reflects spindle activity without detecting individual spindles. Alpha bursts at 11–12 Hz overlap the band, and spindle density falls with age.",
     sources: [1, 7],
     features: [
       { id: "spindle_bursts", name: "Spindle bursts", signal: "EEG", summary: "Seconds in the epoch with a spindle-band burst.", measurement: `${trackMethod} Per second, the 11–16 Hz share divided by the 8–12 Hz plus 16–30 Hz shares (C3 and C4 spectra averaged); a burst is a second more than two robust SDs above that night's median, counted per 30-second epoch.`, stageUse: "Several per epoch in N2 (and N3, where spindles also occur), rare in wake, N1 and REM." },
@@ -165,7 +165,7 @@ const featureFamilies: FeatureFamily[] = [
     signal: "EEG",
     summary: "Frontal slow waves and occipital alpha describe the location and amplitude of EEG staging cues.",
     evidence: "AASM scores N3 from slow waves of at least 75 µV at 0.5–2 Hz on frontal leads, and wake from posterior alpha that attenuates at sleep onset. Calibrated microvolts make the amplitude rule possible.",
-    limitation: "Slow-wave amplitude varies with age. This automated coverage measure is inspired by AASM scoring, rather than an exact reproduction of visual scoring. Eyes-open wake shows little alpha.",
+    limitation: "Slow-wave amplitude varies with age. This automated coverage measure follows the AASM rule; it does not reproduce visual scoring exactly. Eyes-open wake shows little alpha.",
     sources: [1],
     features: [
       { id: "topography_features.frontal_slow_wave_fraction", name: "Frontal slow-wave fraction", signal: "EEG", summary: "Share of the epoch covered by 0.5–2 Hz waves of at least 75 µV peak-to-peak on F3/F4.", measurement: "Band-pass 0.5–2 Hz, split into full waves at upward zero crossings, keep waves of 0.5–2 s with peak-to-peak ≥ 75 µV; fraction of the epoch they cover, averaged over F3-M2 and F4-M1.", stageUse: "AASM scores N3 when this reaches 20%." },
@@ -201,7 +201,7 @@ const featureFamilies: FeatureFamily[] = [
     sources: [1, 9, 10],
     features: [
       { id: "epoch_ratio_features.emg_floor_db", name: "Chin muscle tone", signal: "Chin EMG", summary: "Chin EMG tone relative to the night's quietest epochs, in decibels.", measurement: "10·log10 of the epoch's 10–100 Hz tone over the 5th percentile of all epochs in the recording. No labels are used.", stageUse: "High in wake, lowest in REM." },
-      { id: "track.emg_log_rms", name: "Chin EMG level", signal: "Chin EMG", summary: "RMS of 10–80 Hz chin EMG each second, on a log scale.", measurement: `${trackMethod} Half the log10 of 10–80 Hz power on Chin1-Chin2. Scaled per subject before modelling, so it reads relative to that night.`, stageUse: "Drops at REM onset; brief bursts mark movements and arousals." }
+      { id: "track.emg_log_rms", name: "Chin EMG level", signal: "Chin EMG", summary: "RMS of 10–80 Hz chin EMG each second, on a log scale.", measurement: `${trackMethod} Half the log10 of 10–80 Hz power on Chin1-Chin2. Scaled per night before modelling, so it reads relative to that night.`, stageUse: "Drops at REM onset; brief bursts mark movements and arousals." }
     ]
   },
   {
@@ -209,7 +209,7 @@ const featureFamilies: FeatureFamily[] = [
     label: "Heart",
     signal: "ECG",
     summary: `Heart rate every second from R-peak detection, plus a 5-minute measure of heart-rate variability. Tested but not used in the final model: with EEG, EOG and chin EMG present, heart and breathing together add ${fmt("delta.cardio_with_eeg")} macro-F1.`,
-    evidence: "Sleep changes the heart's rhythm as well as its rate. In stable NREM, and most of all N3, the rhythm is steady; in REM and wake it shows slow, correlated swings and surges. Within subjects, slow heart-rate swings were lower in N3 than in REM in 109 of 112 subjects. The one-second heart-rate signal captures what the earlier 30-second heart features measured (rate, arousal-related surges and short-term variability), along with their timing.",
+    evidence: "Sleep changes the heart's rhythm as well as its rate. In stable NREM, and most of all N3, the rhythm is steady; in REM and wake it shows slow, correlated swings and surges. Slow heart-rate swings were lower in N3 than in REM in 109 of 112 patients. The one-second heart-rate signal captures what the earlier 30-second heart features measured (rate, arousal-related surges and short-term variability), along with their timing.",
     limitation: "A 5-minute window blurs stage boundaries. Age and sleep apnea flatten autonomic contrasts, and apnea-related heart-rate cycles can mimic REM-like variability. Ectopic beats and missed R-peaks create false jumps in the 1-second rate.",
     sources: [11, 14, 15],
     features: [
@@ -222,7 +222,7 @@ const featureFamilies: FeatureFamily[] = [
     label: "Breathing",
     signal: "Respiratory effort",
     summary: `Breath-timing regularity and heart–breathing coupling over 1–2 minutes, plus the effort-belt signal and its amplitude every second. Tested but not in the final model; without the EEG, heart and breathing alone reach ${fmt("noeeg.ensemble.macro_f1", 2)} macro-F1 with a whole-night model (S4).`,
-    evidence: "Breathing becomes regular in stable NREM and irregular in REM and wake, and in stable NREM the heart rate follows breathing closely. In this dataset breath depth was more regular in N3 than in REM in 113 of 119 subjects, outside scored respiratory events.",
+    evidence: "Breathing becomes regular in stable NREM and irregular in REM and wake, and in stable NREM the heart rate follows breathing closely. In this dataset breath depth was more regular in N3 than in REM in 113 of 119 patients, outside scored respiratory events.",
     limitation: "Apneas, hypopneas, snoring, and body position change breathing directly. Effort belts measure movement, not airflow, and can slip.",
     sources: [16],
     features: [
@@ -323,7 +323,7 @@ const mechanismBiology: Array<{ key: string; text: string; cites: number[] }> = 
   },
   {
     key: "Scalp muscle activity",
-    text: "Above about 20 Hz, scalp EEG is dominated by electromyographic activity from scalp, jaw and neck muscles rather than by the brain. Muscle tone falls with sleep, so this high-frequency power marks wakefulness, arousals and movement.",
+    text: "Above about 20 Hz, scalp EEG is dominated by electromyographic activity from scalp, jaw and neck muscles. Muscle tone falls with sleep, so this high-frequency power marks wakefulness, arousals and movement.",
     cites: [18]
   },
   {
@@ -551,9 +551,9 @@ function SleepStudyPrimer() {
     <div className="research-introduction">
       <div className="research-introduction-copy">
         <p>
-          Sleep staging turns an overnight <strong>polysomnogram (PSG)</strong> into a <strong>timeline of wake, N1, N2, N3 and REM</strong>. That timeline establishes how much a patient slept, how fragmented sleep was, and the sleep state in which respiratory events and arousals occurred. Accurate staging therefore underpins the interpretation of the rest of the study. <Citation number={2} />
+          Sleep staging turns an overnight polysomnogram (PSG) into a hypnogram: a timeline of wake, N1, N2, N3 and REM. Total sleep, fragmentation and the stage in which each respiratory event or arousal occurred are all read from it, so staging errors carry into every one of those numbers. <Citation number={2} />
         </p>
-        <p><strong>Manual scoring is slow and partly subjective.</strong> In the AASM inter-scorer reliability program, experienced scorers agreed with the majority on {pct("lit.aasm.agreement")} of epochs, but on only {pct("lit.aasm.agreement_N1")} of N1 and {pct("lit.aasm.agreement_N3")} of N3 epochs. <Citation number={29} /> Deep networks report strong performance on sleep staging. They learn representations from signals; <strong>connecting those representations to physiological events</strong> remains a separate task, and saliency maps provide approximate explanations. <Citation number={26} /></p>
+        <p>Manual scoring is slow and partly subjective. In the AASM inter-scorer reliability program, experienced scorers agreed with the majority on {pct("lit.aasm.agreement")} of epochs, but on only {pct("lit.aasm.agreement_N1")} of N1 and {pct("lit.aasm.agreement_N3")} of N3 epochs. <Citation number={29} /> Deep networks reach macro-F1 near {fmt("lit.usleep.macro_f1", 2)} on Boston recordings, <Citation number={26} /> but they learn their own features, and saliency maps explain those features only approximately.</p>
       </div>
 
       <div className="research-introduction-figure" role="img" aria-label="EEG, EOG, and chin EMG are scored in 30-second epochs to produce a whole-night hypnogram">
@@ -990,7 +990,7 @@ function SleepStructure() {
     <div className="research-sleep-structure">
       <div className="research-sleep-structure-copy">
         <p>
-          Across all {data.source.subjects} expert hypnograms, stages tend to persist from one epoch to the next, wake usually passes through N1 before deeper sleep, and N3 is entered almost only from N2. An epoch is therefore easier to stage when its neighbours are visible, which is why the model looks at 2.5 minutes around each epoch.
+          Across all {data.source.subjects} expert hypnograms, stages tend to persist from one epoch to the next, wake usually passes through N1 before deeper sleep, and N3 is entered almost only from N2. So an epoch is easier to stage when its neighbours are visible, and the model reads 2.5 minutes around each one.
         </p>
         <div className="research-bout-list">
           <strong>Typical bout length</strong>
@@ -1049,12 +1049,12 @@ function CompactStudyProtocol() {
         <div className="research-ablation-row research-data-row" role="row">
           <span role="cell"><strong>Boston · CinC 2018, held out</strong><small className="research-row-note">Same hospital, set aside before modelling</small></span>
           <span role="cell">{data.generalisation?.holdout_subjects || 200} nights<small className="research-row-note">more apnea: 59% moderate or severe</small></span>
-          <span role="cell"><b>Two evaluation looks.</b> Initial held-out evaluation <Exp ids={[30]} />; evaluation after the final feature selection <Exp ids={[37]} />.</span>
+          <span role="cell"><b>Scored twice.</b> Initial held-out evaluation <Exp ids={[30]} />; evaluation after the final feature selection <Exp ids={[37]} />.</span>
         </div>
         <div className="research-ablation-row research-data-row" role="row">
           <span role="cell"><strong>Coimbra · ISRUC-Sleep</strong><small className="research-row-note">Coimbra, Portugal; subgroup I; two scorers per night</small></span>
           <span role="cell">{isrucStatus.final_complete ? isrucStatus.evaluated : 100} nights</span>
-          <span role="cell"><b>One recorded evaluation look.</b> External evaluation after the final feature selection; predictions compared with both scorers. <Exp ids={[38]} /></span>
+          <span role="cell"><b>Scored once.</b> External evaluation after the final feature selection; predictions compared with both scorers. <Exp ids={[38]} /></span>
         </div>
       </div>
       <p className="research-dataset-line"><span>Stage distribution in the development set:</span></p>
@@ -1219,7 +1219,7 @@ function IsrucResults() {
         <span role="cell" className="num">{row.kappa.toFixed(2)}</span>
       </div>)}
     </div>
-    <p className="research-ablation-note">Comparisons involving scorer 2 use epochs scored by both scorers. The agreement-only analysis excludes disputed epochs and describes an easier subset, rather than overall performance.</p>
+    <p className="research-ablation-note">Comparisons involving scorer 2 use epochs scored by both scorers. The agreement-only row excludes disputed epochs, so it describes an easier subset of the night.</p>
   </div>;
 }
 
@@ -1306,7 +1306,7 @@ function Generalisation() {
   const epochRef = data.models.find((model) => model.id === "epoch") as ModelResult;
   const rows = [
     { label: `Cross-validation, ${data.source.subjects} Boston patients`, note: "used to choose the model; each patient tested once", row: { macro_f1: adopted.metrics.macro_f1, kappa: adopted.metrics.cohen_kappa, stage_f1: adopted.stage_f1 }, ci: intervals.cv.adopted.macro_f1_ci },
-    ...(held ? [{ label: `Held-out test, ${g.holdout_subjects} Boston patients`, note: `${g.holdout_looks} evaluation looks`, row: { ...held, stage_f1: intervals.holdout.stage_f1 as Record<string, number> }, ci: intervals.holdout.macro_f1_ci }] : []),
+    ...(held ? [{ label: `Held-out test, ${g.holdout_subjects} Boston patients`, note: `scored ${g.holdout_looks === 2 ? "twice" : `${g.holdout_looks} times`}; no model chosen from it`, row: { ...held, stage_f1: intervals.holdout.stage_f1 as Record<string, number> }, ci: intervals.holdout.macro_f1_ci }] : []),
     ...(isrucStatus.final_complete ? isrucStatus.results.filter((row) => ["transfer_cinc_to_isruc_scorer1", "transfer_cinc_to_isruc_scorer2"].includes(row.evaluation)).map((row) => ({ label: `Coimbra, ${row.n_subjects} nights · scorer ${row.evaluation.endsWith("scorer1") ? "1" : "2"}`, note: "Model C · all 20 inputs", row, ci: intervals.coimbra[row.evaluation.endsWith("scorer1") ? "model_vs_scorer1" : "model_vs_scorer2"].macro_f1_ci })) : []),
   ];
   return (
@@ -1411,7 +1411,7 @@ function SignalAblations() {
   return (
     <div className="research-ablations">
       <div className="research-evidence-head">
-        <h3>Do heart and breathing earn their place?</h3>
+        <h3>Heart and breathing, with and without the EEG</h3>
         <p>
           The same model retrained with groups of signals removed or used alone, on the same folds. Removing heart and breathing changes macro-F1 only from {formatMetric(full.epoch)} to {formatMetric(brain.epoch)}; with EEG, EOG and chin EMG present they are redundant, so the final model leaves them out. On their own they still carry stage information, more so with additional heart features and a longer window: the best heart-and-breathing model reaches {formatMetric(Math.max(bestCardio.epoch, bestCardio.hmm))} macro-F1 and a four-class κ of {Math.max(bestCardio.kappa4, bestCardio.kappa4Hmm).toFixed(2)}. Published heart-rate models report four-class κ of {fmt("lit.cardio_kappa4.low")}–{fmt("lit.cardio_kappa4.high")}, using whole-night context and thousands of nights; the whole-night decoder (a hidden Markov model over stage-to-stage transitions, used only in this comparison) helps here far more than on the full model.
         </p>
@@ -1435,7 +1435,7 @@ function SignalAblations() {
         ))}
       </div>
       <p className="research-ablation-note">{ABLATION_NOTE}</p>
-      <h5 className="research-agreement-title">Without the EEG, how far can heart and breathing go? <Exp ids={[31]} /></h5>
+      <h5 className="research-agreement-title">Heart and breathing without the EEG <Exp ids={[31]} /></h5>
       <p className="research-evidence-lede">
         Heart rate and breathing change slowly with sleep stage, over minutes, so a model without EEG needs a much longer window than 2.5 minutes. Whole-night networks with breath-by-breath respiration and blood oxygen added raise the heart-and-breathing model from {fmt("cv.cardiofull_c10.hmm.macro_f1")} to {fmt("noeeg.ensemble.macro_f1")} macro-F1 (four-class κ from {fmt("cv.cardiofull_c10.hmm.kappa4", 2)} to {fmt("noeeg.ensemble.kappa4", 2)}). The table shows what each sensor achieves on its own, which is the relevant question for a wearable device.
       </p>
@@ -1489,7 +1489,7 @@ function BlackBoxAgreement() {
   return (
     <div className="research-agreement">
       <p className="research-evidence-lede">
-        An exploratory comparison asks which body systems each model uses. C is measured by shuffling inputs; D is estimated from gradients. The models use different inputs and windows, and these attribution methods are not directly equivalent. Agreement is descriptive support, not validation of the features or their physiological interpretation. <Exp ids={[20]} />
+        An exploratory comparison asks which body systems each model uses. C is measured by shuffling inputs; D is estimated from gradients. The models use different inputs and windows, and these attribution methods are not directly equivalent. Agreement between the two does not validate the features or their physiological reading. <Exp ids={[20]} />
       </p>
       <div className="research-agreement-table is-paired" style={{ gridTemplateColumns: `minmax(0, 1.5fr) repeat(${stages.length}, minmax(0, 1fr))` }}>
         <span className="research-agreement-key">% share · <b>C</b> / D</span>
@@ -1504,7 +1504,7 @@ function BlackBoxAgreement() {
         ))}
       </div>
       <p className="research-agreement-takeaway">
-        Both models rely most on the EEG in {agree} of 5 stages, and both shift toward eye movements and chin tone in REM (C {formatPercent(trees[4][1] + trees[4][2])}, D {formatPercent(cnn[4][1] + cnn[4][2])}). D assigns {formatPercent(Math.min(...cnn.map((row) => row[3])))}–{formatPercent(Math.max(...cnn.map((row) => row[3])))} to heart and breathing, partly because gradients spread some credit to every input; C does not use these signals and scores the same within uncertainty (D − C {intervals.cv_paired_vs_adopted.cnn.minus_adopted.toFixed(3)}, 95% interval {intervals.cv_paired_vs_adopted.cnn.ci[0].toFixed(3)} to {intervals.cv_paired_vs_adopted.cnn.ci[1].toFixed(3)}). Shading follows C; each column sums to 100% for each model.
+        Both models rely most on the EEG in {agree} of 5 stages, and both shift toward eye movements and chin tone in REM (C {formatPercent(trees[4][1] + trees[4][2])}, D {formatPercent(cnn[4][1] + cnn[4][2])}). D assigns {formatPercent(Math.min(...cnn.map((row) => row[3])))}–{formatPercent(Math.max(...cnn.map((row) => row[3])))} to heart and breathing, in part because gradients spread some credit to every input; C does not use these signals and scores the same within uncertainty (D − C {intervals.cv_paired_vs_adopted.cnn.minus_adopted.toFixed(3).replace("-", "−")}, 95% interval {intervals.cv_paired_vs_adopted.cnn.ci[0].toFixed(3).replace("-", "−")} to {intervals.cv_paired_vs_adopted.cnn.ci[1].toFixed(3).replace("-", "−")}). Shading follows C; each column sums to 100% for each model.
       </p>
     </div>
   );
@@ -1540,7 +1540,7 @@ function publishedModels(): PublishedModel[] {
       macroF1: adopted.metrics.macro_f1, stageF1: stage(adopted), kappa: adopted.metrics.cohen_kappa, accuracy: adopted.metrics.accuracy,
       size: `${size.trees} trees, ${size.splits.toLocaleString()} splits on ${size.inputs_used} of ${size.inputs} named inputs`,
       learned: size.nodes, learnedShort: size.nodes.toLocaleString(), trainShort: `${size.train_subjects} per fold`, testShort: `5-fold CV, ${data.source.subjects} Boston`,
-      training: `${size.train_subjects} subjects per fold; ${Math.round(size.fit_seconds / 60)} min on a laptop CPU`,
+      training: `${size.train_subjects} patients per fold; ${Math.round(size.fit_seconds / 60)} min on a laptop CPU`,
       inputs: "20 EEG, eye and chin measurements, every 6 s over 150 s",
       evaluation: `5-fold CV, ${data.source.subjects} Boston records`
     },
@@ -1683,7 +1683,7 @@ function SubjectVariability() {
   return (
     <div className="research-subjects">
       <div>
-        <h3>Performance varies across subjects</h3>
+        <h3>Performance by patient</h3>
         <p>Each bar is one Boston development patient scored in their test fold, ordered from lowest to highest macro-F1.</p>
       </div>
       <div className="research-subject-plot">
@@ -1729,7 +1729,7 @@ const historyPhases: Array<{ phase: string; dataset: string; steps: HistoryStep[
       { n: 8, date: "Oct 17", question: "Physiology or a bug?", finding: "18 of 29 features drifted against the labels, up to 6.5 minutes by morning (binned by sample count, not time).", decision: "Bin features by time." },
       { n: 9, date: "Oct 17", question: "Is the learner the bottleneck?", finding: `Default gradient boosting ${fmt("exp9.hgb")} vs the inherited bagged trees ${fmt("exp9.bagged_trees")}.`, decision: "Default boosting, never tuned." },
       { n: 10, date: "Oct 17", question: "Is the second stage leaking?", finding: "Smoother trained on in-sample probabilities.", decision: "Out-of-fold probabilities only." },
-      { n: 11, date: "Oct 17", question: "Does amplifier gain limit us?", finding: `Per-subject scaling already cancels it; gain-free ratios add ${fmt("exp11.ratio_gain", 3, true)}.`, decision: "Add ratio features." },
+      { n: 11, date: "Oct 17", question: "Does amplifier gain limit us?", finding: `Per-night scaling already cancels it; gain-free ratios add ${fmt("exp11.ratio_gain", 3, true)}.`, decision: "Add ratio features." },
       { n: 12, date: "Oct 17", question: "Why no heart-rate effect?", finding: "R-peaks were fine; cleaned intervals and rhythm-structure measures separate N3 from REM.", decision: "Add heart, breathing and coupling features." },
       { n: 13, date: "Oct 17", question: "Why do some patients fail?", finding: "Flat recording dropouts were scored as Wake.", decision: "Mask dropouts." },
       { n: 14, date: "Oct 17", question: "Result of the fixes?", finding: `${fmt("exp14.before")} → ${fmt("exp14.after")}, still limited by 25 R&K-scored subjects.`, decision: "Find a bigger dataset.", score: r("exp14.after") }
@@ -1774,7 +1774,7 @@ const historyPhases: Array<{ phase: string; dataset: string; steps: HistoryStep[
       { n: 35, date: "Oct 22", question: "Which candidate markers mean what they claim?", finding: "Validated first: sawtooth theta (REM) and alpha dropout (N1) passed; REM eye bursts, K-complex events and slow eye movements failed.", decision: "Only validated markers enter the swaps." },
       { n: 36, date: "Oct 22", question: "Swap in the validated markers?", finding: `Passed the rule: spindle bursts for 1/f offset and gamma residual (${fmt("delta.swap_spindle", 4)}), sawtooth theta (${fmt("exp36.swap_sawtooth", 4)}), alpha dropout (${fmt("exp36.swap_alpha_dropout", 4)}). Only spindle bursts is used by the model (3rd-largest N2 importance); the others rank last.`, decision: "Adopt the spindle swap: model C, 20 signals.", score: r("cv.g20.epoch.macro_f1") },
       { n: 37, date: "Oct 22", question: "Final test of model C (look #2)", finding: `${fmt("holdout.look2.g20.macro_f1")} on the same 200 held-out patients (27-signal model at look #1: ${fmt("holdout.look1.nocardio27.macro_f1")}).`, decision: "Reported as is; no choice made from it.", score: r("holdout.look2.g20.macro_f1"), holdout: true },
-      { n: 38, date: "Oct 22", question: "Does final Model C transfer to Coimbra?", finding: `One recorded evaluation look on 99 nights: macro-F1 ${fmt("coimbra.transfer_cinc_to_isruc_scorer1.macro_f1")} against scorer 1 and ${fmt("coimbra.transfer_cinc_to_isruc_scorer2.macro_f1")} against scorer 2; scorer-to-scorer agreement ${fmt("coimbra.isruc_scorer1_vs_scorer2.macro_f1")}. Night 8 excluded before scoring because frontal EEG was missing.`, decision: "Report both scorer comparisons and patient variation as external validation." }
+      { n: 38, date: "Oct 22", question: "Does final Model C transfer to Coimbra?", finding: `Scored once on 99 nights: macro-F1 ${fmt("coimbra.transfer_cinc_to_isruc_scorer1.macro_f1")} against scorer 1 and ${fmt("coimbra.transfer_cinc_to_isruc_scorer2.macro_f1")} against scorer 2; scorer-to-scorer agreement ${fmt("coimbra.isruc_scorer1_vs_scorer2.macro_f1")}. Night 8 excluded before scoring because frontal EEG was missing.`, decision: "Report both scorer comparisons and patient variation as external validation." }
     ]
   }
 ];
@@ -1794,7 +1794,7 @@ const historyWhere: Record<number, string> = {
 const sectionNames: Record<string, string> = {
   staging: "1.1 Sleep staging", stages: "1.2 The physiology of each stage", night: "S3 Sleep structure", "supp-models": "S2 Model development",
   data: "2.1 Data and testing", features: "2.2 Features", model: "2.3 Model", testing: "2.1 Data and testing",
-  evidence: "3.2 Features", performance: "3.1 Model", robustness: "3.3 Testing",
+  evidence: "3.2 What the model relies on", performance: "3.1 Performance", robustness: "3.3 Held-out and external testing",
 "supp-simplify": "S2 Simpler models"
 };
 
@@ -1828,7 +1828,7 @@ const scoreKind = (step: HistoryStep) => (step.holdout ? "holdout" : step.n <= 1
 function HowItWasRun() {
   return (
     <div className="research-workflow">
-      <p className="research-comparison-lede">I set the research questions and made the decisions; AI coding sessions did most of the implementation and ran the experiments. Three working rules kept the work fast and the results verifiable.</p>
+      <p className="research-comparison-lede">I set the research questions and made the decisions; AI coding sessions did most of the implementation and ran the experiments, under the working rules below.</p>
       <ol className="research-glance-takeaways">
         <li><b>One session per question.</b> A coordinating session keeps the goals, the decision log and this page. Each question (normalisation, heart-rate variability, poorly scored patients, signal quality, a second lab, a no-EEG model) has its own session with its own files, so several experiments can run in parallel without interfering.</li>
         <li><b>Adoption criteria set in advance.</b> Each experiment lists its variants and the criterion for adoption (about {fmt("protocol.adoption_gain", 2, true)} macro-F1, better in 4 of 5 folds) before the results are seen. Every feature needs a physiological rationale, and a new feature is checked before any model uses it: it must separate its intended stage in the predicted direction, at least as well as the input it replaces.</li>
@@ -1888,17 +1888,17 @@ function ExperimentHistory() {
 
 function DiscussionExplorer() {
   return <div className="research-conclusion">
-    <p className="research-takeaway">Physiological measurements combined with temporal context provide a <strong>credible offline staging baseline</strong>: a default tree ensemble retains useful performance when transferred to a second hospital. Its physiological assumptions can be checked against the recorded waveforms.</p>
+    <p className="research-takeaway">A default tree ensemble on named measurements, read over 2.5 minutes, scores {formatMetric(intervals.holdout.macro_f1)} on held-out Boston patients and {formatMetric(intervals.coimbra.model_vs_scorer1.macro_f1)} at a second hospital, where its two experts agree with each other at {formatMetric(intervals.coimbra.scorer1_vs_scorer2.macro_f1)}. Every input is a measurement that can be checked against the recorded waveforms.</p>
     <ul className="research-conclusion-objectives">
-      <li>The <strong>reliance on EEG background activity</strong> is consistent with research linking spectral slope to arousal. My slope calculation differs from the published implementation, so this is converging evidence rather than a replication. The weak N2 separation of broad spindle-band power supports measuring defining events directly instead of assuming a physiological name guarantees specificity. <Citation number={17} /> <Citation number={1} /></li>
-      <li>In these experiments, <strong>temporal context contributed more</strong> than changing to the tested neural-network architecture. A compact set of explicit measurements can therefore be a competitive design choice. Published systems such as U-Sleep still provide a stronger benchmark for broad validation; different test cohorts prevent claiming equivalent performance. <Citation number={26} /></li>
-      <li>Coimbra supports portability of the full input set, while the difficult held-out Boston nights show that transfer of an average score is not enough. The different scores against Coimbra’s two scorers also fit established evidence that the reference labels themselves vary. This strengthens the case for <strong>patient-level evaluation and multiple scorers</strong>, without attributing every model error to ambiguous labels. <Citation number={5} /></li>
+      <li>The model relies most on EEG background activity, in line with work linking the spectral slope to arousal; the slope here is calculated differently from the published method, so the result supports that link without replicating it. Broad spindle-band power barely separates N2 (d {fmt("effect.c_rel_sigma.d_N2", 2)}), and a spindle-burst detector did: a physiological name does not make a measurement specific. <Citation number={17} /> <Citation number={1} /></li>
+      <li>Context added more than a neural network did: C exceeds the single-epoch model A by {(-intervals.cv_paired_vs_adopted.epoch.minus_adopted).toFixed(3)}, while the attention network D and C cannot be told apart (D − C {intervals.cv_paired_vs_adopted.cnn.minus_adopted.toFixed(3).replace("-", "−")}, 95% interval {intervals.cv_paired_vs_adopted.cnn.ci[0].toFixed(3).replace("-", "−")} to {intervals.cv_paired_vs_adopted.cnn.ci[1].toFixed(3).replace("-", "−")}). U-Sleep reports {fmt("lit.usleep.macro_f1", 2)} on other Boston patients; with different test sets the two cannot be ranked. <Citation number={26} /></li>
+      <li>The full input set transferred to Coimbra, but per-night scores spread widely in every cohort (Figure 1B), so a good average does not guarantee a good night. The model scores {formatMetric(intervals.coimbra.model_vs_scorer1.macro_f1)} and {formatMetric(intervals.coimbra.model_vs_scorer2.macro_f1)} against Coimbra&rsquo;s two experts, who differ from each other too: results are worth reporting per patient and against more than one scorer. <Citation number={5} /></li>
     </ul>
     <h4>Limitations</h4>
     <ul className="research-limits">
       <li><b>Uneven reliability.</b> N1 and some individual nights remain difficult, even when the overall score is useful.</li>
       <li><b>Partial interpretability.</b> Named measurements show what the model uses, but proxies, mixed EOG/EEG activity and an ensemble of trees limit explanations of individual decisions.</li>
-      <li><b>Limited validation scope.</b> One external dataset supports transfer, not broad clinical reliability. Future epochs and whole-night scaling also limit the current method to offline scoring.</li>
+      <li><b>Limited validation scope.</b> One external dataset shows transfer to a second hospital; broader clinical reliability is untested. Future epochs and whole-night scaling also limit the current method to offline scoring.</li>
     </ul>
     <h4>Next steps</h4>
     <ul className="research-limits">
@@ -2162,7 +2162,7 @@ suppression_mask = tone < (
     title: "Epoch-grid ratio features",
     summary: "Gain-free EEG band shares and muscle fraction per 30-second epoch",
     source: "src/physionet_sleep/algorithms/staging.py · EpochRatioFeatureGenerator",
-    note: "Ratios from the same channel and epoch cancel between-recording differences in gain and electrode contact, so these features enter the model without per-subject scaling.",
+    note: "Ratios from the same channel and epoch cancel between-recording differences in gain and electrode contact, so these features enter the model without per-night scaling.",
     code: `freqs, psd = welch(seg, fs=fs, nperseg=min(nperseg, seg.size))
 total = _half_open_band_sum(psd, freqs, 1.0, 30.0)
 band = {b: _half_open_band_sum(psd, freqs, lo, hi) for b, (lo, hi) in self.BANDS.items()}
@@ -2208,7 +2208,7 @@ out[k] = float(np.mean(coh[max(j - 1, 0) : j + 2]))`
     title: "Subject-grouped evaluation",
     summary: "Every epoch from one person stays on the same side of the split",
     source: "src/physionet_sleep/experiments/tabular_runner.py · build_validation_splits",
-    note: "The group array contains subject identifiers, preventing epochs from one night from leaking into both development and test data.",
+    note: "The group array holds patient identifiers, so epochs from one night cannot appear in both development and test data.",
     code: `splitter = StratifiedGroupKFold(
     n_splits=effective_folds,
     shuffle=True,
@@ -2226,7 +2226,7 @@ yield from splitter.split(
     title: "Context windows",
     summary: "25 six-second steps of 20 signals around each epoch",
     source: "src/physionet_sleep/analysis/epoch_windows.py · WindowEncoder",
-    note: "Standardization uses the training subjects only. Steps before the start or after the end of the recording are zero, which is the training mean.",
+    note: "Standardization uses the training patients only. Steps before the start or after the end of the recording are zero, which is the training mean.",
     code: `def _steps(self, X):
     Z = np.nan_to_num(np.clip((X - self.mean) / self.sd, -10, 10))
     n = -(-len(Z) // self.step_seconds)
@@ -2355,7 +2355,7 @@ function useOpenOnHash() {
 
 // ---------------------------------------------------------------- objectives that thread the page
 const objectives = [
-  { n: 1, short: "Interpretability", line: "Connect each measurement to sleep physiology, check its observed behaviour, and distinguish plausible cues from what the model actually uses." },
+  { n: 1, short: "Interpretability", line: "Connect each measurement to sleep physiology, check how it behaves in the data, and separate what a measurement should capture from what the model uses." },
   { n: 2, short: "Simplicity", line: "Use decision trees with default settings, and keep an addition only if it clearly improves accuracy." },
   { n: 3, short: "Independent validation", line: "Separate training patients from test patients, report held-out scoring history, and examine transfer to other hospitals." }
 ];
@@ -2415,7 +2415,6 @@ function ExternalTestingDetails() {
   const heldRef = data.generalisation?.holdout.find((row) => row.config === "epoch19");
   const epochRef = data.models.find((row) => row.id === "epoch") as ModelResult;
   return <>
-    <p>The held-out Boston cohort contains more sleep apnea. The reference model also falls from {formatMetric(epochRef.metrics.macro_f1)} to {heldRef ? formatMetric(heldRef.macro_f1) : "—"}; this is consistent with a patient-mix effect but does not exclude overfitting.</p>
     <Generalisation />
     <IsrucResults />
   </>;
@@ -2442,7 +2441,7 @@ function ComparisonCompact() {
           </div>
         ))}
       </div>
-      <p className="research-protocol-source">Published models used different test patients; these are reference results, not head-to-head comparisons. Human scorer agreement is also from a separate sample.</p>
+      <p className="research-protocol-source">Published models were tested on different patients, and human agreement comes from a separate sample, so these rows give context and cannot be ranked against C.</p>
     </div>
   );
 }
@@ -2454,7 +2453,7 @@ function PublishedModelSize() {
   return <div className="research-comparison">
       <TradeoffChart models={models} />
       <p className="research-protocol-source">
-        Parameter count is not the whole difference: D has fewer weights ({cnn.learned?.toLocaleString()}) than C has learned values ({ours.learned?.toLocaleString()}). The difference is in what the parameters represent. Each tree split is a threshold on one named signal at one time, whereas a network combines all signals through learned filters. The comparison is approximate, because the published networks were tested on other records, and inter-scorer agreement comes from a small expert sample. C&rsquo;s lower accuracy is partly a result of class weighting, which improves N1 at some cost to the common stages.
+        D has fewer weights ({cnn.learned?.toLocaleString()}) than C has learned values ({ours.learned?.toLocaleString()}), but the two count different things. Each tree split is a threshold on one named signal at one time, whereas a network combines all signals through learned filters. The comparison is approximate, because the published networks were tested on other records, and inter-scorer agreement comes from a small expert sample. C trains with class-balanced weights, which raise N1 sensitivity at some cost to the common stages; an unweighted version of C was not run, so its effect on accuracy is not measured here.
       </p>
   </div>;
 }
@@ -2464,12 +2463,14 @@ function StudySummary() {
   const coimbraResult = isrucStatus.results.find((row) => row.evaluation === "transfer_cinc_to_isruc_scorer1");
   const coimbraResult2 = isrucStatus.results.find((row) => row.evaluation === "transfer_cinc_to_isruc_scorer2");
   const held = data.generalisation?.holdout.find((row) => row.config === "g20");
+  const topSignals = [...data.signal_importance].sort((a, b) => b.importance - a.importance).slice(0, 4)
+    .map((item) => item.label.replace(" (1 s)", "")).map((label) => label[0].toLowerCase() + label.slice(1));
   return (
     <section className="research-section research-summary" id="summary">
       <SectionHeading title="Abstract" />
       <div className="research-summary-copy research-abstract">
         <p>
-          Sleep staging divides an overnight recording into wakefulness, non-REM and REM sleep based on changes in brain activity, eye movements and muscle tone. It helps clinicians assess sleep architecture and diagnose sleep disorders, but manual scoring is time-consuming and involves judgment. My study tests whether a simple model can use <strong>these physiological cues</strong> to identify sleep stages and reveal which measurements contribute to its predictions. A tree ensemble combines {data.source.tracks + data.source.features} EEG, eye and chin measurements with surrounding temporal context.{held ? <> On {data.generalisation?.holdout_subjects} held-out Boston patients it reaches macro-F1 {formatMetric(held.macro_f1)} (95% CI {formatInterval(intervals.holdout.macro_f1_ci)}; κ {held.kappa.toFixed(2)}).</> : null}{isrucStatus.final_complete && coimbraResult && coimbraResult2 ? <> In Coimbra it scores {formatMetric(coimbraResult.macro_f1)} and {formatMetric(coimbraResult2.macro_f1)} against two independent scorers, who agree with each other at {formatMetric(intervals.coimbra.scorer1_vs_scorer2.macro_f1)}.</> : null} Cross-validation on the {data.source.subjects} development patients, which was used to choose the model, gives {formatMetric(adopted.metrics.macro_f1)}. N1 and difficult individual nights remain challenges. Together, these findings show how <strong>physiologically motivated measurements</strong> can support automatic sleep staging while making the model’s reliance on those measurements explicit.
+          Sleep staging divides an overnight recording into wake, N1, N2, N3 and REM from brain activity, eye movements and muscle tone. Manual scoring is slow, and scorers disagree most on N1. This study tests whether gradient-boosted trees on named physiological measurements can stage sleep, and which measurements they rely on. Model C reads {data.source.tracks + data.source.features} EEG, eye and chin measurements over the 2.5 minutes around each epoch.{held ? <> On {data.generalisation?.holdout_subjects} held-out Boston patients it reaches macro-F1 {formatMetric(held.macro_f1)} (95% CI {formatInterval(intervals.holdout.macro_f1_ci)}; κ {held.kappa.toFixed(2)}).</> : null}{isrucStatus.final_complete && coimbraResult && coimbraResult2 ? <> In Coimbra it scores {formatMetric(coimbraResult.macro_f1)} and {formatMetric(coimbraResult2.macro_f1)} against two independent scorers, who agree with each other at {formatMetric(intervals.coimbra.scorer1_vs_scorer2.macro_f1)}.</> : null} Cross-validation on the {data.source.subjects} development patients, which was used to choose the model, gives {formatMetric(adopted.metrics.macro_f1)}. N1 is the weakest stage (held-out F1 {intervals.holdout.stage_f1.N1.toFixed(2)}), and scores vary widely between nights. Permutation importance puts {topSignals.slice(0, -1).join(", ")} and {topSignals[topSignals.length - 1]} first.
         </p>
         <p>
           <b>Aims.</b> {objectives.map((item) => <span key={item.n}>({item.n}) <i>{item.short}.</i> {item.line} </span>)}
@@ -2535,8 +2536,8 @@ export function StagingResearchDashboard() {
           <CompactStudyProtocol />
         </div>
         <div className="research-method-block" id="features">
-          <SubHeading number="2.2" title="Features: each stage's physiology, measured" />
-          <p className="research-takeaway">Each feature translates a physiological staging cue into a measurement, then checks whether it varies across stages as expected. The final model retains {data.source.tracks + data.source.features} EEG, eye and chin measurements every six seconds; heart and breathing candidates are also shown. A plausible physiological rationale is the starting point, not evidence that a feature works.</p>
+          <SubHeading number="2.2" title="Features" />
+          <p className="research-takeaway">Each feature turns a staging cue into a measurement. The explorer shows the cue, how the measurement is calculated, and whether it separates its stage in this data. Model C uses {data.source.tracks + data.source.features} EEG, eye and chin measurements every six seconds; heart and breathing candidates are shown for comparison.</p>
           <div className="research-signal-key research-feature-sensors" aria-label="Measurement colors, matching the physiology table">
             {[
               { name: "Brain", label: "EEG" }, { name: "Eyes", label: "EOG" },
@@ -2547,12 +2548,12 @@ export function StagingResearchDashboard() {
           <div className="research-feature-legend" aria-label="Feature origins">
             <span><em className="research-basis-tag is-aasm">AASM rule</em> measures a waveform, rhythm or muscle-tone cue used in manual staging</span>
             <span><em className="research-basis-tag is-published">Published method</em> follows a published calculation and its standard parameters</span>
-            <span><em className="research-basis-tag is-adapted">Adapted</em> uses published physiology with my choices of detector, frequency band or time window</span>
+            <span><em className="research-basis-tag is-adapted">Adapted</em> uses published physiology with its own detector, frequency band or time window</span>
           </div>
           <PhysiologyExplorer />
         </div>
         <div className="research-method-block" id="model">
-          <SubHeading number="2.3" title="Model: the signals in context" />
+          <SubHeading number="2.3" title="Model" />
           <ModelSection />
         </div>
       </section>
@@ -2560,8 +2561,8 @@ export function StagingResearchDashboard() {
       <section className="research-section" id="results">
         <SectionHeading title="3 Results" />
         <div className="research-results-block research-block" id="performance">
-          <SubHeading number="3.1" title="Model: how well it scores" />
-          <p className="research-takeaway">Context provides the largest improvement, and reducing the inputs to Model C preserves most of that gain: {formatMetric(adopted.metrics.macro_f1)} macro-F1 (95% CI {formatInterval(intervals.cv.adopted.macro_f1_ci)}) in patient-separated cross-validation. Because these folds were also used to choose the model, the held-out score in <SecRef to="robustness" /> is the less biased estimate. Cohen&rsquo;s κ is {adopted.metrics.cohen_kappa.toFixed(2)}, accuracy {formatPercent(adopted.metrics.accuracy)} and balanced accuracy {formatPercent(adopted.metrics.balanced_accuracy)}. N1 remains the main weakness, with {formatPercent(n1?.recall ?? 0)} sensitivity: the matrix below shows where its epochs go. The comparisons below show the gain, the remaining stage errors, and where published models stand.</p>
+          <SubHeading number="3.1" title="Performance" />
+          <p className="research-takeaway">Context provides the largest improvement, and reducing the inputs to Model C preserves most of that gain: {formatMetric(adopted.metrics.macro_f1)} macro-F1 (95% CI {formatInterval(intervals.cv.adopted.macro_f1_ci)}) in patient-separated cross-validation. Because these folds were also used to choose the model, the held-out score in <SecRef to="robustness" /> is the less biased estimate. Cohen&rsquo;s κ is {adopted.metrics.cohen_kappa.toFixed(2)}, accuracy {formatPercent(adopted.metrics.accuracy)} and balanced accuracy {formatPercent(adopted.metrics.balanced_accuracy)}. N1 remains the main weakness, with {formatPercent(n1?.recall ?? 0)} sensitivity: the matrix below shows where its epochs go.</p>
           <ConfusionExplorer />
           <Tabs label="Performance views" tabs={[
             { id: "ladder", title: "Model comparisons", content: <ModelExplorer /> },
@@ -2569,15 +2570,15 @@ export function StagingResearchDashboard() {
           ]} />
         </div>
         <div className="research-results-block research-block" id="evidence">
-          <SubHeading number="3.2" title="Which measurements does the model rely on?" />
-          <p className="research-takeaway">These analyses ask which measurements Model C uses and when it needs them. Values are swapped between test examples while the stage labels stay unchanged; the fall in macro-F1 measures reliance. The tabs examine individual measurements and positions within the input window. A small drop means little additional reliance, since other inputs may carry similar information.</p>
+          <SubHeading number="3.2" title="What the model relies on" />
+          <p className="research-takeaway">Permutation importance: one measurement&rsquo;s values are swapped between test epochs, labels unchanged, and the fall in macro-F1 is its importance. The first tab ranks measurements; the second asks which part of the 2.5-minute window matters. Correlated inputs can stand in for each other, so a small drop means little additional reliance.</p>
           <Tabs label="What the model relies on" tabs={[
             { id: "signals", title: "Individual measurements", content: <PhysiologyFindings /> },
             { id: "time", title: "Why neighbouring epochs matter", content: <ModelEvidence part="time" /> }
           ]} />
         </div>
         <div className="research-results-block research-block" id="robustness">
-          <SubHeading number="3.3" title="Testing: does it hold up?" />
+          <SubHeading number="3.3" title="Held-out and external testing" />
           <p className="research-takeaway">On {intervals.holdout.n_patients} held-out Boston patients Model C scores {formatMetric(intervals.holdout.macro_f1)} (95% CI {formatInterval(intervals.holdout.macro_f1_ci)}), below its {formatMetric(adopted.metrics.macro_f1)} in cross-validation; the single-epoch reference A falls by a similar amount ({formatMetric(epochRef.metrics.macro_f1)} to {heldRef ? formatMetric(heldRef.macro_f1) : "—"}), as expected if the held-out group, which has more sleep apnea, is simply harder. In Coimbra, with the same {data.source.tracks + data.source.features} inputs, it scores {formatMetric(intervals.coimbra.model_vs_scorer1.macro_f1)} ({formatInterval(intervals.coimbra.model_vs_scorer1.macro_f1_ci)}) against scorer 1 and {formatMetric(intervals.coimbra.model_vs_scorer2.macro_f1)} ({formatInterval(intervals.coimbra.model_vs_scorer2.macro_f1_ci)}) against scorer 2; the two scorers agree with each other at {formatMetric(intervals.coimbra.scorer1_vs_scorer2.macro_f1)} ({formatInterval(intervals.coimbra.scorer1_vs_scorer2.macro_f1_ci)}). Scores vary widely between patients in every cohort. The held-out set was scored twice and Coimbra once; no model was chosen from either.</p>
           <p>Figure 1B shows the score of every night in each test set.</p>
           <ExternalTestingDetails />
@@ -2604,7 +2605,7 @@ export function StagingResearchDashboard() {
         <div className="research-method-block" id="supp-importance">
           <SubHeading number="S3" title="Signal reliance and sleep structure" />
           <h4>Interpreting signal importance</h4>
-          <p>Importance is the fall in macro-F1 after swapping one measurement’s complete input window between test epochs, keeping the stage labels and all other inputs unchanged ({data.importance_folds} folds). The trained model is scored again without being refitted. Drops are not additive; correlated measurements can substitute for one another, so a short bar indicates little additional reliance. EOG also contains frontal EEG, so eye-channel reliance is not specific evidence of eye movements. This measures model dependence, not a proven mechanism or an individual explanation.</p>
+          <p>Importance is the fall in macro-F1 after swapping one measurement’s complete input window between test epochs, keeping the stage labels and all other inputs unchanged ({data.importance_folds} folds). The trained model is scored again without being refitted. Drops are not additive; correlated measurements can substitute for one another, so a short bar indicates little additional reliance. EOG also contains frontal EEG, so eye-channel reliance is not specific evidence of eye movements. It shows what the model depends on; it does not establish a mechanism or explain individual predictions.</p>
           <div id="night"><h4>Stage transitions and bout lengths</h4><SleepStructure /></div>
           <div id="supp-network"><h4>Exploratory neural-network attribution</h4><BlackBoxAgreement /></div>
         </div>

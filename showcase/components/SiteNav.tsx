@@ -23,8 +23,8 @@ const subsections: Record<string, Array<{ id: string; label: string }>> = {
     { id: "model", label: "2.3 Model" }
   ],
   results: [
-    { id: "performance", label: "3.1 How well it scores" }, { id: "evidence", label: "3.2 What the model relies on" },
-    { id: "robustness", label: "3.3 Does it hold up?" }
+    { id: "performance", label: "3.1 Performance" }, { id: "evidence", label: "3.2 What the model relies on" },
+    { id: "robustness", label: "3.3 Held-out and external testing" }
   ],
   supplementary: [
     { id: "supp-patients", label: "S1 Variation between patients" },
