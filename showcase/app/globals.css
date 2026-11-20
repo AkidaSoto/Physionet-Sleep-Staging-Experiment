@@ -3330,8 +3330,9 @@ body:has(.research-page) .site-nav-brand {
 }
 
 .site-nav-mobile {
+  flex: 0 1 220px;
   margin-left: auto;
-  min-width: 220px;
+  min-width: 0;
 }
 
 /* Objectives: neutral, numbered, distinct from the coloured feature families and stages. */
@@ -3630,8 +3631,57 @@ body:has(.research-page) .site-nav-brand {
   .research-confusion-static .research-confusion-head,
   .research-confusion-static .research-confusion-row { min-width: 690px; grid-template-columns: 56px repeat(5, minmax(38px, 1fr)) repeat(4, 78px); }
 }
-.research-feature-legend { display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 12px 0 20px; font-size: 0.8125rem; color: var(--ink-2); }
-.research-feature-legend > span { display: inline-flex; align-items: center; gap: 8px; }
+.research-feature-legend {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 8px 16px;
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--ink-2);
+}
+
+.research-feature-legend dt { font-weight: 600; }
+.research-feature-legend dd { margin: 0; }
+
+.research-spindle-comparison {
+  display: grid;
+  gap: 16px;
+  margin: 0;
+}
+
+.research-spindle-comparison h4,
+.research-spindle-comparison h5 {
+  margin: 0 0 8px;
+}
+
+.research-spindle-comparison p { margin: 0; }
+
+.research-spindle-plots {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.research-spindle-plots > div {
+  padding-top: 12px;
+  border-top: 1px solid var(--rule-strong);
+}
+
+.research-spindle-plots .research-distribution-chart { padding-top: 0; }
+.research-spindle-plots .research-distribution-row { min-height: 36px; }
+.research-spindle-plots .research-distribution-row svg { height: 30px; }
+.research-spindle-plots .research-distribution-axis span:nth-child(2) { display: block; }
+.research-spindle-plots .research-distribution-axis span:nth-child(2)::before,
+.research-spindle-plots .research-distribution-axis span:nth-child(2)::after { content: none; }
+
+.research-feature-explorer-section .research-evidence-disclosure { margin: 0 0 16px; }
+
+@media (max-width: 760px) {
+  .research-spindle-plots { grid-template-columns: minmax(0, 1fr); }
+
+  .research-feature-legend { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .research-feature-legend dd + dt { margin-top: 8px; }
+}
 .research-model-table-wrap { overflow-x: auto; }
 .research-model-table { width: 100%; border-collapse: collapse; font-size: .84rem; line-height: 1.55; text-align: left; }
 .research-model-table th, .research-model-table td { padding: 12px 14px; border-bottom: 1px solid var(--rule); vertical-align: top; }
@@ -3681,13 +3731,7 @@ body:has(.research-page) .site-nav-brand {
 .research-context-y-title { margin: 6px 0 12px 52px; font-size: 0.8125rem; color: var(--ink-2); }
 .research-context-plot > .research-context-epochs, .research-context-plot > .research-context-axis { margin-left: 52px; }
 .research-individual-bars.is-compact { grid-template-columns: minmax(0,1fr); grid-template-rows: none; grid-auto-flow: row; }
-.research-feature-sensors { margin: 14px 0 8px; }
 .research-feature-picker strong .research-feature-sensor-dot { display: inline-block; width: 7px; height: 7px; margin-right: 8px; border-radius: 50%; vertical-align: middle; flex: none; }
-/* Keep the two feature keys close to the explorer they describe. */
-#features > .research-takeaway { margin-bottom: 14px; }
-#features > .research-feature-sensors { margin: 0 0 10px; padding: 0; }
-#features > .research-feature-legend { margin: 0 0 20px; gap: 8px 20px; line-height: 1.5; }
-#features > .research-physiology-explorer { margin-top: 0; }
 .research-stage-primer .research-sensor-dot { display: inline-block; width: 7px; height: 7px; margin-right: 8px; border-radius: 50%; vertical-align: middle; }
 .research-other-sum-note { margin-top: 14px; font-size: 0.8125rem; color: var(--ink-3); line-height: 1.5; }
 .research-plot-caption { margin: 6px 0 12px; color: var(--ink-2); font-size: 0.8125rem; line-height: 1.5; }
@@ -3801,55 +3845,37 @@ body:has(.research-page) .site-nav-brand {
 }
 
 .research-page .research-hero {
+  display: block;
   min-height: 0;
-  padding: clamp(40px, 7vh, 72px) 0 24px;
+  padding: clamp(32px, 6vh, 64px) 0 24px;
+}
+
+.research-page .research-hero h1 {
+  font-size: clamp(2rem, 4.8vw, 4.4rem);
+}
+
+.research-page .research-summary {
+  padding-top: 26px;
 }
 
 .research-glance-stats strong {
   color: var(--ink);
 }
 
-/* Figure 1: summary and lead figure above the abstract ------------------------------------------------------------ */
-.research-page .research-hero {
-  display: block;
-}
-
-.lead-summary {
-  margin: 20px 0 0;
-  font-size: 1.18rem;
-  line-height: 1.5;
-  color: var(--ink);
-}
-
 .lead-figure {
-  margin: 36px 0 0;
+  width: 100%;
+  max-width: 800px;
+  margin: 0;
   padding-top: 14px;
   border-top: 1px solid var(--rule-strong);
 }
 
-.lead-panels {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 36px;
-}
-
-.lead-panel svg {
+.lead-plot svg {
   display: block;
   width: 100%;
   height: auto;
   overflow: visible;
   touch-action: pan-y;
-}
-
-.lead-panel-title {
-  margin: 0 0 6px;
-  font-family: var(--sans);
-  font-size: 0.875rem;
-  color: var(--ink);
-}
-
-.lead-panel-title b {
-  margin-right: 6px;
 }
 
 .lead-axis,
@@ -3884,17 +3910,52 @@ body:has(.research-page) .site-nav-brand {
 
 .lead-figure figcaption {
   max-width: var(--measure);
-  margin-top: 16px;
+  margin-bottom: 16px;
   font-family: var(--sans);
   font-size: 0.875rem;
   line-height: 1.5;
   color: var(--ink-2);
 }
 
-@media (max-width: 960px) {
-  .lead-panels {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 28px;
+.research-supplement-disclosures {
+  display: grid;
+  gap: 8px;
+}
+
+.research-supplement-disclosures > details {
+  margin-top: 0;
+}
+
+.research-confusion-scroll-hint {
+  display: none;
+}
+
+.research-confusion[tabindex]:focus-visible,
+.research-evidence-disclosure > summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 760px) {
+  .research-confusion-scroll-hint {
+    display: block;
+    margin: 0 0 8px;
+    font: 0.8125rem var(--sans);
+    color: var(--ink-2);
+  }
+}
+
+@media print {
+  .research-supplement-disclosures > details::details-content {
+    content-visibility: visible;
+  }
+
+  .research-supplement-disclosures > details > summary {
+    display: block;
+  }
+
+  .research-supplement-disclosures > details > summary::after {
+    display: none;
   }
 }
 

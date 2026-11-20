@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 const items = [
@@ -27,7 +28,7 @@ const subsections: Record<string, Array<{ id: string; label: string }>> = {
     { id: "robustness", label: "3.3 Held-out and external testing" }
   ],
   supplementary: [
-    { id: "supp-patients", label: "S1 Variation between patients" },
+    { id: "supp-patients", label: "S1 Development patient variation" },
     { id: "supp-models", label: "S2 Model development and size" },
     { id: "supp-importance", label: "S3 Signal reliance and sleep structure" },
     { id: "supp-cardio", label: "S4 Alternative sensor models" },
@@ -36,6 +37,8 @@ const subsections: Record<string, Array<{ id: string; label: string }>> = {
 };
 
 export function SiteNav() {
+  const pathname = usePathname();
+  const router = useRouter();
   const [activeId, setActiveId] = useState("top");
 
   useEffect(() => {
@@ -48,7 +51,7 @@ export function SiteNav() {
         .elementFromPoint(window.innerWidth / 2, readingLine)
         ?.closest<HTMLElement>("section[id]");
       const active = visibleSection && targets.includes(visibleSection) ? visibleSection : targets[0];
-      if (active?.id) setActiveId(active.id);
+      setActiveId(active?.id ?? "top");
     };
     const syncToHash = () => {
       const id = window.location.hash.slice(1) || "top";
@@ -70,11 +73,14 @@ export function SiteNav() {
       window.removeEventListener("hashchange", syncToHash);
       document.removeEventListener("click", syncToAnchorClick);
     };
-  }, []);
+  }, [pathname]);
 
   function handleMobileSection(value: string) {
     const target = document.getElementById(value);
-    if (!target) return;
+    if (!target) {
+      router.push(`/#${value}`);
+      return;
+    }
     let node: HTMLElement | null = target;
     while (node) {  // open a collapsed panel the target sits in
       if (node instanceof HTMLDetailsElement) node.open = true;
