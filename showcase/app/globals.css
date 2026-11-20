@@ -3839,6 +3839,73 @@ body:has(.research-page) .site-nav-brand {
   min-width: max-content;
 }
 
+.research-performance-comparison {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-family: var(--sans);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+
+.research-performance-comparison th,
+.research-performance-comparison td {
+  padding: 12px 10px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--rule);
+  overflow-wrap: anywhere;
+}
+
+.research-performance-comparison thead th {
+  border-top: 1px solid var(--rule-strong);
+}
+
+.research-performance-comparison th:first-child { width: 23%; }
+.research-performance-comparison th:nth-child(2) { width: 13%; }
+.research-performance-comparison .is-adopted { background: var(--accent-wash); }
+.research-comparison-label { display: none; }
+
+@media (max-width: 760px) {
+  .research-performance-comparison,
+  .research-performance-comparison tbody {
+    display: block;
+  }
+
+  .research-performance-comparison thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .research-performance-comparison tbody tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-top: 1px solid var(--rule-strong);
+    padding-bottom: 12px;
+  }
+
+  .research-performance-comparison tbody th:first-child {
+    grid-column: 1 / -1;
+    width: auto;
+  }
+
+  .research-performance-comparison th,
+  .research-performance-comparison td {
+    border-bottom: 0;
+    padding: 10px;
+  }
+
+  .research-comparison-label {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--ink-2);
+  }
+}
+
 .research-validation-scroll {
   overflow-x: auto;
 }

@@ -238,7 +238,7 @@ type FeatureBasis = "aasm" | "published" | "adapted";
 const basisLabels: Record<FeatureBasis, { short: string; long: string }> = {
   aasm: { short: "AASM rule", long: "Implements an AASM scoring criterion directly" },
   published: { short: "Published method", long: "Established measure from the literature, standard parameters" },
-  adapted: { short: "Adapted", long: "Research-motivated idea with our own implementation choices" }
+  adapted: { short: "Adapted", long: "Research-motivated idea with my own implementation choices" }
 };
 
 // Basis (how directly the feature follows a scoring rule or a published method) and the biological mechanism it measures.
@@ -764,7 +764,7 @@ function SpindleComparison() {
         </div>
       </div>
       <p className="research-plot-caption">Boxes show the middle half of values, whiskers span the 10th to 90th percentiles, and the number at right gives the median. Each panel uses its own units.</p>
-      <p>For N2 versus the other stages as a group, the standardized difference was {fmt("effect.spindle_bursts.d_N2", 2)} for the burst measure and {fmt("effect.c_rel_sigma.d_N2", 2)} for band share. N2 and N3 had the same median burst count. We kept both measures, adding the burst measure in place of two other spectral inputs. Identifying individual spindles would require validation against marked events. <Exp ids={[32, 36]} /></p>
+      <p>For N2 versus the other stages as a group, the standardized difference was {fmt("effect.spindle_bursts.d_N2", 2)} for the burst measure and {fmt("effect.c_rel_sigma.d_N2", 2)} for band share. N2 and N3 had the same median burst count. I kept both measures, adding the burst measure in place of two other spectral inputs. Identifying individual spindles would require validation against marked events. <Exp ids={[32, 36]} /></p>
     </figure>
   );
 }
@@ -1610,11 +1610,11 @@ function publishedModels(): PublishedModel[] {
     },
     {
       name: "U-Sleep", kind: "Fully convolutional U-Net", macroF1: r("lit.usleep.macro_f1"), stageF1: ["Wake", "N1", "N2", "N3", "REM"].map((s) => r(`lit.usleep.f1_${s}`)),
-      size: "≈3.1 million weights", learned: uSleepWeights, learnedShort: "≈3.1 M", trainShort: "≈15,600 people pooled from 13 datasets", testShort: "100 other Boston", training: "≈15,600 participants from 13 datasets",
+      size: "≈3.1 million weights", learned: uSleepWeights, learnedShort: "≈3.1 M weights", trainShort: "Training subsets of 13 datasets", testShort: "100 other Boston patients", training: "Training subsets of 13 datasets; 15,660 participants across all training and evaluation datasets",
       inputs: "Raw EEG + EOG at 128 Hz", evaluation: "100 held-out Boston records", cite: 26
     },
     {
-      name: "U-Time", kind: "Fully convolutional U-Net", macroF1: r("lit.utime.macro_f1"), size: "≈1.1 million weights", learned: 1.1e6, learnedShort: "≈1.1 M", trainShort: "Boston only (one model per dataset, 7 in the paper)", testShort: "Other Boston",
+      name: "U-Time", kind: "Fully convolutional U-Net", macroF1: r("lit.utime.macro_f1"), size: "≈1.1 million weights", learned: 1.1e6, learnedShort: "≈1.1 M weights", trainShort: "Boston only (one model per dataset, 7 in the paper)", testShort: "Other Boston",
       training: "Trained per dataset", inputs: "Raw EEG", evaluation: "Boston, more records than U-Sleep's test set", cite: 27
     },
     {
@@ -1798,7 +1798,7 @@ const historyPhases: Array<{ phase: string; dataset: string; steps: HistoryStep[
     steps: [
       { n: 15, date: "Oct 17", question: "Move to Boston?", finding: `${fmt("exp15.boston120")} on 120 records; calibrated µV, frontal and occipital leads, AASM labels. Trained on UCDDB, tested on Boston: ${fmt("exp15.ucddb_to_boston")}.`, decision: "Switch to Boston.", score: r("exp15.boston120") },
       { n: 16, date: "Oct 17", question: "Better model or more data?", finding: "Learning curve still rising; tuning gave nothing.", decision: "Download to 320 patients." },
-      { n: 17, date: "Oct 17", question: "Can we cut features?", finding: `33 → 16 features at no loss with a decoder; new event features ${fmt("exp17.event_features", 3, true)}.`, decision: `A feature must add ≥ ${fmt("protocol.adoption_gain")} or replace two.` },
+      { n: 17, date: "Oct 17", question: "Can I cut features?", finding: `33 → 16 features at no loss with a decoder; new event features ${fmt("exp17.event_features", 3, true)}.`, decision: `A feature must add ≥ ${fmt("protocol.adoption_gain")} or replace two.` },
       { n: 18, date: "Oct 17", question: "Why do Boston patients fail?", finding: "Dead leads, ECG artefact in the EEG, stages with few epochs.", decision: "Report stage counts with per-patient scores." }
     ]
   },
@@ -1809,7 +1809,7 @@ const historyPhases: Array<{ phase: string; dataset: string; steps: HistoryStep[
       { n: 19, date: "Oct 18", question: "Does real context beat smoothing?", finding: `1-s tracks and 6-s features over 150 s: ${fmt("cv.window33.hmm.macro_f1")} with a decoder vs ${fmt("exp19.epoch16_hmm")}.`, decision: "Adopt the window model; retire smoothers and networks.", score: r("cv.window33.hmm.macro_f1") },
       { n: 20, date: "Oct 18", question: "What does a network on the same signals do?", finding: `Attention CNN ${formatMetric((data.models.find((m) => m.id === "cnn") as ModelResult).metrics.macro_f1)}; relies on the same physiology.`, decision: "Keep as the black-box comparison." },
       { n: 21, date: "Oct 19", question: "Is the start of the epoch special?", finding: `No: a tree tie-break artifact. Evidence peaks 6–18 s in; the previous epoch counts ${fmt("exp21.prev_next_ratio")}× the next.`, decision: "Report the corrected profile." },
-      { n: 22, date: "Oct 19", question: "How do we compare?", finding: `U-Sleep ${fmt("lit.usleep.macro_f1")}; human scorers agree on ${pct("lit.aasm.agreement")} of epochs.`, decision: "Add the comparison section." },
+      { n: 22, date: "Oct 19", question: "How does the model compare?", finding: `U-Sleep ${fmt("lit.usleep.macro_f1")}; human scorers agree on ${pct("lit.aasm.agreement")} of epochs.`, decision: "Add the comparison section." },
       { n: 23, date: "Oct 21", question: "Is the decoder still needed?", finding: `${fmt("delta.decoder_with_window", 3, true)} with the window, and it costs N1.`, decision: "Drop it: one idea, fewer parts.", score: r("cv.window33.epoch.macro_f1") },
       { n: 24, date: "Oct 21", question: "Do heart and breathing earn their place?", finding: `Removing them costs ${fmt("delta.cardio_with_eeg")}; alone (6 signals) they reach ${fmt("range.cardio_alone.low", 2)}–${fmt("range.cardio_alone.high", 2)}.`, decision: "Kept for now; their stand-alone value is the no-EEG case." },
       { n: 25, date: "Oct 21", question: "How simple can the learner be?", finding: `Boosted single splits (an additive model) ${fmt("exp25.stumps")} with a tenth of the values; one readable depth-4 tree ${fmt("exp25.tree_d4")}.`, decision: "Keep default boosting; show the sweep and the readable tree." },
@@ -1944,8 +1944,12 @@ function ExperimentHistory() {
 }
 
 function DiscussionExplorer() {
+  const full = data.complexity.find((row) => row.learner === "hgb_l31_i100");
+  const smaller = data.complexity.find((row) => row.learner === "hgb_l8_i100");
   return <div className="research-conclusion">
-    <p>The reduced model keeps the inputs tied to measurements we can inspect in the recording. The <a href="#spindle-example">spindle comparison</a> shows why that matters. Two measurements of the same frequency band behaved differently across stages. Even when a measurement tracks a stage well, the distributions and importance scores tell us little about why the model assigned a particular label.</p>
+    <p>A tree model trained on a few hundred patients approached U-Sleep&rsquo;s published Boston performance with far fewer learned values. The <a href="#comparison">comparison</a> places that result alongside the training data and model sizes. Different test patients and evaluation procedures leave the direct performance difference uncertain, while the smaller model offers a concrete starting point for resource-limited development.</p>
+    {full && smaller && <p>The <SecRef to="supp-simplify" /> experiment tests the trade-off directly on the same inputs and folds. Restricting trees to eight leaves reduced learned values by {Math.round((1 - smaller.learned_values / full.learned_values) * 100)}%, with macro-F1 moving from {formatMetric(full.macro_f1)} to {formatMetric(smaller.macro_f1)}. That result shows how much additional simplification is possible and what it costs in performance.</p>}
+    <p>The named measurements also let me check whether a proposed sleep cue behaves as expected. In the <a href="#spindle-example">spindle comparison</a>, two measurements of the same frequency band behaved differently across stages. Distributions and importance scores help assess those inputs, while explaining individual predictions requires further checks.</p>
     <p>N1 was the weakest stage, and some nights scored much lower than others. The model transferred to one other hospital, with the two scorers providing context for interpreting those <a href="#validation-distribution">per-night results</a>. Broader clinical reliability remains untested, and the use of later epochs and whole-night scaling limits the model to offline scoring.</p>
     <p>The next step is to review difficult nights with a scorer. Comparing the waveforms, measured cues and disputed labels would help distinguish missed stage cues from ambiguous reference labels.</p>
   </div>;
@@ -2106,7 +2110,7 @@ const references = [
     number: 26,
     citation: "Perslev M, Darkner S, Kempfner L, Nikolic M, Jennum PJ, Igel C. U-Sleep: resilient high-frequency sleep staging. npj Digital Medicine. 2021;4:72.",
     href: "https://doi.org/10.1038/s41746-021-00440-5",
-    note: "Fully convolutional network trained on about 15,600 participants; reports per-dataset F1, including held-out CinC 2018 records."
+    note: "Fully convolutional network trained on subsets of 13 datasets, with 15,660 participants across all training and evaluation datasets; reports per-dataset F1, including held-out CinC 2018 records."
   },
   {
     number: 27,
@@ -2416,7 +2420,7 @@ function ModelSection() {
     { name: "A · Single epoch", inputs: "19 epoch-averaged features", window: "30 s", purpose: "Baseline without neighbouring epochs", refs: [16, 17] },
     { name: "B · Context", inputs: "33 measurements every 6 s; heart and breathing included", window: "150 s", purpose: "Test the gain from temporal context", refs: [19] },
     { name: "C · Adopted", inputs: "20 EEG, eye and chin measurements every 6 s; spindle-burst marker added", window: "150 s", purpose: "Retain performance with fewer, physiologically motivated inputs", refs: [28, 33, 36] },
-    { name: "D · Attention CNN", inputs: "B’s 14 one-second signals, including heart and breathing", window: "90 s", purpose: "Compare learned signal combinations with the tree models", refs: [20] }
+    { name: "D · Attention CNN", inputs: "14 one-second tracks plus 16 features, including heart and breathing", window: "90 s", purpose: "Compare learned signal combinations with the tree models", refs: [20] }
   ];
   return (
     <div className="research-model-section">
@@ -2446,6 +2450,7 @@ function TestingProtocol() {
   return (
     <div className="research-model-section">
       <p className="research-takeaway" id="testing">The data serve three roles: early feature development in Dublin, model development and held-out testing in Boston, and external testing in Coimbra. Splitting by patient tests whether the model works on another person; Coimbra tests whether that performance carries to another hospital.</p>
+      <p>I recorded the variants and adoption criteria before running each experiment, checked new measurements against their intended stage, and logged the finding and decision. Patient-separated development folds guided model selection. The Boston holdout has two recorded evaluations and Coimbra one. The <Link href="/history">experiment log</Link> includes rejected approaches, <Exp ids={[7, 8, 10]} /> documenting label, alignment and leakage fixes, and <Exp ids={[30, 37, 38]} /> documenting the independent evaluations.</p>
     </div>
   );
 }
@@ -2464,22 +2469,21 @@ function ComparisonCompact() {
   const fold = (value?: number) => (value === undefined ? "—" : formatMetric(value));
   return (
     <div className="research-comparison">
-      <div className="research-ablation-table" role="table" aria-label="Comparison with published models">
-        <div className="research-ablation-row research-compare-row is-head" role="row">
-          <span role="columnheader">Model</span><span role="columnheader">Macro-F1</span><span role="columnheader">κ / acc.</span><span role="columnheader">Learned values</span><span role="columnheader">Training patients</span><span role="columnheader">Tested on</span>
-        </div>
-        {models.map((model) => (
-          <div key={model.name} className={`research-ablation-row research-compare-row${model.ours ? " is-adopted" : ""}`} role="row">
-            <span role="cell"><strong>{model.name.replace(" (this page)", "")}</strong>{model.cite ? <> <Citation number={model.cite} /></> : null}<small className="research-row-note">{model.kind}</small></span>
-            <span role="cell" className="num">{fold(model.macroF1)}</span>
-            <span role="cell" className="num">{model.kappa ? model.kappa.toFixed(2) : "—"} / {model.accuracy ? formatPercent(model.accuracy) : "—"}</span>
-            <span role="cell" className="num">{model.learnedShort}</span>
-            <span role="cell"><small>{model.trainShort}</small></span>
-            <span role="cell"><small>{model.testShort}</small></span>
-          </div>
-        ))}
-      </div>
-      <p className="research-protocol-source">Published models were tested on different patients, and human agreement comes from a separate sample, so these rows give context and cannot be ranked against C.</p>
+      <table className="research-performance-comparison" role="table" aria-label="Comparison with published models">
+        <thead role="rowgroup"><tr role="row">
+          {["Model", "Macro-F1", "Model size", "Training data", "Evaluation"].map((label) => <th role="columnheader" scope="col" key={label}>{label}</th>)}
+        </tr></thead>
+        <tbody role="rowgroup">{models.filter((model) => model.macroF1 !== undefined).map((model) => (
+          <tr role="row" key={model.name} className={model.ours ? "is-adopted" : undefined}>
+            <th role="rowheader" scope="row"><strong>{model.name.replace(" (this page)", "")}</strong>{model.cite ? <> <Citation number={model.cite} /></> : null}<small className="research-row-note">{model.kind}</small></th>
+            <td role="cell"><span className="research-comparison-label" aria-hidden="true">Macro-F1</span>{fold(model.macroF1)}</td>
+            <td role="cell"><span className="research-comparison-label" aria-hidden="true">Model size</span>{model.learnedShort}{model.name.startsWith("C ") ? " tree values" : model.name.startsWith("D ") ? " weights" : ""}</td>
+            <td role="cell"><span className="research-comparison-label" aria-hidden="true">Training data</span>{model.trainShort}</td>
+            <td role="cell"><span className="research-comparison-label" aria-hidden="true">Evaluation</span>{model.testShort}</td>
+          </tr>
+        ))}</tbody>
+      </table>
+      <p className="research-protocol-source">Model C and the attention CNN use the same development folds. U-Sleep and U-Time report results on different Boston patients. U-Sleep&rsquo;s study includes 15,660 participants across training and evaluation, with training drawn from subsets of 13 datasets. <Citation number={26} /> Tree values count split thresholds and leaf values, while network sizes count learned weights.</p>
     </div>
   );
 }
@@ -2508,7 +2512,7 @@ function StudySummary() {
           Sleep staging labels each 30-second interval of an overnight recording as wake or one of four sleep stages. I tested how close a simpler model could get to a large neural network by giving boosted trees measurements that capture cues experts use to score sleep.
         </p>
         <p>
-          My model reached <b>{formatMetric(adopted.metrics.macro_f1)} macro-F1, within {formatMetric(gap)} of U-Sleep&rsquo;s published {fmt("lit.usleep.macro_f1", 3)}</b>, using about <b>one-sixtieth as many training patients</b>: roughly {data.model_size.train_subjects} per fold versus 15,600. A representative fit used about <b>{roundedTreeValues.toLocaleString("en-US")} tree split and leaf values</b>, compared with <b>{(uSleepWeights / 1_000_000).toFixed(1)} million neural-network weights</b> in U-Sleep. These scores come from different Boston test sets.
+          My model reached <b>{formatMetric(adopted.metrics.macro_f1)} macro-F1, within {formatMetric(gap)} of U-Sleep&rsquo;s published {fmt("lit.usleep.macro_f1", 3)}</b>, with far less training data: roughly {data.model_size.train_subjects} patients per fold, compared with U-Sleep&rsquo;s training across 13 datasets. Its full study included 15,660 participants across training and evaluation. A representative fit used about <b>{roundedTreeValues.toLocaleString("en-US")} tree split and leaf values</b>, compared with <b>{(uSleepWeights / 1_000_000).toFixed(1)} million neural-network weights</b> in U-Sleep. These scores come from different Boston test sets.
         </p>
         <p>
           I logged each experiment and model-selection decision, then tested the selected model on held-out Boston patients and at another hospital in Coimbra. N1 remained the hardest stage to classify.
@@ -2603,15 +2607,19 @@ export function StagingResearchDashboard() {
         <SectionHeading title="3 Results" />
         <div className="research-results-block research-block" id="performance">
           <SubHeading number="3.1" title="Performance" />
-          <p className="research-takeaway">The final model detected {formatPercent(n1?.recall ?? 0)} of expert-labeled N1 epochs in cross-validation. N1 was its weakest stage. The matrix shows how often those epochs were labeled Wake, N2 or REM instead.</p>
-          <ConfusionExplorer />
+          <p className="research-takeaway">The tree model approached the published Boston performance of much larger networks using a few hundred training patients per fold. The comparison below shows the performance, model size and training data together.</p>
+          <h4 id="comparison">Performance, model size and training data</h4>
+          <ComparisonCompact />
           <h4>Model comparisons on the development folds</h4>
-          <p>Model C reached {formatMetric(adopted.metrics.macro_f1)} macro-F1 (95% CI {formatInterval(intervals.cv.adopted.macro_f1_ci)}), with {formatPercent(adopted.metrics.accuracy)} accuracy, {formatPercent(adopted.metrics.balanced_accuracy)} balanced accuracy and κ {adopted.metrics.cohen_kappa.toFixed(2)}. It scored {formatMetric(-intervals.cv_paired_vs_adopted.epoch.minus_adopted)} higher in macro-F1 than the single-epoch reference. The models differ in both inputs and window length. We chose C because reducing the inputs from 33 to {data.source.tracks + data.source.features} cost {formatMetric(intervals.cv_paired_vs_adopted["window-all"].minus_adopted)} macro-F1 on these folds. See <SecRef to="robustness" /> for the held-out results.</p>
+          <p>Model C reached {formatMetric(adopted.metrics.macro_f1)} macro-F1 (95% CI {formatInterval(intervals.cv.adopted.macro_f1_ci)}), with {formatPercent(adopted.metrics.accuracy)} accuracy, {formatPercent(adopted.metrics.balanced_accuracy)} balanced accuracy and κ {adopted.metrics.cohen_kappa.toFixed(2)}. It scored {formatMetric(-intervals.cv_paired_vs_adopted.epoch.minus_adopted)} higher in macro-F1 than the single-epoch reference. The models differ in both inputs and window length. I chose C because reducing the inputs from 33 to {data.source.tracks + data.source.features} cost {formatMetric(intervals.cv_paired_vs_adopted["window-all"].minus_adopted)} macro-F1 on these folds. See <SecRef to="robustness" /> for the held-out results.</p>
           <ModelExplorer />
+          <h4>Errors by sleep stage</h4>
+          <p>The final model detected {formatPercent(n1?.recall ?? 0)} of expert-labeled N1 epochs in cross-validation. N1 was its weakest stage. The matrix shows how often those epochs were labeled Wake, N2 or REM instead.</p>
+          <ConfusionExplorer />
         </div>
         <div className="research-results-block research-block" id="evidence">
           <SubHeading number="3.2" title="Feature evidence and model reliance" />
-          <p className="research-takeaway">We shuffled one measurement at a time across test examples and recorded the drop in macro-F1. A small drop can mean that other measurements carry similar information. A separate analysis shuffled measurements at specific positions in the window to test which positions mattered most.</p>
+          <p className="research-takeaway">I shuffled one measurement at a time across test examples and recorded the drop in macro-F1. A small drop can mean that other measurements carry similar information. A separate analysis shuffled measurements at specific positions in the window to test which positions mattered most.</p>
           <Tabs label="What the model relies on" tabs={[
             { id: "signals", title: "Individual measurements", content: <PhysiologyFindings /> },
             { id: "time", title: "Positions in the input window", content: <ModelEvidence part="time" /> }
@@ -2641,7 +2649,7 @@ export function StagingResearchDashboard() {
           <Evidence id="supp-models" summary="S2 Model development, simplification and size">
             <h4>From 33 inputs to 20</h4><ModelPath />
             <div id="supp-simplify"><h4>Simpler models</h4><ModelSimplification /></div>
-            <div id="supp-published-size"><h4 id="comparison">Published models and parameter counts</h4><ComparisonCompact /><PublishedModelSize /></div>
+            <div id="supp-published-size"><h4>Published models and parameter counts</h4><PublishedModelSize /><p>SLEEPNET reported {pct("lit.sleepnet.accuracy")} accuracy and κ {fmt("lit.sleepnet.kappa", 2)} on 1,000 MGH recordings after training on about 10,000 patients. <Citation number={28} /> The AASM inter-scorer program reported {pct("lit.aasm.agreement")} agreement with the majority on a separate sample. <Citation number={29} /></p></div>
           </Evidence>
           <Evidence id="supp-importance" summary="S3 Signal reliance and sleep structure">
             <h4>Interpreting signal importance</h4>
