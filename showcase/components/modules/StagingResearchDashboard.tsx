@@ -645,7 +645,7 @@ function StagePrimer() {
   return (
     <div className="research-stage-primer">
       <p className="research-stage-primer-lede">
-        Sleep stages are identified by combinations of brain activity, eye movements and muscle tone. Heart rate and breathing change alongside them, but do not define the stages. These physiological patterns motivate the features; their overlap explains why no single measurement can identify every stage.
+        Scorers identify sleep stages from combinations of brain activity, eye movements and muscle tone. These patterns can overlap across stages, so scorers consider them together. Heart rate and breathing also change across stages.
       </p>
       <div className="research-stage-primer-scroll">
         <table>
@@ -2556,7 +2556,6 @@ export function StagingResearchDashboard() {
         <div className="research-method-block" id="staging">
           <SubHeading number="1.1" title="Sleep staging" />
           <SleepStudyPrimer />
-          <HeldOutNightFigure />
         </div>
         <div className="research-method-block" id="stages">
           <SubHeading number="1.2" title="The physiology of each stage" />
@@ -2620,6 +2619,7 @@ export function StagingResearchDashboard() {
         <div className="research-results-block research-block" id="robustness">
           <SubHeading number="3.3" title="Held-out and external testing" />
           <p className="research-takeaway">Model C and the single-epoch reference both scored lower on held-out Boston patients than in cross-validation. The held-out cohort had more sleep apnea, and the effect of that difference was not isolated. In Coimbra, Model C used the same inputs, and two experts scored the recordings. The Boston holdout was scored twice and Coimbra once. Model selection used the development folds. <Exp ids={[30, 37, 38]} /></p>
+          <HeldOutNightFigure />
           <ValidationDistributionFigure />
           <ExternalTestingDetails />
         </div>
