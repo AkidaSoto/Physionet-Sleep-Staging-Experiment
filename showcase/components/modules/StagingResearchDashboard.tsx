@@ -1254,23 +1254,25 @@ function IsrucResults() {
     return result ? [{ ...result, label: item.label }] : [];
   });
   if (rows.length !== 4) return null;
-  const columns = { gridTemplateColumns: "minmax(200px, 2fr) repeat(4, minmax(72px, 1fr))" };
   return <div className="research-ablations">
     <div className="research-evidence-head">
-      <h3>Coimbra</h3>
+      <h4 id="coimbra-scorers">Coimbra scorer comparisons</h4>
       <p>The adopted 20-signal model trained on Boston recordings, applied to {isrucStatus.evaluated} Coimbra nights. Night 8 lacked frontal EEG and was excluded.</p>
     </div>
-    <div className="research-ablation-table" role="table" aria-label="Coimbra external evaluation">
-      <div className="research-ablation-row is-head" role="row" style={columns}>
-        {["Comparison", "Nights", "Macro-F1", "Accuracy", "κ"].map((label) => <span role="columnheader" key={label}>{label}</span>)}
-      </div>
-      {rows.map((row) => <div className="research-ablation-row" role="row" style={columns} key={row.evaluation}>
-        <span role="cell">{row.label}</span>
-        <span role="cell" className="num">{row.n_subjects}</span>
-        <span role="cell" className="num">{formatMetric(row.macro_f1)}</span>
-        <span role="cell" className="num">{(100 * row.accuracy).toFixed(1)}%</span>
-        <span role="cell" className="num">{row.kappa.toFixed(2)}</span>
-      </div>)}
+    <p className="research-validation-scroll-hint research-validation-scroll-hint-coimbra">Scroll across for all metrics.</p>
+    <div className="research-validation-scroll" role="region" tabIndex={0} aria-labelledby="coimbra-scorers">
+      <table className="research-validation-table" aria-labelledby="coimbra-scorers">
+        <thead><tr>
+          {["Comparison", "Nights", "Macro-F1", "Accuracy", "κ"].map((label) => <th scope="col" key={label}>{label}</th>)}
+        </tr></thead>
+        <tbody>{rows.map((row) => <tr key={row.evaluation}>
+          <th scope="row">{row.label}</th>
+          <td>{row.n_subjects}</td>
+          <td>{formatMetric(row.macro_f1)}</td>
+          <td>{(100 * row.accuracy).toFixed(1)}%</td>
+          <td>{row.kappa.toFixed(2)}</td>
+        </tr>)}</tbody>
+      </table>
     </div>
     <p className="research-ablation-note">Comparisons involving scorer 2 use epochs scored by both scorers. The agreement-only row excludes disputed epochs, so it describes an easier subset of the night.</p>
   </div>;
@@ -1355,32 +1357,33 @@ function Generalisation() {
   const g = data.generalisation;
   if (!g) return null;
   const held = g.holdout.find((row) => row.config === "g20");
-  const heldRef = g.holdout.find((row) => row.config === "epoch19");
-  const epochRef = data.models.find((model) => model.id === "epoch") as ModelResult;
   const rows = [
-    { label: `Cross-validation, ${data.source.subjects} Boston patients`, note: "used to choose the model; each patient tested once", row: { macro_f1: adopted.metrics.macro_f1, kappa: adopted.metrics.cohen_kappa, stage_f1: adopted.stage_f1 }, ci: intervals.cv.adopted.macro_f1_ci },
     ...(held ? [{ label: `Held-out test, ${g.holdout_subjects} Boston patients`, note: `scored ${g.holdout_looks === 2 ? "twice" : `${g.holdout_looks} times`}; no model chosen from it`, row: { ...held, stage_f1: intervals.holdout.stage_f1 as Record<string, number> }, ci: intervals.holdout.macro_f1_ci }] : []),
     ...(isrucStatus.final_complete ? isrucStatus.results.filter((row) => ["transfer_cinc_to_isruc_scorer1", "transfer_cinc_to_isruc_scorer2"].includes(row.evaluation)).map((row) => ({ label: `Coimbra, ${row.n_subjects} nights · scorer ${row.evaluation.endsWith("scorer1") ? "1" : "2"}`, note: "Model C · all 20 inputs", row, ci: intervals.coimbra[row.evaluation.endsWith("scorer1") ? "model_vs_scorer1" : "model_vs_scorer2"].macro_f1_ci })) : []),
+    { label: `Cross-validation, ${data.source.subjects} Boston patients`, note: "Development folds used for model selection", row: { macro_f1: adopted.metrics.macro_f1, kappa: adopted.metrics.cohen_kappa, stage_f1: adopted.stage_f1 }, ci: intervals.cv.adopted.macro_f1_ci },
   ];
   return (
     <div className="research-ablations">
       <div className="research-evidence-head">
-        <h3>Per-stage scores for each test</h3>
+        <h4 id="validation-scores">Overall and per-stage scores</h4>
+        <p>Macro-F1 averages the F1 scores for the five stages, giving each stage equal weight. F1 combines how many expert labels the model finds with how often its predictions for that stage are correct.</p>
       </div>
-      <div className="research-ablation-table" role="table" aria-label="Held-out and cross-lab results">
-        <div className="research-ablation-row is-head" role="row">
-          <span role="columnheader">Test</span><span role="columnheader">Macro-F1</span><span role="columnheader">κ</span><span role="columnheader" />
-          {data.source.stages.map((stage) => <span role="columnheader" key={stage} className="swatch" style={{ "--swatch": stageColors[stage] } as React.CSSProperties}>{stage}</span>)}
-        </div>
-        {rows.map(({ label, note, row, ci }) => (
-          <div className="research-ablation-row" role="row" key={label}>
-            <span role="cell">{label}<small className="research-row-note">{note}</small></span>
-            <span role="cell" className="num">{formatMetric(row.macro_f1)}<small className="research-row-note">{formatInterval(ci)}</small></span>
-            <span role="cell" className="num">{row.kappa.toFixed(2)}</span>
-            <span role="cell" />
-            {data.source.stages.map((stage) => <span role="cell" className="num" key={stage}>{row.stage_f1 ? (row.stage_f1 as Record<string, number>)[stage].toFixed(2) : "—"}</span>)}
-          </div>
-        ))}
+      <p className="research-validation-scroll-hint">Scroll across for all five sleep stages.</p>
+      <div className="research-validation-scroll" role="region" tabIndex={0} aria-labelledby="validation-scores">
+        <table className="research-validation-table research-validation-table-stages" aria-labelledby="validation-scores">
+          <thead><tr>
+            <th scope="col">Test</th><th scope="col">Macro-F1</th><th scope="col">κ</th>
+            {data.source.stages.map((stage) => <th scope="col" key={stage} className="swatch" style={{ "--swatch": stageColors[stage] } as React.CSSProperties}>{stage}</th>)}
+          </tr></thead>
+          <tbody>{rows.map(({ label, note, row, ci }) => (
+            <tr key={label}>
+              <th scope="row">{label}<small className="research-row-note">{note}</small></th>
+              <td>{formatMetric(row.macro_f1)}<small className="research-row-note">{formatInterval(ci)}</small></td>
+              <td>{row.kappa.toFixed(2)}</td>
+              {data.source.stages.map((stage) => <td key={stage}>{row.stage_f1 ? (row.stage_f1 as Record<string, number>)[stage].toFixed(2) : "—"}</td>)}
+            </tr>
+          ))}</tbody>
+        </table>
       </div>
       <p className="research-ablation-note">Small figures under each macro-F1 are 95% patient-bootstrap intervals ({intervals.reps.toLocaleString()} resamples of patients; within each test fold for cross-validation).</p>
     </div>
@@ -1846,7 +1849,7 @@ const historyWhere: Record<number, string> = {
 const sectionNames: Record<string, string> = {
   staging: "1.1 Sleep staging", stages: "1.2 The physiology of each stage", night: "S3 Sleep structure", "supp-models": "S2 Model development",
   data: "2.1 Data and testing", features: "2.2 Features", model: "2.3 Model", testing: "2.1 Data and testing",
-  evidence: "3.2 What the model relies on", performance: "3.1 Performance", robustness: "3.3 Held-out and external testing",
+  evidence: "3.2 Feature evidence and model reliance", performance: "3.1 Performance", robustness: "3.3 Held-out and external testing",
 "supp-simplify": "S2 Simpler models"
 };
 
@@ -2541,6 +2544,8 @@ export function StagingResearchDashboard() {
   useOpenOnHash();
   const adopted = data.models.find((model) => model.id === "adopted") as ModelResult;
   const n1 = data.diagnostics.per_stage.find((row) => row.stage === "N1");
+  const epochReference = data.models.find((model) => model.id === "epoch");
+  const heldOutEpochReference = data.generalisation?.holdout.find((row) => row.config === "epoch19");
   return (
     <main className="research-page">
       <section className="research-hero" id="top">
@@ -2572,7 +2577,7 @@ export function StagingResearchDashboard() {
         </div>
         <div className="research-method-block" id="features">
           <SubHeading number="2.2" title="Features" />
-          <SpindleComparison />
+          <p>The model uses {data.source.tracks + data.source.features} measurements of brain activity, eye movements and chin muscle tone, sampled every six seconds. The explorer connects each measurement to its physiological cue and shows how it is calculated.</p>
           <div className="research-feature-explorer-section">
             <h4>Explore the measurements by stage</h4>
             <Evidence summary="Signal types and feature labels">
@@ -2605,23 +2610,24 @@ export function StagingResearchDashboard() {
           <p className="research-takeaway">The final model detected {formatPercent(n1?.recall ?? 0)} of expert-labeled N1 epochs in cross-validation. N1 was its weakest stage. The matrix shows how often those epochs were labeled Wake, N2 or REM instead.</p>
           <ConfusionExplorer />
           <h4>Model comparisons on the development folds</h4>
-          <p>Model C reached {formatMetric(adopted.metrics.macro_f1)} macro-F1 (95% CI {formatInterval(intervals.cv.adopted.macro_f1_ci)}), with {formatPercent(adopted.metrics.accuracy)} accuracy, {formatPercent(adopted.metrics.balanced_accuracy)} balanced accuracy and κ {adopted.metrics.cohen_kappa.toFixed(2)}. It scored {formatMetric(-intervals.cv_paired_vs_adopted.epoch.minus_adopted)} higher in macro-F1 than the single-epoch reference. The models differ in both inputs and window length. These folds guided model selection. See <SecRef to="robustness" /> for the held-out results.</p>
+          <p>Model C reached {formatMetric(adopted.metrics.macro_f1)} macro-F1 (95% CI {formatInterval(intervals.cv.adopted.macro_f1_ci)}), with {formatPercent(adopted.metrics.accuracy)} accuracy, {formatPercent(adopted.metrics.balanced_accuracy)} balanced accuracy and κ {adopted.metrics.cohen_kappa.toFixed(2)}. It scored {formatMetric(-intervals.cv_paired_vs_adopted.epoch.minus_adopted)} higher in macro-F1 than the single-epoch reference. The models differ in both inputs and window length. We chose C because reducing the inputs from 33 to {data.source.tracks + data.source.features} cost {formatMetric(intervals.cv_paired_vs_adopted["window-all"].minus_adopted)} macro-F1 on these folds. See <SecRef to="robustness" /> for the held-out results.</p>
           <ModelExplorer />
         </div>
         <div className="research-results-block research-block" id="evidence">
-          <SubHeading number="3.2" title="What the model relies on" />
+          <SubHeading number="3.2" title="Feature evidence and model reliance" />
           <p className="research-takeaway">We shuffled one measurement at a time across test examples and recorded the drop in macro-F1. A small drop can mean that other measurements carry similar information. A separate analysis shuffled measurements at specific positions in the window to test which positions mattered most.</p>
           <Tabs label="What the model relies on" tabs={[
             { id: "signals", title: "Individual measurements", content: <PhysiologyFindings /> },
             { id: "time", title: "Positions in the input window", content: <ModelEvidence part="time" /> }
           ]} />
+          <SpindleComparison />
         </div>
         <div className="research-results-block research-block" id="robustness">
           <SubHeading number="3.3" title="Held-out and external testing" />
-          <p className="research-takeaway">Model C and the single-epoch reference both scored lower on held-out Boston patients than in cross-validation. The held-out cohort had more sleep apnea, and the effect of that difference was not isolated. In Coimbra, Model C used the same inputs, and two experts scored the recordings. The Boston holdout was scored twice and Coimbra once. Model selection used the development folds. <Exp ids={[30, 37, 38]} /></p>
+          <ExternalTestingDetails />
+          <p className="research-takeaway">Model C scored lower on held-out Boston patients than in cross-validation. {epochReference && heldOutEpochReference && <>The single-epoch reference also fell, from {formatMetric(epochReference.metrics.macro_f1)} to {formatMetric(heldOutEpochReference.macro_f1)} macro-F1. </>}The effect of the higher rate of sleep apnea in the held-out cohort remains unknown. In Coimbra, Model C used the same inputs, and two experts scored the recordings. The Boston holdout was scored twice and Coimbra once. Model selection used the development folds. <Exp ids={[30, 37, 38]} /></p>
           <HeldOutNightFigure />
           <ValidationDistributionFigure />
-          <ExternalTestingDetails />
         </div>
       </section>
 

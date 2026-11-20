@@ -24,7 +24,7 @@ const subsections: Record<string, Array<{ id: string; label: string }>> = {
     { id: "model", label: "2.3 Model" }
   ],
   results: [
-    { id: "performance", label: "3.1 Performance" }, { id: "evidence", label: "3.2 What the model relies on" },
+    { id: "performance", label: "3.1 Performance" }, { id: "evidence", label: "3.2 Feature evidence and model reliance" },
     { id: "robustness", label: "3.3 Held-out and external testing" }
   ],
   supplementary: [

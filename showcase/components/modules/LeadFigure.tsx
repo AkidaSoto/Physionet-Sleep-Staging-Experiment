@@ -182,7 +182,7 @@ export function ValidationDistributionFigure() {
       <figcaption>
         <b>Figure 2. Per-night macro-F1 in Boston and Coimbra.</b> Each night is scored over the stages present in its
         reference labels. Held-out Boston scores vary the most. The last row shows agreement between the Coimbra experts.
-        These medians summarize individual nights. The overall scores above pool epochs across each test set.
+        These medians summarize individual nights. The <a href="#validation-scores">test scores</a> pool epochs across each cohort.
       </figcaption>
       <PatientScores />
     </figure>
