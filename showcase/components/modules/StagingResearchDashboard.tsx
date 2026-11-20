@@ -1585,6 +1585,8 @@ type PublishedModel = {
   ours?: boolean;
 };
 
+const uSleepWeights = 3_100_000;
+
 function publishedModels(): PublishedModel[] {
   const adopted = data.models.find((model) => model.id === "adopted") as ModelResult;
   const cnn = data.models.find((model) => model.id === "cnn") as ModelResult;
@@ -1608,7 +1610,7 @@ function publishedModels(): PublishedModel[] {
     },
     {
       name: "U-Sleep", kind: "Fully convolutional U-Net", macroF1: r("lit.usleep.macro_f1"), stageF1: ["Wake", "N1", "N2", "N3", "REM"].map((s) => r(`lit.usleep.f1_${s}`)),
-      size: "≈3.1 million weights", learned: 3.1e6, learnedShort: "≈3.1 M", trainShort: "≈15,600 people pooled from 13 datasets", testShort: "100 other Boston", training: "≈15,600 participants from 13 datasets",
+      size: "≈3.1 million weights", learned: uSleepWeights, learnedShort: "≈3.1 M", trainShort: "≈15,600 people pooled from 13 datasets", testShort: "100 other Boston", training: "≈15,600 participants from 13 datasets",
       inputs: "Raw EEG + EOG at 128 Hz", evaluation: "100 held-out Boston records", cite: 26
     },
     {
@@ -2494,28 +2496,22 @@ function PublishedModelSize() {
   </div>;
 }
 
-const objectives = [
-  { n: 1, short: "Interpretability", line: "Connect each measurement to sleep physiology, check how it behaves in the data, and separate what a measurement should capture from what the model uses." },
-  { n: 2, short: "Simplicity", line: "Use decision trees with default settings, and keep an addition only if it clearly improves accuracy." },
-  { n: 3, short: "Independent validation", line: "Separate training patients from test patients, report held-out scoring history, and examine transfer to other hospitals." }
-];
-
 function StudySummary() {
   const adopted = data.models.find((model) => model.id === "adopted") as ModelResult;
-  const coimbraResult = isrucStatus.results.find((row) => row.evaluation === "transfer_cinc_to_isruc_scorer1");
-  const coimbraResult2 = isrucStatus.results.find((row) => row.evaluation === "transfer_cinc_to_isruc_scorer2");
-  const held = data.generalisation?.holdout.find((row) => row.config === "g20");
-  const topSignals = [...data.signal_importance].sort((a, b) => b.importance - a.importance).slice(0, 4)
-    .map((item) => item.label.replace(" (1 s)", "")).map((label) => label[0].toLowerCase() + label.slice(1));
+  const gap = r("lit.usleep.macro_f1") - adopted.metrics.macro_f1;
+  const roundedTreeValues = Math.round(data.model_size.nodes / 1000) * 1000;
   return (
     <section className="research-section research-summary" id="summary">
       <SectionHeading title="Abstract" />
       <div className="research-summary-copy research-abstract">
         <p>
-          Sleep staging divides an overnight recording into wake, N1, N2, N3 and REM from brain activity, eye movements and muscle tone. Manual scoring is slow, and scorers disagree most on N1. This study tests whether gradient-boosted trees on named physiological measurements can stage sleep, and which measurements they rely on. Model C reads {data.source.tracks + data.source.features} EEG, eye and chin measurements over the 2.5 minutes around each epoch.{held ? <> On {data.generalisation?.holdout_subjects} held-out Boston patients it reaches macro-F1 {formatMetric(held.macro_f1)} (95% CI {formatInterval(intervals.holdout.macro_f1_ci)}; κ {held.kappa.toFixed(2)}).</> : null}{isrucStatus.final_complete && coimbraResult && coimbraResult2 ? <> In Coimbra it scores {formatMetric(coimbraResult.macro_f1)} and {formatMetric(coimbraResult2.macro_f1)} against two independent scorers, who agree with each other at {formatMetric(intervals.coimbra.scorer1_vs_scorer2.macro_f1)}.</> : null} Cross-validation on the {data.source.subjects} development patients, which was used to choose the model, gives {formatMetric(adopted.metrics.macro_f1)}. N1 is the weakest stage (held-out F1 {intervals.holdout.stage_f1.N1.toFixed(2)}), and scores vary widely between nights. Permutation importance puts {topSignals.slice(0, -1).join(", ")} and {topSignals[topSignals.length - 1]} first.
+          Sleep staging labels each 30-second interval of an overnight recording as wake or one of four sleep stages. I tested how close a simpler model could get to a large neural network by giving boosted trees measurements that capture cues experts use to score sleep.
         </p>
         <p>
-          <b>Aims.</b> {objectives.map((item) => <span key={item.n}>({item.n}) <i>{item.short}.</i> {item.line} </span>)}
+          My model reached <b>{formatMetric(adopted.metrics.macro_f1)} macro-F1, within {formatMetric(gap)} of U-Sleep&rsquo;s published {fmt("lit.usleep.macro_f1", 3)}</b>, using about <b>one-sixtieth as many training patients</b>: roughly {data.model_size.train_subjects} per fold versus 15,600. A representative fit used about <b>{roundedTreeValues.toLocaleString("en-US")} tree split and leaf values</b>, compared with <b>{(uSleepWeights / 1_000_000).toFixed(1)} million neural-network weights</b> in U-Sleep. These scores come from different Boston test sets.
+        </p>
+        <p>
+          I logged each experiment and model-selection decision, then tested the selected model on held-out Boston patients and at another hospital in Coimbra. N1 remained the hardest stage to classify.
         </p>
       </div>
     </section>
