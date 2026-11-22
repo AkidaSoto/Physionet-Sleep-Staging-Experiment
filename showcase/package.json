@@ -5,6 +5,8 @@
   "scripts": {
     "data:staging": "python ../scripts/export_staging_dashboard_data.py",
     "data:registry": "python ../scripts/build_results_registry.py",
+    "data:concept": "python ../scripts/export_concept_showcase.py",
+    "data:metadata": "python ../scripts/export_showcase_metadata.py",
     "check:results": "node scripts/check-results.mjs",
     "dev": "next dev",
     "prebuild": "node scripts/check-results.mjs",

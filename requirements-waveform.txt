@@ -1,0 +1,8 @@
+# Development run environment (Python 3.14.3, Windows).
+# Install CPU or XPU PyTorch 2.13.0 separately using its official wheel index.
+numpy==2.4.4
+scipy==1.17.1
+pandas==3.0.2
+scikit-learn==1.8.0
+pyarrow==25.0.1
+wfdb==4.3.1

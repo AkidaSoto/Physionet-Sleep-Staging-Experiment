@@ -1,0 +1,33 @@
+{
+  "sample_rate_hz": 200,
+  "epoch_ratio_bands": {
+    "theta": "4\u20138 Hz",
+    "alpha": "8\u201311 Hz",
+    "sigma": "11\u201316 Hz",
+    "beta": "16\u201330 Hz",
+    "gamma": "30\u2013100 Hz"
+  },
+  "track_bands": {
+    "delta": "0.5\u20134 Hz",
+    "theta": "4\u20138 Hz",
+    "alpha": "8\u201312 Hz",
+    "sigma": "11\u201316 Hz",
+    "beta": "16\u201330 Hz"
+  },
+  "track_ids": [
+    "track.c_rel_delta",
+    "track.c_rel_theta",
+    "track.c_rel_alpha",
+    "track.c_rel_sigma",
+    "track.c_rel_beta",
+    "track.c_log_power",
+    "track.f_rel_delta",
+    "track.o_rel_alpha",
+    "track.eog_low",
+    "track.eog_high",
+    "track.emg_log_rms",
+    "track.hr",
+    "track.resp_effort",
+    "track.resp_env"
+  ]
+}

@@ -417,6 +417,7 @@ class EpochRatioFeatureGenerator(BaseAlgorithm):
         epoch_seconds: float = 30.0,
         row_seconds: float = 6.0,
         floor_percentile: float = 5.0,
+        include_emg_baseline: bool = True,
     ) -> None:
         super().__init__(name="epoch_ratio_features")
         self.eeg_key = eeg_key
@@ -425,6 +426,7 @@ class EpochRatioFeatureGenerator(BaseAlgorithm):
         self.epoch_seconds = float(epoch_seconds)
         self.row_seconds = float(row_seconds)
         self.floor_percentile = float(floor_percentile)
+        self.include_emg_baseline = include_emg_baseline
         rows = self.epoch_seconds / self.row_seconds
         if abs(rows - round(rows)) > 1e-9:
             raise ValueError("epoch_seconds must be an integer multiple of row_seconds")
@@ -527,10 +529,12 @@ class EpochRatioFeatureGenerator(BaseAlgorithm):
     def _emg_floor(self, emg: np.ndarray, fs: float, n_epochs: int) -> dict[str, np.ndarray]:
         tone = _band_envelope(emg, fs, 10.0, 100.0)
         tone = rolling_mean(tone, max(int(round(fs * 1.0)), 1))
-        tone_baseline = rolling_median(tone, max(int(round(fs * 60.0)), 1))
+        tracks = {"emg_floor_db": tone}
+        if self.include_emg_baseline:
+            tracks["emg_baseline_floor_db"] = rolling_median(tone, max(int(round(fs * 60.0)), 1))
         out = {}
         row_len = int(round(self.row_seconds * fs))
-        for name, track in (("emg_floor_db", tone), ("emg_baseline_floor_db", tone_baseline)):
+        for name, track in tracks.items():
             epoch_vals = np.full(n_epochs, np.nan)
             for k in range(n_epochs):
                 seg = self._epoch_segment(track, fs, k)

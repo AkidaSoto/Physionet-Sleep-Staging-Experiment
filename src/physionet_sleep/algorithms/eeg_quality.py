@@ -72,14 +72,14 @@ def _frame_corr(a: np.ndarray, b: np.ndarray, n: int) -> np.ndarray:
 
 
 def channel_quality(signals: dict[str, np.ndarray], spectra: dict[str, np.ndarray], ecg: np.ndarray | None,
-                    n: int) -> pd.DataFrame:
-    """One row per second, columns '<short channel>_<metric>' for the 8 spectral channels."""
+                    n: int, *, channels: tuple[str, ...] = tuple(SPECTRAL_CHANNELS)) -> pd.DataFrame:
+    """Return one row per second with '<short channel>_<metric>' for each selected lead."""
     from scipy.signal import butter, sosfiltfilt
 
     sos = butter(4, [5, 40], btype="band", fs=FS, output="sos")
     ecg_bp = sosfiltfilt(sos, np.nan_to_num(np.asarray(ecg, float))) if ecg is not None else None
     q = {"second": np.arange(n)}
-    for ch in SPECTRAL_CHANNELS:
+    for ch in channels:
         P, sh = spectra[ch], SHORT[ch]
         work = _working_power(P, ch)
         q[f"{sh}_log_power"] = np.log10(work + EPS)

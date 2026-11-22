@@ -97,3 +97,11 @@ def test_recorded_entries_match_their_source():
         if shown not in text.replace("−", "-"):
             bad.append(f"{entry_id} = {shown} not found in {where}")
     assert not bad, "\n".join(bad)
+
+
+def test_algorithm_metadata_matches_python():
+    spec = importlib.util.spec_from_file_location("export_showcase_metadata", ROOT / "scripts" / "export_showcase_metadata.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    exported = json.loads((ROOT / "showcase" / "content" / "generated" / "algorithm-metadata.json").read_text(encoding="utf-8"))
+    assert exported == module.build_metadata(), "algorithm-metadata.json is stale; rerun scripts/export_showcase_metadata.py"

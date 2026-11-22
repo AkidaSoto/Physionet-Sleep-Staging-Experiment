@@ -5,14 +5,11 @@ import { useEffect, useRef, useState } from "react";
 import lead from "../../content/generated/lead-figure.json";
 import { fmt } from "../../lib/results";
 
-const STAGE_NAMES = ["Wake", "N1", "N2", "N3", "REM"];
+import { ACCENT, INK, INK_3, RULE, STAGE_NAMES } from "../../design/palette";
+
 // Hypnogram rows, top to bottom, in the conventional order: Wake, REM, N1, N2, N3.
 const ROW_OF_STAGE = [0, 2, 3, 4, 1];
 const ROW_LABELS = ["Wake", "REM", "N1", "N2", "N3"];
-const INK = "#1b1a17";
-const INK_3 = "#6e6c65";
-const RULE = "#dedbd2";
-const ACCENT = "#1c5cab";
 
 const night = lead.night;
 const n = night.expert.length;
@@ -72,10 +69,35 @@ function Hypnogram() {
     const i = Math.floor(((px - left) / plotW) * n);
     setHover(i >= 0 && i < n ? i : null);
   };
+  const onKeyDown = (event: React.KeyboardEvent<SVGSVGElement>) => {
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      setHover((prev) => (prev === null ? 0 : Math.min(prev + 1, n - 1)));
+    } else if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      setHover((prev) => (prev === null ? n - 1 : Math.max(prev - 1, 0)));
+    } else if (event.key === "Home") {
+      event.preventDefault();
+      setHover(0);
+    } else if (event.key === "End") {
+      event.preventDefault();
+      setHover(n - 1);
+    } else if (event.key === "Escape") {
+      setHover(null);
+    }
+  };
   return (
     <div className="lead-plot" ref={ref}>
-      <svg viewBox={`0 0 ${W} ${H}`} role="img" onPointerMove={onMove} onPointerLeave={() => setHover(null)}
-        aria-label={`Sleep stages assigned by the expert and Model C over ${(n / 120).toFixed(1)} scored hours, including wake. They differ on ${night.disagreements} of ${night.epochs} epochs.`}>
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        className="lead-svg-interactive"
+        role="img"
+        tabIndex={0}
+        onPointerMove={onMove}
+        onPointerLeave={() => setHover(null)}
+        onKeyDown={onKeyDown}
+        aria-label={`Sleep stages assigned by the expert and Model C over ${(n / 120).toFixed(1)} scored hours, including wake. They differ on ${night.disagreements} of ${night.epochs} epochs. Hover or use arrow keys to inspect individual epochs.`}
+      >
         {longest && <rect x={x(longest[0])} y={first - 4} width={x(longest[1]) - x(longest[0])} height={stripTop + stripH - first + 4} fill={ACCENT} fillOpacity={0.12} />}
         {tracks.map((t) => (
           <g key={t.label}>
@@ -98,12 +120,12 @@ function Hypnogram() {
             <text x={x(e)} y={stripTop + stripH + 16} textAnchor="middle" className="lead-axis">{e / 120} h</text>
           </g>
         ))}
-        {hover !== null ? <line x1={x(hover + 0.5)} x2={x(hover + 0.5)} y1={10} y2={stripTop + stripH} stroke={INK} strokeWidth={0.75} strokeDasharray="2 2" /> : null}
+        {hover !== null ? <line x1={x(hover + 0.5)} x2={x(hover + 0.5)} y1={10} y2={stripTop + stripH} stroke={INK} strokeWidth={1} strokeDasharray="2 2" /> : null}
       </svg>
       <p className="lead-readout" aria-live="polite">
         {hover !== null
           ? <>{clock(hover)} from first scored epoch · expert <b>{STAGE_NAMES[night.expert[hover]]}</b> · model <b>{STAGE_NAMES[night.model[hover]]}</b></>
-          : <>Record {night.record} · macro-F1 {fmt("lead.night.macro_f1")} · differs on {fmt("lead.night.disagreements", 0)} of {fmt("lead.night.epochs", 0)} epochs</>}
+          : <>Record {night.record} · macro-F1 {fmt("lead.night.macro_f1")} · differs on {fmt("lead.night.disagreements", 0)} of {fmt("lead.night.epochs", 0)} epochs · <span className="lead-hint">Hover or use ←/→ keys to inspect epochs</span></>}
       </p>
     </div>
   );
@@ -118,6 +140,7 @@ const cohorts = [
 
 function PatientScores() {
   const [ref, W] = useWidth(640);
+  const [hoveredDot, setHoveredDot] = useState<{ label: string; value: number; key: string; index: number } | null>(null);
   const narrow = W < 520;  // labels go above each row instead of beside it
   const left = narrow ? 8 : 188, right = 40, rowH = narrow ? 56 : 40, top = 8;
   const lo = 0.3, hi = 1;
@@ -127,7 +150,7 @@ function PatientScores() {
   const jitter = (i: number) => (((i * 2654435761) >>> 0) % 1000) / 1000 - 0.5;
   return (
     <div className="lead-plot" ref={ref}>
-      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={cohorts.map((c) => `${c.label}: median ${fmt(`lead.${c.key}.median`)}, range ${fmt(`lead.${c.key}.min`, 2)} to ${fmt(`lead.${c.key}.max`, 2)}, ${fmt(`lead.${c.key}.n`, 0)} nights`).join("; ")}>
+      <svg viewBox={`0 0 ${W} ${H}`} role="img" onPointerLeave={() => setHoveredDot(null)} aria-label={cohorts.map((c) => `${c.label}: median ${fmt(`lead.${c.key}.median`)}, range ${fmt(`lead.${c.key}.min`, 2)} to ${fmt(`lead.${c.key}.max`, 2)}, ${fmt(`lead.${c.key}.n`, 0)} nights`).join("; ")}>
         {ticks.map((t) => (
           <g key={t}>
             <line x1={x(t)} x2={x(t)} y1={top} y2={top + cohorts.length * rowH} stroke={RULE} />
@@ -146,19 +169,35 @@ function PatientScores() {
                 ? <text x={left} y={cy - rowH / 2 + 4} className="lead-row-label">{c.label} <tspan className="lead-axis">· {fmt(`lead.${c.key}.n`, 0)}</tspan></text>
                 : <><text x={0} y={cy - 2} className="lead-row-label">{c.label}</text>
                   <text x={0} y={cy + 12} className="lead-axis">{fmt(`lead.${c.key}.n`, 0)} nights</text></>}
-              {values.map((v, i) => (
-                <circle key={i} cx={x(v)} cy={cy + jitter(i) * spread} r={2.1} fill={c.color} fillOpacity={0.42}>
-                  <title>{v.toFixed(3)}</title>
-                </circle>
-              ))}
+              {values.map((v, i) => {
+                const active = hoveredDot?.key === c.key && hoveredDot.index === i;
+                return (
+                  <circle
+                    key={i}
+                    cx={x(v)}
+                    cy={cy + jitter(i) * spread}
+                    r={active ? 4.2 : 2.3}
+                    fill={c.color}
+                    fillOpacity={active ? 0.95 : 0.42}
+                    style={{ cursor: "pointer" }}
+                    onPointerEnter={() => setHoveredDot({ label: c.label, value: v, key: c.key, index: i })}
+                  >
+                    <title>{`${c.label}: ${v.toFixed(3)}`}</title>
+                  </circle>
+                );
+              })}
               <line x1={x(median)} x2={x(median)} y1={cy - spread / 2 - 4} y2={cy + spread / 2 + 4} stroke={INK} strokeWidth={2} />
               <text x={W - right + 6} y={cy + 4} className="lead-median">{median.toFixed(2)}</text>
-              {c.key === "holdout" ? <circle cx={x(night.macro_f1)} cy={cy} r={5} fill="none" stroke={INK} strokeWidth={1.2}><title>Night shown in Figure 1</title></circle> : null}
+              {c.key === "holdout" ? <circle cx={x(night.macro_f1)} cy={cy} r={5} fill="none" stroke={INK} strokeWidth={1.2}><title>Night shown in Figure 2</title></circle> : null}
             </g>
           );
         })}
       </svg>
-      <p className="lead-readout">Each dot is one night. The bar and number at right show the median. The ring marks the night in <a href="#held-out-night">Figure 1</a>.</p>
+      <p className="lead-readout" aria-live="polite">
+        {hoveredDot
+          ? <>{hoveredDot.label} · night #{hoveredDot.index + 1} · macro-F1 <b>{hoveredDot.value.toFixed(3)}</b></>
+          : <>Each dot is one night (hover a dot to read its score). The bar and number at right show the median; the ring marks <a href="#held-out-night">Figure 2</a>.</>}
+      </p>
     </div>
   );
 }
@@ -167,7 +206,7 @@ export function HeldOutNightFigure() {
   return (
     <figure className="lead-figure" id="held-out-night">
       <figcaption>
-        <b>Figure 1. Expert and model on one held-out night.</b> This Boston night scored closest to the median.
+        <b>Figure 2. Expert and Model C on one held-out Boston night.</b> This Boston night scored closest to the median.
         Dark marks show where the stage labels differ, and the shaded band marks the longest continuous disagreement.
         Time starts at the first scored epoch.
       </figcaption>
@@ -180,7 +219,7 @@ export function ValidationDistributionFigure() {
   return (
     <figure className="lead-figure" id="validation-distribution">
       <figcaption>
-        <b>Figure 2. Per-night macro-F1 in Boston and Coimbra.</b> Each night is scored over the stages present in its
+        <b>Figure 3. Per-night macro-F1 for Model C in Boston holdout and Coimbra.</b> Each night is scored over the stages present in its
         reference labels. Held-out Boston scores vary the most. The last row shows agreement between the Coimbra experts.
         These medians summarize individual nights. The <a href="#validation-scores">test scores</a> pool epochs across each cohort.
       </figcaption>
