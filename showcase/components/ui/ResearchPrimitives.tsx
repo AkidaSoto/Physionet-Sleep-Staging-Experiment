@@ -232,7 +232,6 @@ export function ExpRefs({ ids }: { ids: number[] }) {
 }
 
 export const sectionNames: Record<string, string> = {
-  "lead-overview": "Key figures",
   staging: "1.1 Sleep staging",
   stages: "1.2 The physiology of each stage",
   night: "S3 Sleep structure",

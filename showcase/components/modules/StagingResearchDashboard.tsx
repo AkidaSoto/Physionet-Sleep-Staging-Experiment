@@ -282,32 +282,32 @@ function WindowModelFigure() {
 
 function ModelSection() {
   const models = [
-    { name: "A · Single epoch", inputs: "19 epoch-averaged features", window: "30 s", purpose: "Baseline without neighbouring epochs (255/fold)", refs: [16, 17] },
-    { name: "B · Context trees", inputs: "33 measurements every 6 s", window: "150 s", purpose: "Establish the gain from 2.5-min context (255/fold)", refs: [19, 23] },
-    { name: "C · Compact trees", inputs: "20 signals over 150 s (364 of 500 inputs used; 14,100 splits)", window: "150 s", purpose: `Earlier ${data.model_size.trees}-tree baseline tested on holdout & Coimbra (255/fold)`, refs: [28, 33, 36] },
-    { name: `D · Concept-BiGRU (#${conceptData.active_experiment})`, inputs: `29 features (${conceptData.input_dim} inputs: 13 six-second tracks × 5 + 16 epoch markers)`, window: "Whole night", purpose: "Adopted model: 4 additive stems + 64-unit BiGRUs + conformal (704/fold)", refs: [79] }
+    { name: "A · Single epoch", inputs: "19 epoch-averaged features", window: "30 s", purpose: "Baseline without neighbouring epochs", refs: [16, 17] },
+    { name: "B · Context trees", inputs: "33 measurements every 6 s", window: "150 s", purpose: "Test the gain from 2.5 minutes of surrounding context", refs: [19, 23] },
+    { name: "C · Compact trees", inputs: "20 brain, eye and chin signals", window: "150 s", purpose: `Earlier ${data.model_size.trees}-tree baseline evaluated on Boston and Coimbra`, refs: [28, 33, 36] },
+    { name: "D · Concept sequence model", inputs: "29 brain, eye and chin features (81 per-epoch inputs)", window: "Whole night", purpose: "Adopted model: four physiological branches, whole-night memory, and uncertainty sets", refs: [79] }
   ];
   const nConcepts = conceptData.concept_attribution.concepts.length;
   return (
     <div className="research-model-section">
       <p className="research-takeaway">
-        Model D (Concept-BiGRU, #{conceptData.active_experiment}) isolates <em>four domain-grouped branch encoders</em> from <em>whole-night sequence gating</em>: {nConcepts} private feature branches sum into additive feature-only stage log-odds, then 64-unit causal and anti-causal GRUs adjust predictions via bounded per-stage gates.
+        Model D separates <em>physiological evidence</em> from <em>whole-night context</em>: {nConcepts} independent branches score each body system on its own before a compact recurrent layer reads backward and forward across the night.
       </p>
       <WindowModelFigure />
       <p>
-        At each 30-second epoch, 13 six-second tracks (5 steps each) and 16 epoch/context markers enter four private branch MLPs (<code>slow_wave</code>, <code>n2_events</code>, <code>wake_n1</code>, and <code>rem_tone</code>; 16 units each) whose linear heads sum with a stage bias into feature-only local log-odds (with zero cross-branch interaction prior to summation). Their concatenated 64-unit embedding then enters 1-layer past and future GRUs (64 units per direction) fused by bounded per-stage gates (<code>logits = local + past_gate · past + future_gate · future</code>; {conceptData.model_params.toLocaleString("en-US")} weights per fold, averaged across 5 fold checkpoints on external cohorts). Without ECG or respiratory belts, out-of-fold Mondrian conformal quantiles map calibrated probabilities into stage-conditional prediction sets.
+        At each 30-second epoch, the measurements enter four separate physiological branches—deep slow waves, light-sleep events (spindles and K-complexes), wake and drowsiness cues, and eye/chin tone—whose scores add together before any cross-branch mixing. A compact bidirectional recurrent layer then reads across the full night and adjusts each stage through learned past and future gates, keeping total model size to {conceptData.model_params.toLocaleString("en-US")} weights (~{Math.round(uSleepWeights / conceptData.model_params)}× smaller than U-Sleep <Citation number={26} />). Rather than forcing a single guess on ambiguous transitions, stage-calibrated prediction sets return multiple plausible stages whenever confidence drops.
       </p>
       <div className="research-design-rationale">
-        <h5>Architectural design choices</h5>
+        <h5>Why this design</h5>
         <ul className="research-glance-takeaways">
           <li>
-            <b>Grouped additive stems before sequence mixing:</b> Routing features through four domain-grouped stems <Citation number={1} /> exposes an exact stage-by-branch logit sum ({formatMetric(conceptData.concept_attribution.local_only_macro_f1)} feature-only macro-F1) before downstream recurrence mixes representations across the night.
+            <b>Four separate physiological branches:</b> Grouping measurements by sleep physiology <Citation number={1} /> lets each system contribute an inspectable score before sequence modeling combines them across the night.
           </li>
           <li>
-            <b>Two-timescale decoupling:</b> Following sequence-to-sequence staging that separates epoch-level feature encoding from macro-architecture <Citation number={13} />, 64-unit directional GRUs model sleep-stage hysteresis in {Math.round(conceptData.model_params / 1000)}k weights per fold (~{Math.round(uSleepWeights / conceptData.model_params)}× fewer than U-Sleep&rsquo;s ~{(uSleepWeights / 1_000_000).toFixed(1)} million <Citation number={26} />), trading offline whole-night lookahead for temporal accuracy.
+            <b>Short-epoch physiology separated from night-long patterns:</b> Following sequence-to-sequence sleep staging <Citation number={13} />, splitting local scoring from whole-night recurrence captures multi-minute sleep structure in a fraction of the size of raw-waveform networks <Citation number={26} />.
           </li>
           <li>
-            <b>Tempered training + Mondrian uncertainty:</b> Because transitional N1 accounts for ~10% of epochs, pairing tempered inverse-frequency weights with label smoothing and exponential moving average (EMA) weights protects N1 recall without severe over-prediction, while stage-conditional Mondrian conformal quantiles prevent rare N1 boundaries from being under-covered.
+            <b>Balanced training and per-stage uncertainty:</b> Because brief light sleep (N1) makes up only ~10% of a night, tempered class weighting protects N1 without inflating false alarms, and per-stage uncertainty thresholds keep rare stages from being under-covered.
           </li>
         </ul>
       </div>
@@ -338,9 +338,9 @@ function ModelSection() {
           </table>
         </div>
       </div>
-      <Evidence summary="Training, fold-split math (255 vs. 230 + 474 = 704) &amp; normalization guardrails">
+      <Evidence summary="Implementation details (64-unit GRUs, fold splits, normalization &amp; calibration)">
         <p>
-          Each of the 5 folds on the 320 Boston development patients holds out 64 test nights, leaving ~255 non-test nights. Models A–C fit trees directly on all ~255 nights; Model D reserves ~25 nights per fold for inner early-stopping validation, combining the remaining 230 inner-training nights with 474 fit-only Boston nights (230 + 474 = 704 fitted nights/fold). Per-subject robust track scaling follows the prior pipeline, while feature standardization means and SDs are computed strictly on each fold&rsquo;s fitting pool. Exploratory neural/tree comparators (dense BiGRU #75, multi-scale HGB #76, ensemble #78, and cue-screened #80) remain archived in <SecRef to="supp-cardio" />.
+          Each branch encodes its inputs into 16 units and outputs additive stage log-odds; their concatenated 64-unit representation feeds 1-layer causal and anti-causal GRUs (64 units per direction) merged via bounded per-stage gates (<code>logits = local + past_gate · past + future_gate · future</code>; {conceptData.model_params.toLocaleString("en-US")} weights/fold, averaged across 5 fold checkpoints on external cohorts). Each of the 5 development folds holds out 64 test nights, leaving ~255 non-test nights; Models A–C fit directly on all ~255, while Model D reserves ~25 for inner early stopping and adds 474 fit-only Boston nights (704 fitted nights/fold). Training uses fit-only standardization, tempered inverse-frequency weights, label smoothing, exponential moving average weights, and out-of-fold Mondrian conformal quantiles. Additional 704-patient comparators (#75, #76, #78, #80) are archived in <SecRef to="supp-cardio" />.
         </p>
       </Evidence>
     </div>
@@ -348,47 +348,20 @@ function ModelSection() {
 }
 
 function StudySummary() {
-  const adopted = data.models.find((model) => model.id === "adopted") as ModelResult;
   const activeF1 = conceptData.calibrated.mean_fold_macro_f1;
-  const activeKappa = conceptData.calibrated.kappa;
   const activeParams = conceptData.model_params;
-  const mon90 = conceptData.conformal.coverage_90.mondrian;
   return (
     <section className="research-section research-summary" id="summary">
       <SectionHeading title="Abstract" />
-      <div className="research-orientation">
-        <p>
-          <b>Plain-English guide:</b> Overnight sleep studies divide an 8-hour recording of brain waves (EEG), eye movements (EOG), and chin muscle tone (EMG) into 30-second chunks (<em>epochs</em>) labeled Wake, light sleep (N1, N2), deep slow-wave sleep (N3), or REM. We score models with <b>Macro-F1</b> (0 to 1 scale weighting all five stages equally). Across 81 logged experiments, our models progressed from single-epoch decision trees (<b>Model A</b>) and 2.5-minute context trees (<b>Models B &amp; C</b>) to <b>Model D</b> (#79): a compact sequence network that adds up four separate physiological branch scores before smoothing across the whole night, and outputs <em>Mondrian conformal prediction sets</em> (returning 2–3 plausible stages on blurry transitions so rare stages like N1 keep a 90% coverage guarantee). All model choices stayed inside 320-patient Boston cross-validation (CV); reserved Boston holdout nights (200) and external Coimbra hospital nights (99, scored by two independent experts) were tested in a locked final run (Look #3).
-        </p>
-      </div>
-      <div className="research-exec-strip" role="region" aria-label="Model D headline scorecard">
-        <div className="research-kpi-card">
-          <span>Boston 5-Fold CV (320 nights)</span>
-          <strong>{formatMetric(activeF1)} Macro-F1</strong>
-          <small>+{formatMetric(activeF1 - adopted.metrics.macro_f1)} vs. Model C · κ {activeKappa.toFixed(2)}</small>
-        </div>
-        <div className="research-kpi-card">
-          <span>Boston Holdout (200 nights)</span>
-          <strong>{fmt("ext.concept79.holdout.calibrated.macro_f1")} Macro-F1</strong>
-          <small>{fmt("delta.concept79_holdout_vs_model_c", 3, true)} vs. Model C · locked test (Look #3)</small>
-        </div>
-        <div className="research-kpi-card">
-          <span>Coimbra Hospital (99 nights)</span>
-          <strong>{fmt("ext.concept79.isruc.calibrated_scorer1.macro_f1")} Macro-F1</strong>
-          <small>vs. Scorer 1 (Scorer 2: {fmt("ext.concept79.isruc.calibrated_scorer2.macro_f1")} · human: {fmt("coimbra.isruc_scorer1_vs_scorer2.macro_f1")})</small>
-        </div>
-        <div className="research-kpi-card">
-          <span>Model D Footprint</span>
-          <strong>{Math.round(activeParams / 1000)}k weights / fold</strong>
-          <small>29 features ({conceptData.input_dim} inputs: 13×5 + 16) · 4 stems</small>
-        </div>
-      </div>
       <div className="research-summary-copy research-abstract">
         <p>
-          Sleep staging models typically trade off accuracy (raw-waveform U-Nets with millions of weights) against transparency (decision trees over flattened windows). <b>Model D (Concept-BiGRU, #{conceptData.active_experiment})</b> targets an interpretable middle ground on 29 distinct EEG, EOG, and chin EMG features ({conceptData.input_dim} inputs per epoch): four domain-grouped branch encoders sum into feature-only stage log-odds before 64-unit past and future GRUs apply whole-night sequence gates ({activeParams.toLocaleString("en-US")} weights per fold—~{Math.round(uSleepWeights / activeParams)}× fewer than U-Sleep <Citation number={26} />, though ~{(activeParams / data.model_size.nodes).toFixed(1)}× more learned values than Model C&rsquo;s {data.model_size.trees} trees and requiring offline whole-night lookahead). Combining 230 inner-training nights per fold with 474 fit-only Boston nights (704 fitted nights/fold vs. Model C&rsquo;s 255) reached <b>{formatMetric(activeF1)}</b> 5-fold Macro-F1 on the 320 development patients (+{formatMetric(activeF1 - adopted.metrics.macro_f1)} over Model C).
+          Clinicians stage overnight sleep studies by reading brain waves, eye movements, and chin muscle tone in 30-second slices, assigning each slice to wake, light sleep, deep sleep, or REM. Modern deep-learning networks can automate this task accurately from raw waveforms, but their millions of parameters hide which physiological cues drove a call and force a single confident label even when a stage transition is genuinely ambiguous.
         </p>
         <p>
-          In locked external Look #3 (<Exp ids={[81]} />, averaging all 5 fold checkpoints), Model D reached <b>{fmt("ext.concept79.holdout.calibrated.macro_f1", 4)}</b> Macro-F1 on 200 apnea-heavy Boston holdout patients ({fmt("delta.concept79_holdout_vs_model_c", 4, true)} over Model C, with a smaller CV-to-holdout drop) and <b>{fmt("ext.concept79.isruc.calibrated_scorer1.macro_f1", 4)} / {fmt("ext.concept79.isruc.calibrated_scorer2.macro_f1", 4)}</b> across 99 external Coimbra hospital nights—ahead of Model C against both scorers, though cross-hospital N3 shift compressed Boston&rsquo;s margin. At a 90% target, stage-conditional <b>Mondrian conformal sets</b> maintain {formatPercent(mon90.empirical_coverage)} coverage across every stage in Boston CV and {pct("ext.concept79.holdout.conformal.coverage_90.coverage")} overall on Boston holdouts ({pct("ext.concept79.holdout.conformal.coverage_95.coverage")} at 95%), while dipping on holdout N2/N3 and Coimbra N3 under cross-cohort shift.
+          This study develops a compact, structured alternative—<b>Model D</b>—that separates standard brain, eye, and chin measurements into four independent physiological branches before reading backward and forward across the night. With roughly {Math.round(uSleepWeights / activeParams)} times fewer weights than leading raw-waveform networks <Citation number={26} />, it keeps per-system reasoning inspectable and pairs every decision with a calibrated uncertainty set that lists multiple plausible stages on blurry transitions.
+        </p>
+        <p>
+          Across 320 Boston development patients, Model D reached <b>{formatMetric(activeF1)}</b> macro-F1. In locked testing on 200 unseen Boston patients with heavier sleep apnea, it held <b>{fmt("ext.concept79.holdout.calibrated.macro_f1")}</b>—improving substantially over our earlier decision-tree baseline—and transferred without retraining to 99 patients from an independent hospital in Coimbra, Portugal at <b>{fmt("ext.concept79.isruc.calibrated_scorer1.macro_f1")}</b> against clinical scorers. Checking its uncertainty sets across hospitals also revealed a slow-wave calibration shift in Coimbra, showing where lightweight local calibration is needed before cross-clinic deployment.
         </p>
       </div>
     </section>
@@ -398,7 +371,6 @@ function StudySummary() {
 function DiscussionExplorer() {
   const full = data.complexity.find((row) => row.learner === "hgb_l31_i100");
   const smaller = data.complexity.find((row) => row.learner === "hgb_l8_i100");
-  const mon90 = conceptData.conformal.coverage_90.mondrian;
   const gates = conceptData.concept_attribution.stage_gates;
   const wakeGate = gates.find((g) => g.stage === "Wake");
   const n3Gate = gates.find((g) => g.stage === "N3");
@@ -407,13 +379,13 @@ function DiscussionExplorer() {
   return (
     <div className="research-conclusion">
       <p>
-        <b>1. Disentangling data scale vs. architecture (+{formatMetric(attr.full_macro_f1 - adopted.metrics.macro_f1)} over Model C):</b> In Experiment #73 (<Exp ids={[73]} />), expanding training from 230 to 704 Boston nights on a fixed sequence architecture added {fmt("dev.additional_training.delta", 4, true)} Macro-F1 ({fmt("dev.additional_training.reference.macro_f1", 4)} → {fmt("dev.additional_training.candidate.macro_f1", 4)}). On that same 704-patient pool (<SecRef to="supp-cardio" />), unifying complementary slow-wave, spindle/K-complex, and night-history markers inside whole-night recurrence added {fmt("dev.concept79.vs_73.delta", 4, true)} in Model D (#{conceptData.active_experiment}, {fmt("dev.concept79.calibrated.macro_f1", 4)}), matching 309-feature Multi-scale HGB (#76, {fmt("dev.hgb704.calibrated.macro_f1", 4)}) and trading {formatMetric(r("dev.bigru75.calibrated.macro_f1") - attr.full_macro_f1)} vs. 266k-weight Dense BiGRU (#75, {fmt("dev.bigru75.calibrated.macro_f1", 4)}) for 4× fewer weights and four-branch additive local scoring ({formatMetric(attr.local_only_macro_f1)} local-only; +{formatMetric(attr.temporal_context_gain)} from directional gates, e.g., Wake future {wakeGate ? formatMetric(wakeGate.future) : "—"} vs. N3 past {n3Gate ? formatMetric(n3Gate.past) : "—"}). Adding ECG heart rate and respiratory envelopes in #80 ({fmt("dev.cues80.calibrated.macro_f1", 4)}) yielded no net 5-fold gain.
+        <b>What drove the gain over earlier models.</b> Comparing models trained on the same expanded Boston pool (<SecRef to="supp-cardio" />) shows that both extra training recordings (<Exp ids={[73]} />, {fmt("dev.additional_training.delta", 3, true)}) and richer sleep-event features with whole-night recurrence ({fmt("dev.concept79.vs_73.delta", 3, true)}) contributed to moving from Model C ({formatMetric(adopted.metrics.macro_f1)}) to Model D ({formatMetric(attr.full_macro_f1)}). Model D gives up a tiny fraction of cross-validation accuracy relative to a dense black-box recurrent network (#75) in exchange for four times fewer weights and an inspectable four-branch decomposition, where directional memory adds +{formatMetric(attr.temporal_context_gain)} and recovers natural sleep-stage asymmetry (Wake looks ahead at {wakeGate ? formatMetric(wakeGate.future) : "—"}; deep N3 anchors to preceding slow waves at {n3Gate ? formatMetric(n3Gate.past) : "—"}). Adding heart rate and breathing signals (#80) gave no net gain once brain, eye, and chin cues were present.
       </p>
       <p>
-        <b>2. Cross-hospital shift, calibration, and conformal limits:</b> Out-of-fold Mondrian thresholds hold ~90% / 95% per-stage coverage in Boston CV (single-stage accuracy {formatPercent(mon90.singleton_accuracy)} at 90%) and {pct("ext.concept79.holdout.conformal.coverage_95.coverage")} overall at 95% on Boston holdouts. Under distribution shift without local recalibration, 90%-target coverage dips to {formatPercent(conceptData.external_eval.holdout.conformal_90.per_stage_coverage.N2)}/{formatPercent(conceptData.external_eval.holdout.conformal_90.per_stage_coverage.N3)} on apnea-heavy Boston holdout N2/N3, and drops to {formatPercent(conceptData.external_eval.isruc.conformal_90.per_stage_coverage.Wake)} on Wake and {formatPercent(conceptData.external_eval.isruc.conformal_90.per_stage_coverage.N3)} on N3 against Coimbra Scorer 1. Likewise, Boston-fitted prior-power calibration slightly helped Boston holdout ({fmt("ext.concept79.holdout.raw.macro_f1", 4)} → {fmt("ext.concept79.holdout.calibrated.macro_f1", 4)}) but trimmed raw Coimbra logits ({fmt("ext.concept79.isruc.raw_scorer1.macro_f1", 4)} → {fmt("ext.concept79.isruc.calibrated_scorer1.macro_f1", 4)} Scorer 1), pointing to clinic differences in stage prevalence and ≥75 µV frontal slow-wave amplitude thresholds. Because detecting under-coverage requires labeled target-clinic hypnograms, transferring to a new hospital warrants lightweight site recalibration on a small labeled sample.
+        <b>Generalization limits across hospitals.</b> Model D held up cleanly on the harder Boston holdout cohort, but transferring to Coimbra without retraining narrowed its margin over Model C. Its per-stage uncertainty checks pinpointed why: fixed Boston thresholds held well in development, dipped modestly on N2 and N3 in apnea-heavy Boston holdouts, and under-covered deep N3 sleep ({formatPercent(conceptData.external_eval.isruc.conformal_90.per_stage_coverage.N3)}) and Wake ({formatPercent(conceptData.external_eval.isruc.conformal_90.per_stage_coverage.Wake)}) in Coimbra. Because hospital montages, scoring habits, and slow-wave amplitudes differ across clinics, moving a staging model to a new hospital still warrants checking and recalibrating thresholds on a small labeled local sample.
       </p>
       <p>
-        <b>3. Deployment constraints &amp; next engineering steps:</b> Model D is strictly an offline post-recording scorer: in addition to the anti-causal future GRU, several multi-minute markers (<code>atonia_fraction_10min</code>, <code>nearby_eye_atonia</code>, <code>slow_burden_vs_clock</code>) and per-night robust normalization depend on the complete recording, so real-time bedside staging would require causal feature and causal-GRU replacements. Finally, per-night holdout Macro-F1 spans {fmt("ext.concept79.holdout.calibrated.subj_median")} median down to {conceptData.external_eval.holdout.subj_min.toFixed(3)} (<a href="#validation-distribution">Figure 2</a>), motivating automated lead-dropout/artifact triage on the lowest-decile apnea recordings.
+        <b>Practical constraints and next steps.</b> Because Model D uses both future context and whole-night normalization, it is an offline post-recording scorer rather than a real-time bedside monitor; real-time use would require causal-only features and forward-only recurrence. In addition, patient-to-patient spread remains wide on the most severely fragmented recordings (<a href="#validation-distribution">Figure 2</a>), pointing to automated lead-quality and artifact triage as the clearest next improvement.
       </p>
       {full && smaller ? (
         <p className="research-protocol-source">
@@ -459,11 +431,6 @@ export function StagingResearchDashboard() {
       </section>
 
       <StudySummary />
-
-      <section className="research-section" id="lead-overview">
-        <ConceptHypnogramFigure />
-        <ConceptExternalDistFigure />
-      </section>
 
       <section className="research-section" id="introduction">
         <SectionHeading title="1 Introduction" />
@@ -529,13 +496,13 @@ export function StagingResearchDashboard() {
         <div className="research-results-block research-block" id="performance">
           <SubHeading number="3.1" title="Performance" />
           <p className="research-takeaway">
-            On 320 Boston development patients, expanding training data (255 → 704 nights/fold) and adding whole-night sequence context lifted performance from Model C ({formatMetric(adopted.metrics.macro_f1)}) to {formatMetric(conceptData.calibrated.mean_fold_macro_f1)}, which Model D (#{conceptData.active_experiment}) achieves at 4× fewer weights than #75.
+            Moving from single-epoch trees to whole-night sequence modeling lifted Boston development performance from Model C ({formatMetric(adopted.metrics.macro_f1)}) to Model D ({formatMetric(conceptData.calibrated.mean_fold_macro_f1)}) while staying orders of magnitude smaller than raw-waveform networks.
           </p>
           <h4 id="comparison">Comparison with published models</h4>
           <ComparisonCompact />
           <h4>Model progression (A → B → C → D) on 320 development patients</h4>
           <p>
-            From single-epoch trees (A {epochReference ? formatMetric(epochReference.metrics.macro_f1) : "—"}) and 2.5-minute context trees (B {fmt("cv.window33.epoch.macro_f1")} / Model C {formatMetric(adopted.metrics.macro_f1)}), Model D reached <b>{formatMetric(conceptData.calibrated.mean_fold_macro_f1)}</b> macro-F1 (κ {conceptData.calibrated.kappa.toFixed(2)}: Wake {formatMetric(conceptData.calibrated.stage_f1.Wake)}, N1 {formatMetric(conceptData.calibrated.stage_f1.N1)}, N2 {formatMetric(conceptData.calibrated.stage_f1.N2)}, N3 {formatMetric(conceptData.calibrated.stage_f1.N3)}, REM {formatMetric(conceptData.calibrated.stage_f1.REM)}) with {conceptData.model_params.toLocaleString("en-US")} weights/fold. On the same 704-patient folds (<SecRef to="supp-cardio" />), Model D matches Multi-scale HGB (#76, {fmt("dev.hgb704.calibrated.macro_f1")}) and gives up {formatMetric(r("dev.bigru75.calibrated.macro_f1") - conceptData.calibrated.mean_fold_macro_f1)} vs. Dense BiGRU (#75, {fmt("dev.bigru75.calibrated.macro_f1")}, 266k weights) for 4× smaller size and additive stems. Brief transitional N1 stays hardest ({pct("lit.aasm.agreement_N1")} AASM human consensus).
+            Single-epoch trees (A, {epochReference ? formatMetric(epochReference.metrics.macro_f1) : "—"}) improved substantially once 2.5 minutes of surrounding context was added (B and C). Expanding the training pool and adding whole-night sequence memory in Model D lifted macro-F1 to <b>{formatMetric(conceptData.calibrated.mean_fold_macro_f1)}</b> (κ {conceptData.calibrated.kappa.toFixed(2)}), with the biggest remaining bottleneck in brief transitional N1 sleep ({pct("lit.aasm.agreement_N1")} human scorer consensus).
           </p>
           <ConceptProgressionSection />
         </div>
@@ -550,9 +517,9 @@ export function StagingResearchDashboard() {
           <ConformalUncertaintySection />
         </div>
         <div className="research-results-block research-block" id="robustness">
-          <SubHeading number="3.3" title="Locked external validation (Boston holdout &amp; Coimbra ISRUC)" />
+          <SubHeading number="3.3" title="Locked external validation (Boston holdout &amp; Coimbra)" />
           <p className="research-takeaway">
-            Scoring the 5-fold ensemble in locked Look #3 (<Exp ids={[81]} />) held <b>{fmt("ext.concept79.holdout.calibrated.macro_f1", 4)}</b> on 200 apnea-heavy Boston holdout patients (<b>{fmt("delta.concept79_holdout_vs_model_c", 4, true)}</b> vs. Model C) and reached <b>{fmt("ext.concept79.isruc.calibrated_scorer1.macro_f1", 4)} / {fmt("ext.concept79.isruc.calibrated_scorer2.macro_f1", 4)}</b> on 99 Coimbra hospital nights—ahead of Model C on both scorers, though cross-site N3 shift narrowed Boston&rsquo;s margin.
+            On 200 reserved Boston patients with heavier sleep apnea, Model D held <b>{fmt("ext.concept79.holdout.calibrated.macro_f1")}</b> macro-F1 ({fmt("delta.concept79_holdout_vs_model_c", 3, true)} over Model C). On 99 patients from an independent hospital in Coimbra, it reached <b>{fmt("ext.concept79.isruc.calibrated_scorer1.macro_f1")}</b> against clinical scorers—still ahead of Model C, though cross-hospital differences narrowed Boston&rsquo;s margin. <Exp ids={[81]} />
           </p>
           <div className="research-model-table-wrap">
             <table className="research-model-table">
@@ -613,6 +580,8 @@ export function StagingResearchDashboard() {
           <p>
             On Boston holdouts (59% moderate or severe apnea), Model D beat Model C in every stage and shrank the CV-to-holdout drop (−{formatMetric(conceptData.calibrated.mean_fold_macro_f1 - r("ext.concept79.holdout.calibrated.macro_f1"))} vs. −{formatMetric(adopted.metrics.macro_f1 - r("holdout.look2.g20.macro_f1"))}), matching U-Time&rsquo;s single-channel raw-EEG Boston mark ({fmt("lit.utime.macro_f1", 2)} on another split) <Citation number={27} /> while trailing U-Sleep ({fmt("lit.usleep.macro_f1", 2)} on 100 other Boston records) <Citation number={26} /> and SLEEPNET ({pct("lit.sleepnet.accuracy")} accuracy on 1,000 MGH nights vs. Model D&rsquo;s {pct("ext.concept79.holdout.calibrated.accuracy")}) <Citation number={28} />. On Coimbra ISRUC nights, Model D improved over Model C on both scorers ({fmt("delta.concept79_isruc_s1_vs_model_c", 4, true)} Scorer 1; {fmt("delta.concept79_isruc_s2_vs_model_c", 4, true)} Scorer 2) and trailed same-cohort inter-scorer agreement ({fmt("coimbra.isruc_scorer1_vs_scorer2.macro_f1", 3)}; <a href="#validation-distribution">Figure 2</a>). Archived Model C holdout tables remain in <SecRef to="supp-models" />.
           </p>
+          <ConceptHypnogramFigure />
+          <ConceptExternalDistFigure />
         </div>
       </section>
 

@@ -134,13 +134,9 @@ export function ConceptHypnogramFigure() {
       <figcaption>
         <b>
           Figure 1. Expert and Model D on one{" "}
-          {isHoldout ? "held-out Boston night" : "Boston development night"}.
+          {isHoldout ? "unseen Boston night" : "Boston development night"}.
         </b>{" "}
-        A hypnogram tracks sleep depth from Wake at the top down to deep sleep (N3) at the bottom across an overnight recording. This unseen night ({night.record}, macro-F1 {formatMetric(night.macro_f1)}) sits at the {isHoldout ? "held-out" : "CV"} cohort median (
-        {isHoldout
-          ? fmt("ext.concept79.holdout.calibrated.subj_median")
-          : formatMetric(conceptData.calibrated.subj_median ?? conceptData.calibrated.mean_fold_macro_f1)}{" "}
-        across all {isHoldout ? conceptData.external_eval?.holdout?.n_subjects ?? 200 : 320} nights). Shaded columns = multi-stage 90% conformal uncertainty sets (concentrated at transitions); bottom ticks = disagreements ({night.disagreements} of {night.epochs} epochs).
+        A hypnogram tracks sleep depth from Wake at the top down to deep sleep (N3) at the bottom across an overnight recording. This unseen patient ({night.record}) sits right at the held-out cohort median. Shaded bands mark epochs where the model&rsquo;s 90% uncertainty set holds more than one plausible stage (concentrated at transitions); bottom ticks mark disagreements ({night.disagreements} of {night.epochs} epochs).
       </figcaption>
       <div className="lead-plot" ref={ref}>
         <svg
@@ -592,9 +588,7 @@ export function ConceptAttributionSection() {
   return (
     <div className="research-evidence">
       <p className="research-evidence-lede">
-        Model D&rsquo;s local stem sums {attr.concepts.length} isolated physiological branches additively into feature-only stage log-odds (6-s tracks plus multi-minute markers, before BiGRU sequence recurrence; local-only macro-F1{" "}
-        {formatMetric(attr.local_only_macro_f1)} on uncalibrated OOF logits, where past and future GRUs add{" "}
-        {formatMetric(attr.temporal_context_gain)} to reach {formatMetric(attr.full_macro_f1)}). Select a branch below to inspect its post-hoc ablation impact by stage:
+        Model D scores four physiological branches separately before reading across the whole night (reaching {formatMetric(attr.local_only_macro_f1)} from the four branches alone, plus {formatMetric(attr.temporal_context_gain)} from whole-night sequence memory). Select a branch below to see which sleep stages lose accuracy when that branch is turned off:
       </p>
 
       <div className="research-concept-list" role="group" aria-label="Additive physiological concept branches">
@@ -627,17 +621,16 @@ export function ConceptAttributionSection() {
       </div>
 
       <p className="research-concept-detail" aria-live="polite">
-        <b>{current.label}</b> (per-stage local F1 Δ when branch is zeroed out before BiGRU smoothing):{" "}
+        <b>{current.label}</b> (per-stage change when turned off before whole-night smoothing):{" "}
         {STAGES.map((st, idx) => {
           const delta = current.per_stage_local_f1_delta[st];
           const signed = `${delta >= 0 ? "+" : "−"}${Math.abs(delta).toFixed(3)}`;
           return `${idx ? " · " : ""}${st} ${signed}`;
         })}
-        {" "}(direct local-term Δ holding BiGRU context logits fixed: {current.full_direct_drop >= 0 ? "+" : "−"}
-        {Math.abs(current.full_direct_drop).toFixed(4)} macro-F1).
+        .
       </p>
       <p className="research-protocol-source">
-        Because the four branches are trained jointly, zeroing <code>slow_wave</code> post-hoc without refitting causes only a small argmax F1 change (broadband central power <code>c_log_power</code> in <code>wake_n1</code> and frontal slow-wave leakage into EOG still keep most N3 epochs above threshold, even though <code>slow_wave</code>&rsquo;s mean |logit| on true N3 epochs is {current.mean_abs_true_stage_logit ? conceptData.concept_attribution.concepts.find((c) => c.id === "slow_wave")?.mean_abs_true_stage_logit.N3.toFixed(2) : "—"}). Conversely, <code>rem_tone</code> strongly affects both N1 and REM because it carries slow-vs-rapid eye-movement ratios and chin muscle tone.
+        Because the four branches are trained together, turning off the slow-wave branch alone causes a small drop when neighbouring features (broadband brain power in the wake/drowsiness branch and frontal slow waves leaking into the eye channel) still support deep N3 sleep.
       </p>
 
       <h5 style={{ marginTop: "1.25rem", marginBottom: "0.5rem" }}>
@@ -775,7 +768,7 @@ export function ConformalUncertaintySection() {
         </table>
       </div>
       <p className="research-protocol-source">
-        In Boston CV, out-of-fold Mondrian thresholds hold ~90%/95% coverage in every stage (whereas a single global threshold under-covers N1). Applying fixed Boston thresholds to external cohorts tests cross-cohort exchangeability: N2/N3 drop on apnea-heavy Boston holdouts, and Wake ({extIs ? formatPercent(extIs.per_stage_coverage.Wake) : "—"}) plus N3 ({extIs ? formatPercent(extIs.per_stage_coverage.N3) : "—"}) drop against Coimbra Scorer 1 under cross-hospital shift.
+        Using one threshold per stage keeps rare light sleep (N1) covered at the target rate in Boston development, unlike a single global threshold. When those fixed Boston thresholds are carried over to unseen hospitals without local recalibration, coverage dips on N2 and N3 in apnea-heavy Boston holdouts and on Wake ({extIs ? formatPercent(extIs.per_stage_coverage.Wake) : "—"}) and N3 ({extIs ? formatPercent(extIs.per_stage_coverage.N3) : "—"}) in Coimbra.
       </p>
     </div>
   );

@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 
 const paperItems = [
   { id: "summary", href: "/#summary", label: "Abstract" },
-  { id: "lead-overview", href: "/#lead-overview", label: "Key figures" },
   { id: "introduction", href: "/#introduction", label: "1 Introduction" },
   { id: "methods", href: "/#methods", label: "2 Methods" },
   { id: "results", href: "/#results", label: "3 Results" },
