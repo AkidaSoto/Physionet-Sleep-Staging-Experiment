@@ -2,13 +2,220 @@
 
 import { useEffect, useRef, useState } from "react";
 import conceptData from "../../content/generated/concept-showcase.json";
-import { ACCENT, INK, INK_3, RULE, STAGE_NAMES, modalityInk, sensorColors } from "../../design/palette";
+import { ACCENT, INK, INK_3, RULE, STAGE_NAMES, modalityInk, sensorColors, stageColors } from "../../design/palette";
 import { fmt } from "../../lib/results";
 import { formatMetric, formatPercent } from "../ui/ResearchPrimitives";
 
 const ROW_OF_STAGE = [0, 2, 3, 4, 1];
 const ROW_LABELS = ["Wake", "REM", "N1", "N2", "N3"];
 const STAGES = ["Wake", "N1", "N2", "N3", "REM"] as const;
+type StageKey = (typeof STAGES)[number];
+
+const BRANCH_SHORT: Record<string, string> = {
+  slow_wave: "Slow-wave & delta",
+  n2_events: "N2 spindles & K-complexes",
+  wake_n1: "Wake / N1 arousal",
+  rem_tone: "REM ocular & chin tone",
+};
+
+const BRANCH_ORDER = ["slow_wave", "n2_events", "wake_n1", "rem_tone"] as const;
+
+export function ConceptArchitectureFigure() {
+  const [stage, setStage] = useState<StageKey>("N3");
+  const attr = conceptData.concept_attribution;
+  const conceptsById = new Map(attr.concepts.map((c) => [c.id, c]));
+  const ordered = BRANCH_ORDER.map((id) => conceptsById.get(id)).filter(Boolean) as typeof attr.concepts;
+  const gate = attr.stage_gates.find((g) => g.stage === stage) ?? attr.stage_gates[0];
+  const stageColor = stageColors[stage] ?? ACCENT;
+
+  const strengths = ordered.map((c) => c.mean_abs_true_stage_logit[stage]);
+  const maxStrength = Math.max(...strengths, 0.5);
+  const topBranch = ordered[strengths.indexOf(Math.max(...strengths))];
+
+  const branchColor = (id: string) =>
+    id === "rem_tone" ? modalityInk.eog : modalityInk.eeg;
+
+  const gateNote =
+    gate.future > gate.past + 0.1
+      ? `looks ahead into upcoming transitions (future gate ${formatMetric(gate.future)} vs. past ${formatMetric(gate.past)})`
+      : gate.past > gate.future + 0.15
+        ? `anchors strongly to preceding sleep bouts (past gate ${formatMetric(gate.past)} vs. future ${formatMetric(gate.future)})`
+        : `balances past (${formatMetric(gate.past)}) and future (${formatMetric(gate.future)}) context`;
+
+  return (
+    <figure className="concept-arch-figure" aria-label="Interactive architecture diagram of Model D">
+      <div className="concept-arch-controls" role="group" aria-label="Inspect stage pathway">
+        <span className="concept-arch-controls-label">Inspect stage pathway:</span>
+        <div className="concept-arch-stage-pills">
+          {STAGES.map((st) => {
+            const active = st === stage;
+            return (
+              <button
+                key={st}
+                type="button"
+                className={`concept-arch-stage-btn${active ? " is-active" : ""}`}
+                aria-pressed={active}
+                onClick={() => setStage(st)}
+              >
+                <i style={{ background: stageColors[st] }} aria-hidden="true" />
+                {st}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <svg
+        viewBox="0 0 760 286"
+        className="concept-arch-svg"
+        role="img"
+        aria-label={`Model D flow for ${stage}: four physiological branches sum into a local score and feed past and future 64-unit GRUs with gates ${formatMetric(gate.past)} and ${formatMetric(gate.future)}.`}
+      >
+        <defs>
+          <marker id="arch-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0 1 L7 4 L0 7 z" fill={INK_3} />
+          </marker>
+          <marker id="arch-arrow-accent" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0 1 L7 4 L0 7 z" fill={ACCENT} />
+          </marker>
+        </defs>
+
+        {/* Column headers */}
+        <text x="12" y="16" className="arch-col-head">1 · FOUR PHYSIOLOGICAL BRANCHES</text>
+        <text x="276" y="16" className="arch-col-head">2 · ADDITIVE LOCAL + WHOLE-NIGHT MEMORY</text>
+        <text x="582" y="16" className="arch-col-head">3 · DECISION &amp; SET</text>
+
+        {/* Connectors: branches -> local sum (top) and -> BiGRU concat (bottom) */}
+        {ordered.map((c, i) => {
+          const cy = 56 + i * 58;
+          const strength = c.mean_abs_true_stage_logit[stage];
+          const norm = strength / maxStrength;
+          const active = norm > 0.72;
+          return (
+            <g key={`wire-${c.id}`}>
+              <path
+                d={`M 232 ${cy} C 262 ${cy}, 268 72, 294 72`}
+                fill="none"
+                stroke={active ? stageColor : RULE}
+                strokeWidth={active ? 1.8 : 1.1}
+                strokeOpacity={active ? 0.85 : 0.7}
+              />
+              <path
+                d={`M 232 ${cy + 8} C 258 ${cy + 8}, 264 196, 294 196`}
+                fill="none"
+                stroke={RULE}
+                strokeWidth={1.1}
+                strokeDasharray="3 3"
+              />
+            </g>
+          );
+        })}
+
+        {/* Left column: 4 physiological branch cards */}
+        {ordered.map((c, i) => {
+          const y = 32 + i * 58;
+          const strength = c.mean_abs_true_stage_logit[stage];
+          const norm = Math.min(strength / 1.0, 1);
+          const isTop = c.id === topBranch.id;
+          return (
+            <g key={c.id} className="arch-branch">
+              <rect
+                x="12"
+                y={y}
+                width="220"
+                height="48"
+                rx="4"
+                fill={isTop ? "#f4f6f9" : "#fbfaf7"}
+                stroke={isTop ? stageColor : RULE}
+                strokeWidth={isTop ? 1.6 : 1}
+              />
+              <rect x="12" y={y} width="4" height="48" rx="1" fill={branchColor(c.id)} />
+              <text x="24" y={y + 18} className="arch-box-title">
+                {BRANCH_SHORT[c.id] ?? c.label}
+              </text>
+              <text x="24" y={y + 33} className="arch-box-sub">
+                {c.dims} inputs → {c.width}u
+              </text>
+              <text x="222" y={y + 33} textAnchor="end" className="arch-val">
+                |{strength.toFixed(2)}|
+              </text>
+              <rect x="122" y={y + 26} width="66" height="6" rx="3" fill="#ece9e1" />
+              <rect
+                x="122"
+                y={y + 26}
+                width={Math.max(4, norm * 66)}
+                height="6"
+                rx="3"
+                fill={stageColor}
+                className="arch-anim-bar"
+              />
+            </g>
+          );
+        })}
+
+        {/* Center-top: Additive local sum */}
+        <rect x="294" y="38" width="234" height="68" rx="4" fill="#fbfaf7" stroke={INK} strokeWidth={1.2} />
+        <text x="308" y="59" className="arch-box-title">Additive local score</text>
+        <text x="308" y="76" className="arch-box-sub">s₁ + s₂ + s₃ + s₄ + bias (no cross-talk)</text>
+        <text x="308" y="94" className="arch-box-sub">
+          Alone reaches {formatMetric(attr.local_only_macro_f1)} macro-F1
+        </text>
+
+        {/* Center-bottom: Bidirectional GRU + Stage Gates */}
+        <rect x="294" y="132" width="234" height="124" rx="4" fill="#fbfaf7" stroke={ACCENT} strokeWidth={1.3} />
+        <text x="308" y="153" className="arch-box-title">Whole-night memory (64u BiGRU)</text>
+        <text x="308" y="169" className="arch-box-sub">
+          Reads full night (+{formatMetric(attr.temporal_context_gain)} macro-F1)
+        </text>
+
+        {/* Past gate bar */}
+        <text x="308" y="196" className="arch-gate-label">← Past gate ({stage})</text>
+        <text x="516" y="196" textAnchor="end" className="arch-val">{formatMetric(gate.past)}</text>
+        <rect x="308" y="202" width="208" height="8" rx="4" fill="#ece9e1" />
+        <rect
+          x="308"
+          y="202"
+          width={Math.max(6, Math.min(gate.past, 1) * 208)}
+          height="8"
+          rx="4"
+          fill={ACCENT}
+          className="arch-anim-bar"
+        />
+
+        {/* Future gate bar */}
+        <text x="308" y="228" className="arch-gate-label">Future gate ({stage}) →</text>
+        <text x="516" y="228" textAnchor="end" className="arch-val">{formatMetric(gate.future)}</text>
+        <rect x="308" y="234" width="208" height="8" rx="4" fill="#ece9e1" />
+        <rect
+          x="308"
+          y="234"
+          width={Math.max(6, Math.min(gate.future, 1) * 208)}
+          height="8"
+          rx="4"
+          fill={stageColor}
+          className="arch-anim-bar"
+        />
+
+        {/* Connectors: Center -> Right Decision */}
+        <path d="M 528 72 C 556 72, 558 128, 582 128" fill="none" stroke={INK} strokeWidth={1.3} markerEnd="url(#arch-arrow)" />
+        <path d="M 528 196 C 556 196, 558 152, 582 152" fill="none" stroke={ACCENT} strokeWidth={1.4} markerEnd="url(#arch-arrow-accent)" />
+
+        {/* Right column: Combined score + Uncertainty set */}
+        <rect x="582" y="88" width="166" height="106" rx="4" fill="#f4f6f9" stroke={ACCENT} strokeWidth={1.4} />
+        <text x="596" y="110" className="arch-box-title">Stage + 90% Set</text>
+        <text x="596" y="128" className="arch-box-sub">local + past·gₚ + future·g_f</text>
+        <line x1="596" y1="139" x2="734" y2="139" stroke={RULE} />
+        <text x="596" y="156" className="arch-box-sub">Clear epoch → 1 stage</text>
+        <text x="596" y="172" className="arch-box-sub">Blurry transition → 2–3</text>
+        <text x="596" y="186" className="arch-box-sub">{conceptData.model_params.toLocaleString("en-US")} weights / fold</text>
+      </svg>
+
+      <figcaption className="concept-arch-readout" aria-live="polite">
+        <b>{stage} pathway:</b> strongest direct local signal comes from <b>{topBranch.label}</b> (mean |logit| {Math.max(...strengths).toFixed(2)}); across the night, the recurrent layer {gateNote}.
+      </figcaption>
+    </figure>
+  );
+}
 
 function useWidth(fallback: number) {
   const ref = useRef<HTMLDivElement>(null);
@@ -488,8 +695,8 @@ export function ConceptExternalDistFigure() {
           ) : (
             <>
               Hover or use arrow keys to inspect individual nights. Per-night medians appear on the right; pooled all-epoch macro-F1 is{" "}
-              {fmt("ext.concept79.holdout.calibrated.macro_f1")} in Boston holdout and{" "}
-              {fmt("ext.concept79.isruc.calibrated_scorer1.macro_f1")} / {fmt("ext.concept79.isruc.calibrated_scorer2.macro_f1")} in Coimbra.
+              {fmt("ext.minimal82.holdout.calibrated.macro_f1")} in Boston holdout and{" "}
+              {fmt("ext.minimal82.isruc.calibrated_scorer1.macro_f1")} / {fmt("ext.minimal82.isruc.calibrated_scorer2.macro_f1")} in Coimbra.
             </>
           )}
         </p>
@@ -632,38 +839,6 @@ export function ConceptAttributionSection() {
       <p className="research-protocol-source">
         Because the four branches are trained together, turning off the slow-wave branch alone causes a small drop when neighbouring features (broadband brain power in the wake/drowsiness branch and frontal slow waves leaking into the eye channel) still support deep N3 sleep.
       </p>
-
-      <h5 style={{ marginTop: "1.25rem", marginBottom: "0.5rem" }}>
-        Learned past vs. future context gates by stage
-      </h5>
-      <div className="research-model-table-wrap">
-        <table className="research-model-table">
-          <thead>
-            <tr>
-              <th scope="col">Stage</th>
-              <th scope="col">Past gate (history)</th>
-              <th scope="col">Future gate (look-ahead)</th>
-              <th scope="col">Physiological role</th>
-            </tr>
-          </thead>
-          <tbody>
-            {attr.stage_gates.map((g) => (
-              <tr key={g.stage}>
-                <th scope="row">{g.stage}</th>
-                <td>{formatMetric(g.past)}</td>
-                <td>{formatMetric(g.future)}</td>
-                <td>
-                  {g.future > g.past + 0.1
-                    ? "Looks ahead into upcoming transitions"
-                    : g.past > g.future + 0.15
-                      ? "Anchors strongly to preceding bout"
-                      : "Balanced past and future context"}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
     </div>
   );
 }
@@ -706,19 +881,15 @@ export function ConformalUncertaintySection() {
               <th scope="col">Overall cov.</th>
               <th scope="col">N1 cov.</th>
               <th scope="col">N2 / N3 cov.</th>
-              <th scope="col">Mean set size</th>
-              <th scope="col" title="Accuracy on epochs where the prediction set contains exactly 1 stage">
-                Single-stage acc.
-              </th>
-              <th scope="col" title="Mean set size on stage-transition epochs vs. steady interior bouts">
-                Set size: Trans. / Steady
+              <th scope="col" title="Average stages in the prediction set, plus accuracy on confident single-stage calls">
+                Mean size (single-stage acc.)
               </th>
             </tr>
           </thead>
           <tbody>
             {[
-              { name: "Boston CV · Standard split conformal (1 global threshold)", m: marginal, adopted: false },
-              { name: "Boston CV · Mondrian conformal (per-stage thresholds)", m: mondrian, adopted: true },
+              { name: "Boston CV · Single global threshold", m: marginal, adopted: false },
+              { name: "Boston CV · Per-stage thresholds (Mondrian)", m: mondrian, adopted: true },
             ].map(({ name, m, adopted }) => (
               <tr key={name} className={adopted ? "is-adopted" : undefined}>
                 <th scope="row">{name}</th>
@@ -727,40 +898,34 @@ export function ConformalUncertaintySection() {
                 <td>
                   {formatPercent(m.per_stage.N2.coverage)} / {formatPercent(m.per_stage.N3.coverage)}
                 </td>
-                <td>{m.mean_set_size.toFixed(2)} stages</td>
-                <td>{formatPercent(m.singleton_accuracy)}</td>
                 <td>
-                  {m.transition_epochs.mean_set_size.toFixed(2)} / {m.interior_epochs.mean_set_size.toFixed(2)}
+                  {m.mean_set_size.toFixed(2)} stages ({formatPercent(m.singleton_accuracy)})
                 </td>
               </tr>
             ))}
             {extHo ? (
               <tr>
-                <th scope="row">Boston Holdout (200) · fixed out-of-fold Mondrian</th>
+                <th scope="row">Boston Holdout (200) · fixed Boston thresholds</th>
                 <td>{formatPercent(extHo.empirical_coverage)}</td>
                 <td>{formatPercent(extHo.per_stage_coverage.N1)}</td>
                 <td>
                   {formatPercent(extHo.per_stage_coverage.N2)} / {formatPercent(extHo.per_stage_coverage.N3)}
                 </td>
-                <td>{extHo.mean_set_size.toFixed(2)} stages</td>
-                <td>{formatPercent(extHo.singleton_accuracy)}</td>
                 <td>
-                  {extHo.transition_set_size.toFixed(2)} / {extHo.interior_set_size.toFixed(2)}
+                  {extHo.mean_set_size.toFixed(2)} stages ({formatPercent(extHo.singleton_accuracy)})
                 </td>
               </tr>
             ) : null}
             {extIs ? (
               <tr>
-                <th scope="row">Coimbra ISRUC (99, vs. Scorer 1) · fixed out-of-fold Mondrian</th>
+                <th scope="row">Coimbra ISRUC (99, vs. Scorer 1) · fixed Boston thresholds</th>
                 <td>{formatPercent(extIs.empirical_coverage)}</td>
                 <td>{formatPercent(extIs.per_stage_coverage.N1)}</td>
                 <td>
                   {formatPercent(extIs.per_stage_coverage.N2)} / {formatPercent(extIs.per_stage_coverage.N3)}
                 </td>
-                <td>{extIs.mean_set_size.toFixed(2)} stages</td>
-                <td>{formatPercent(extIs.singleton_accuracy)}</td>
                 <td>
-                  {extIs.transition_set_size.toFixed(2)} / {extIs.interior_set_size.toFixed(2)}
+                  {extIs.mean_set_size.toFixed(2)} stages ({formatPercent(extIs.singleton_accuracy)})
                 </td>
               </tr>
             ) : null}
@@ -811,7 +976,7 @@ export function SupplementaryExplorationSection() {
             Experiment #80: Pre-hoc Cohen&rsquo;s d cue screen (320 dev training folds)
           </h5>
           <p className="research-other-sum-note" style={{ marginBottom: "0.5rem" }}>
-            Candidate signals missing from the 474-patient cache were screened on outer-training folds before neural fitting. Although relative delta passed Stage-1 screening, a Fold-0 ablation showed no gain over existing slow-wave markers; combining the winning REM/EMG and autonomic cues across all 5 folds reached {fmt("dev.cues80.calibrated.macro_f1", 4)} macro-F1, so Model D (#79) was retained to avoid extra parameters and ECG/belt dependencies.
+            Candidate signals missing from the 474-patient cache were screened on outer-training folds before neural fitting. Although relative delta passed Stage-1 screening, a Fold-0 ablation showed no gain over existing slow-wave markers; combining the winning REM/EMG and autonomic cues across all 5 folds reached {fmt("dev.cues80.calibrated.macro_f1", 4)} macro-F1, so the leaner EEG+EOG+EMG-only Model D was retained to avoid extra parameters and ECG/belt dependencies.
           </p>
           <div className="research-model-table-wrap">
             <table className="research-model-table">

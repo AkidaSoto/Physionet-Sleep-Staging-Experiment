@@ -124,7 +124,7 @@ def _select_median_night(
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--active-exp", type=int, choices=[79, 80], default=79)
+    ap.add_argument("--active-exp", type=int, choices=[79, 80, 82], default=82)
     args = ap.parse_args()
 
     s75 = _load_json(ROOT / "artifacts/exploration/cinc-bigru-unified/summary.json")
@@ -135,17 +135,28 @@ def main() -> int:
     s80 = _load_json(s80_dir / "summary.json")
     if s80 is not None and "calibrated" not in s80:
         s80 = None
+    s82_dir = ROOT / "artifacts/exploration/cinc-bigru-pruned/minimal13"
+    s82 = _load_json(s82_dir / "summary.json")
     d_screen = _load_json(ROOT / "artifacts/exploration/cinc-bigru-cues/cohen_d_screen.json")
     dash = _load_json(GENERATED / "staging-dashboard.json")
     lead_old = _load_json(GENERATED / "lead-figure.json")
 
-    ho_sum = _load_json(ROOT / "artifacts/exploration/cinc-bigru-concept/external_eval/holdout_summary.json")
-    is_sum = _load_json(ROOT / "artifacts/exploration/cinc-bigru-concept/external_eval/isruc_summary.json")
-
-    active_exp = 80 if (args.active_exp == 80 and s80 is not None) else 79
-    active_summary = s80 if active_exp == 80 else s79
-    active_dir = s80_dir if active_exp == 80 else (ROOT / "artifacts/exploration/cinc-bigru-concept")
+    if args.active_exp == 82 and s82 is not None:
+        active_exp = 82
+        active_summary = s82
+        active_dir = s82_dir
+    elif args.active_exp == 80 and s80 is not None:
+        active_exp = 80
+        active_summary = s80
+        active_dir = s80_dir
+    else:
+        active_exp = 79
+        active_summary = s79
+        active_dir = ROOT / "artifacts/exploration/cinc-bigru-concept"
     assert active_summary is not None
+
+    ho_sum = _load_json(active_dir / "external_eval" / "holdout_summary.json")
+    is_sum = _load_json(active_dir / "external_eval" / "isruc_summary.json")
 
     # Clean A -> B -> C -> D main progression ladder (tangents live in Supplementary)
     old_models = {m["id"]: m for m in dash["models"]} if dash else {}
@@ -190,11 +201,12 @@ def main() -> int:
             "train_patients": "255 / fold",
         })
     cal_act = active_summary["calibrated"]
+    n_feat = int(active_summary.get("n_features", 29 if active_exp == 79 else 13))
     ladder.append({
         "id": "model_d",
-        "label": "D · Concept-BiGRU (#79)",
+        "label": f"D · Concept-BiGRU (#{active_exp})",
         "exp": active_exp,
-        "kind": "4 additive concepts + 1-layer BiGRU + conformal",
+        "kind": f"{n_feat} single-epoch features · 4 branches + BiGRU",
         "macro_f1": round(cal_act["mean_fold_macro_f1"], 4),
         "kappa": round(cal_act["kappa"], 4),
         "folds": [round(x, 4) for x in cal_act["fold_macro_f1"]],
@@ -296,9 +308,9 @@ def main() -> int:
     ]
     cv_subj_median = float(np.median(cv_subj_f1s))
 
-    # Prefer #79's median held-out night for Figure 1 once external_eval exists!
+    # Prefer the active model's median held-out night for Figure 1 once external_eval exists!
     ho_preds_path = active_dir / "external_eval" / "holdout_predictions.parquet"
-    if active_exp == 79 and ho_preds_path.is_file():
+    if ho_preds_path.is_file():
         night_trace = _select_median_night(
             pd.read_parquet(ho_preds_path),
             active_summary,
@@ -313,7 +325,7 @@ def main() -> int:
         )
 
     external_eval = None
-    if ho_sum is not None and is_sum is not None and active_exp == 79:
+    if ho_sum is not None and is_sum is not None:
         coimbra_scorers = sorted(lead_old["patients"]["coimbra_scorers"]) if lead_old else []
         ho_vals = sorted(ho_sum["per_night_macro_f1"].values())
         s1_vals = sorted(is_sum["per_night_scorer1"].values())
@@ -339,6 +351,7 @@ def main() -> int:
         "generated_by": "scripts/export_concept_showcase.py",
         "active_experiment": active_exp,
         "has_external": external_eval is not None,
+        "n_features": n_feat,
         "model_params": int(active_summary["model_params"]),
         "input_dim": int(active_summary["input_dim"]),
         "calibrated": {

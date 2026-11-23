@@ -4709,3 +4709,127 @@ span.swatch {
     padding: 14px 16px 18px;
   }
 }
+
+/* Interactive Model D architecture diagram (§2.3) */
+.concept-arch-figure {
+  margin: 4px 0 8px;
+  padding: 14px 16px 12px;
+  border: 1px solid var(--rule);
+  border-radius: 5px;
+  background: var(--paper);
+}
+
+.concept-arch-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 14px;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.concept-arch-controls-label {
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.concept-arch-stage-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.concept-arch-stage-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 11px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.concept-arch-stage-btn > i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.concept-arch-stage-btn:hover {
+  border-color: var(--accent);
+  background: var(--accent-wash);
+}
+
+.concept-arch-stage-btn.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.concept-arch-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 780px;
+  margin: 0 auto;
+}
+
+.concept-arch-svg .arch-col-head {
+  font-family: var(--sans);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  fill: var(--ink-3);
+}
+
+.concept-arch-svg .arch-box-title {
+  font-family: var(--sans);
+  font-size: 11.5px;
+  font-weight: 700;
+  fill: var(--ink);
+}
+
+.concept-arch-svg .arch-box-sub,
+.concept-arch-svg .arch-gate-label {
+  font-family: var(--sans);
+  font-size: 10px;
+  fill: var(--ink-2);
+}
+
+.concept-arch-svg .arch-val {
+  font-family: var(--sans);
+  font-size: 10px;
+  font-weight: 600;
+  fill: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.concept-arch-svg .arch-anim-bar {
+  transition: width 220ms ease, fill 180ms ease;
+}
+
+.concept-arch-readout {
+  margin: 10px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--rule);
+  font-family: var(--sans);
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.concept-arch-readout b {
+  color: var(--ink);
+}

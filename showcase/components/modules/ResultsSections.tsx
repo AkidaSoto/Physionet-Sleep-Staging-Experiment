@@ -486,7 +486,7 @@ export function ComparisonCompact() {
         </thead>
         <tbody role="rowgroup">
           {models
-            .filter((model) => model.macroF1 !== undefined)
+            .filter((model) => model.macroF1 !== undefined && !model.name.startsWith("C "))
             .map((model) => (
               <tr role="row" key={model.name} className={model.ours ? "is-adopted" : undefined}>
                 <th role="rowheader" scope="row">
@@ -529,7 +529,7 @@ export function ComparisonCompact() {
         </tbody>
       </table>
       <p className="research-protocol-source">
-        Models C and D share the exact same 320-patient 5-fold Boston development split (Model D adds 474 fit-only Boston recordings strictly inside training folds). External testing for Model D (Boston Holdout {fmt("ext.concept79.holdout.calibrated.macro_f1", 3)}; Coimbra ISRUC {fmt("ext.concept79.isruc.calibrated_scorer1.macro_f1", 3)} / {fmt("ext.concept79.isruc.calibrated_scorer2.macro_f1", 3)}) is detailed in &sect;3.3. U-Sleep and U-Time report results on different Boston subsets; U-Sleep&rsquo;s study includes 15,660 participants across training and evaluation on 13 datasets. <Citation number={26} /> Tree values count split thresholds and leaf values, while neural sizes count learned weights.
+        Model D is scored across the 320-patient 5-fold Boston development split (with 474 fit-only Boston nights added inside training folds); external Boston Holdout ({fmt("ext.minimal82.holdout.calibrated.macro_f1", 3)}) and Coimbra ({fmt("ext.minimal82.isruc.calibrated_scorer1.macro_f1", 3)}) results follow in &sect;3.3. U-Sleep and U-Time report results on different Boston subsets; U-Sleep&rsquo;s study spans 15,660 participants across 16 clinical studies. <Citation number={26} />
       </p>
     </div>
   );

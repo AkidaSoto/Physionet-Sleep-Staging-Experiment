@@ -9,7 +9,7 @@ import { PaperDisclosure, SectionHeading, useOpenOnHash } from "../ui/ResearchPr
 const scoreKinds = {
   ucddb: { label: "UCDDB cross-validation (25 patients)", color: modalityInk.emg },
   cinc: { label: "Boston cross-validation", color: modalityInk.eeg },
-  holdout: { label: "Held-out Boston patients (three evaluation looks)", color: ACCENT }
+  holdout: { label: "Held-out Boston patients (locked evaluation looks)", color: ACCENT }
 };
 
 const scoreKind = (step: HistoryStep) => (step.holdout ? "holdout" : step.n <= 14 ? "ucddb" : "cinc");
@@ -53,8 +53,8 @@ function ExperimentHistory() {
     n: phase.steps[0].n,
     label: shortMarker[phase.phase] ?? phase.phase
   }));
-  const quietSteps = new Set([14, 28, 33, 36, 39, 75, 76, 78, 80]);
-  const belowSteps = new Set([30, 37, 40, 81]);
+  const quietSteps = new Set([14, 28, 33, 36, 39, 75, 76, 78, 80, 81]);
+  const belowSteps = new Set([30, 37, 40, 82]);
   return (
     <div className="research-history">
       <div className="research-history-progress" role="img" aria-label={`Best macro-F1 over time, from ${scored[0].score} to ${scored[scored.length - 1].score}`}>

@@ -530,55 +530,59 @@ def _cohen_d_screen(path: Path) -> list[Entry]:
     return out
 
 
-def _concept_external_holdout(path: Path) -> list[Entry]:
-    study = json.loads(path.read_text(encoding="utf-8"))
-    out: list[Entry] = []
-    for arm in ("calibrated", "raw"):
-        s = study[arm]
-        out += [
-            (f"ext.concept79.holdout.{arm}.macro_f1", float(s["macro_f1"]), f"#79 Boston holdout ({arm}), macro-F1"),
-            (f"ext.concept79.holdout.{arm}.kappa", float(s["kappa"]), f"#79 Boston holdout ({arm}), kappa"),
-            (f"ext.concept79.holdout.{arm}.accuracy", float(s["accuracy"]), f"#79 Boston holdout ({arm}), accuracy"),
-            (f"ext.concept79.holdout.{arm}.log_loss", float(s["log_loss"]), f"#79 Boston holdout ({arm}), log loss"),
-            (f"ext.concept79.holdout.{arm}.subj_median", float(s["subj_median"]), f"#79 Boston holdout ({arm}), subject median"),
-        ]
-        for st in STAGES:
-            out.append((f"ext.concept79.holdout.{arm}.f1_{st}", float(s["stage_f1"][st]), f"#79 Boston holdout ({arm}), {st} F1"))
-    for cov in ("coverage_90", "coverage_95"):
-        c = study["conformal_calibrated"][cov]
-        out += [
-            (f"ext.concept79.holdout.conformal.{cov}.coverage", float(c["empirical_coverage"]), f"#79 Boston holdout {cov}, empirical coverage"),
-            (f"ext.concept79.holdout.conformal.{cov}.set_size", float(c["mean_set_size"]), f"#79 Boston holdout {cov}, mean set size"),
-            (f"ext.concept79.holdout.conformal.{cov}.singleton_rate", float(c["singleton_rate"]), f"#79 Boston holdout {cov}, singleton rate"),
-            (f"ext.concept79.holdout.conformal.{cov}.singleton_acc", float(c["singleton_accuracy"]), f"#79 Boston holdout {cov}, singleton accuracy"),
-            (f"ext.concept79.holdout.conformal.{cov}.n1_coverage", float(c["per_stage_coverage"]["N1"]), f"#79 Boston holdout {cov}, N1 coverage"),
-            (f"ext.concept79.holdout.conformal.{cov}.transition_size", float(c["transition_set_size"]), f"#79 Boston holdout {cov}, transition set size"),
-            (f"ext.concept79.holdout.conformal.{cov}.interior_size", float(c["interior_set_size"]), f"#79 Boston holdout {cov}, interior set size"),
-        ]
-    return out
+def _concept_external_holdout(prefix: str, label: str) -> Callable[[Path], list[Entry]]:
+    def read(path: Path) -> list[Entry]:
+        study = json.loads(path.read_text(encoding="utf-8"))
+        out: list[Entry] = []
+        for arm in ("calibrated", "raw"):
+            s = study[arm]
+            out += [
+                (f"{prefix}.holdout.{arm}.macro_f1", float(s["macro_f1"]), f"{label} Boston holdout ({arm}), macro-F1"),
+                (f"{prefix}.holdout.{arm}.kappa", float(s["kappa"]), f"{label} Boston holdout ({arm}), kappa"),
+                (f"{prefix}.holdout.{arm}.accuracy", float(s["accuracy"]), f"{label} Boston holdout ({arm}), accuracy"),
+                (f"{prefix}.holdout.{arm}.log_loss", float(s["log_loss"]), f"{label} Boston holdout ({arm}), log loss"),
+                (f"{prefix}.holdout.{arm}.subj_median", float(s["subj_median"]), f"{label} Boston holdout ({arm}), subject median"),
+            ]
+            for st in STAGES:
+                out.append((f"{prefix}.holdout.{arm}.f1_{st}", float(s["stage_f1"][st]), f"{label} Boston holdout ({arm}), {st} F1"))
+        for cov in ("coverage_90", "coverage_95"):
+            c = study["conformal_calibrated"][cov]
+            out += [
+                (f"{prefix}.holdout.conformal.{cov}.coverage", float(c["empirical_coverage"]), f"{label} Boston holdout {cov}, empirical coverage"),
+                (f"{prefix}.holdout.conformal.{cov}.set_size", float(c["mean_set_size"]), f"{label} Boston holdout {cov}, mean set size"),
+                (f"{prefix}.holdout.conformal.{cov}.singleton_rate", float(c["singleton_rate"]), f"{label} Boston holdout {cov}, singleton rate"),
+                (f"{prefix}.holdout.conformal.{cov}.singleton_acc", float(c["singleton_accuracy"]), f"{label} Boston holdout {cov}, singleton accuracy"),
+                (f"{prefix}.holdout.conformal.{cov}.n1_coverage", float(c["per_stage_coverage"]["N1"]), f"{label} Boston holdout {cov}, N1 coverage"),
+                (f"{prefix}.holdout.conformal.{cov}.transition_size", float(c["transition_set_size"]), f"{label} Boston holdout {cov}, transition set size"),
+                (f"{prefix}.holdout.conformal.{cov}.interior_size", float(c["interior_set_size"]), f"{label} Boston holdout {cov}, interior set size"),
+            ]
+        return out
+    return read
 
 
-def _concept_external_isruc(path: Path) -> list[Entry]:
-    study = json.loads(path.read_text(encoding="utf-8"))
-    out: list[Entry] = []
-    for arm in ("calibrated_scorer1", "calibrated_scorer2", "raw_scorer1", "raw_scorer2"):
-        s = study[arm]
-        out += [
-            (f"ext.concept79.isruc.{arm}.macro_f1", float(s["macro_f1"]), f"#79 Coimbra ISRUC {arm}, macro-F1"),
-            (f"ext.concept79.isruc.{arm}.kappa", float(s["kappa"]), f"#79 Coimbra ISRUC {arm}, kappa"),
-            (f"ext.concept79.isruc.{arm}.accuracy", float(s["accuracy"]), f"#79 Coimbra ISRUC {arm}, accuracy"),
-            (f"ext.concept79.isruc.{arm}.subj_median", float(s["subj_median"]), f"#79 Coimbra ISRUC {arm}, subject median"),
-        ]
-        for st in STAGES:
-            out.append((f"ext.concept79.isruc.{arm}.f1_{st}", float(s["stage_f1"][st]), f"#79 Coimbra ISRUC {arm}, {st} F1"))
-    for cov in ("coverage_90", "coverage_95"):
-        c = study["conformal_calibrated_scorer1"][cov]
-        out += [
-            (f"ext.concept79.isruc.conformal.{cov}.coverage", float(c["empirical_coverage"]), f"#79 Coimbra ISRUC {cov}, empirical coverage"),
-            (f"ext.concept79.isruc.conformal.{cov}.set_size", float(c["mean_set_size"]), f"#79 Coimbra ISRUC {cov}, mean set size"),
-            (f"ext.concept79.isruc.conformal.{cov}.singleton_acc", float(c["singleton_accuracy"]), f"#79 Coimbra ISRUC {cov}, singleton accuracy"),
-        ]
-    return out
+def _concept_external_isruc(prefix: str, label: str) -> Callable[[Path], list[Entry]]:
+    def read(path: Path) -> list[Entry]:
+        study = json.loads(path.read_text(encoding="utf-8"))
+        out: list[Entry] = []
+        for arm in ("calibrated_scorer1", "calibrated_scorer2", "raw_scorer1", "raw_scorer2"):
+            s = study[arm]
+            out += [
+                (f"{prefix}.isruc.{arm}.macro_f1", float(s["macro_f1"]), f"{label} Coimbra ISRUC {arm}, macro-F1"),
+                (f"{prefix}.isruc.{arm}.kappa", float(s["kappa"]), f"{label} Coimbra ISRUC {arm}, kappa"),
+                (f"{prefix}.isruc.{arm}.accuracy", float(s["accuracy"]), f"{label} Coimbra ISRUC {arm}, accuracy"),
+                (f"{prefix}.isruc.{arm}.subj_median", float(s["subj_median"]), f"{label} Coimbra ISRUC {arm}, subject median"),
+            ]
+            for st in STAGES:
+                out.append((f"{prefix}.isruc.{arm}.f1_{st}", float(s["stage_f1"][st]), f"{label} Coimbra ISRUC {arm}, {st} F1"))
+        for cov in ("coverage_90", "coverage_95"):
+            c = study["conformal_calibrated_scorer1"][cov]
+            out += [
+                (f"{prefix}.isruc.conformal.{cov}.coverage", float(c["empirical_coverage"]), f"{label} Coimbra ISRUC {cov}, empirical coverage"),
+                (f"{prefix}.isruc.conformal.{cov}.set_size", float(c["mean_set_size"]), f"{label} Coimbra ISRUC {cov}, mean set size"),
+                (f"{prefix}.isruc.conformal.{cov}.singleton_acc", float(c["singleton_accuracy"]), f"{label} Coimbra ISRUC {cov}, singleton accuracy"),
+            ]
+        return out
+    return read
 
 
 MEASURED = [
@@ -632,10 +636,13 @@ MEASURED += [
         Source("artifacts/exploration/cinc-hgb-704/summary.json", _hgb704, exp=76),
         Source("artifacts/exploration/cinc-unified-ensemble/summary.json", _ensemble78, exp=78),
         Source("artifacts/exploration/cinc-bigru-concept/summary.json", _concept_model("dev.concept79", "#79 Concept-BiGRU"), exp=79),
-        Source("artifacts/exploration/cinc-bigru-concept/external_eval/holdout_summary.json", _concept_external_holdout, exp=81),
-        Source("artifacts/exploration/cinc-bigru-concept/external_eval/isruc_summary.json", _concept_external_isruc, exp=81),
+        Source("artifacts/exploration/cinc-bigru-concept/external_eval/holdout_summary.json", _concept_external_holdout("ext.concept79", "#79"), exp=81),
+        Source("artifacts/exploration/cinc-bigru-concept/external_eval/isruc_summary.json", _concept_external_isruc("ext.concept79", "#79"), exp=81),
         Source("artifacts/exploration/cinc-bigru-cues/cohen_d_screen.json", _cohen_d_screen, exp=80),
         Source("artifacts/exploration/cinc-bigru-cues/rem_auto/summary.json", _concept_model("dev.cues80", "#80 Concept-BiGRU + Cues"), exp=80),
+        Source("artifacts/exploration/cinc-bigru-pruned/minimal13/summary.json", _concept_model("dev.minimal82", "#82 Concept-BiGRU minimal13"), exp=82),
+        Source("artifacts/exploration/cinc-bigru-pruned/minimal13/external_eval/holdout_summary.json", _concept_external_holdout("ext.minimal82", "#82 minimal13"), exp=82),
+        Source("artifacts/exploration/cinc-bigru-pruned/minimal13/external_eval/isruc_summary.json", _concept_external_isruc("ext.minimal82", "#82 minimal13"), exp=82),
     ) if (ROOT / source.path).is_file()
 ]
 
@@ -647,7 +654,7 @@ def derive(v: dict[str, float]) -> dict[str, tuple[float, list[str], str]]:
     spindle = ["cv.nocardio27_bursts.epoch.macro_f1", "cv.nocardio27.epoch.macro_f1",
                "cv.prune6_sigratio.epoch.macro_f1", "cv.prune6.epoch.macro_f1", "cv.prune6_bursts.epoch.macro_f1"]
     cardio = [f"cv.{c}.{d}.macro_f1" for c in ("cardio6", "cardio6_c5") for d in ("epoch", "hmm")]
-    return {
+    out = {
         "delta.cardio_with_eeg": diff("cv.window33.epoch.macro_f1", "cv.nocardio27.epoch.macro_f1",
                                       "Gain from adding heart and breathing to EEG, eyes and chin (B minus 27 signals)"),
         "delta.decoder_with_window": diff("cv.window33.hmm.macro_f1", "cv.window33.epoch.macro_f1",
@@ -665,6 +672,21 @@ def derive(v: dict[str, float]) -> dict[str, tuple[float, list[str], str]]:
         "delta.concept79_isruc_s2_vs_model_c": diff("ext.concept79.isruc.calibrated_scorer2.macro_f1", "coimbra.transfer_cinc_to_isruc_scorer2.macro_f1",
                                                    "#79 Concept-BiGRU minus Model C on Coimbra ISRUC scorer 2"),
     }
+    if "ext.minimal82.holdout.calibrated.macro_f1" in v:
+        out["delta.minimal82_holdout_vs_model_c"] = diff(
+            "ext.minimal82.holdout.calibrated.macro_f1", "holdout.look2.g20.macro_f1",
+            "#82 Concept-BiGRU minimal13 minus Model C on 200 held-out Boston patients",
+        )
+    if "ext.minimal82.isruc.calibrated_scorer1.macro_f1" in v:
+        out["delta.minimal82_isruc_s1_vs_model_c"] = diff(
+            "ext.minimal82.isruc.calibrated_scorer1.macro_f1", "coimbra.transfer_cinc_to_isruc_scorer1.macro_f1",
+            "#82 Concept-BiGRU minimal13 minus Model C on Coimbra ISRUC scorer 1",
+        )
+        out["delta.minimal82_isruc_s2_vs_model_c"] = diff(
+            "ext.minimal82.isruc.calibrated_scorer2.macro_f1", "coimbra.transfer_cinc_to_isruc_scorer2.macro_f1",
+            "#82 Concept-BiGRU minimal13 minus Model C on Coimbra ISRUC scorer 2",
+        )
+    return out
 
 
 def sha256(path: Path) -> str:
